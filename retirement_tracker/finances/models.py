@@ -1,7 +1,5 @@
 from django.db import models
 
-# Create your models here.
-
 
 class User(models.Model):
     """ User class for the retirement tracker.
@@ -58,7 +56,10 @@ class Account(models.Model):
 
     Return the balance for all time
     Return balance for given month/year
+    Estimate balance at month/year
     """
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def return_balance(self):
         pass
@@ -66,14 +67,44 @@ class Account(models.Model):
     def return_balance_month_year(self):
         pass
 
+    def estimate_balance_month_year(self):
+        pass
+
+
+class Withdrawal(models.Model):
+    """ Withdrawal for a given account.
+
+    """
+    account = models.ForeignKey(Account)
+    amount = models.FloatField(verbose_name='Amount')
+
+
+class Deposit(models.Model):
+    """ Deposit for a given account.
+
+    """
+    account = models.ForeignKey(Account)
+    amount = models.FloatField(verbose_name='Amount')
+
 
 class SavingsAccount(Account):
     pass
 
 
 class RetirementAccount(Account):
+    """ 401k, IRA"""
+    interest_rate = models.FloatField(verbose_name='Monthly Interest')
+    pass
+
+
+class Expense(models.Model):
+    pass
+
+
+class Income(models.Model):
     pass
 
 
 class MonthlyBudget(models.Model):
+    """ The monthly budgets set for a given user."""
     pass
