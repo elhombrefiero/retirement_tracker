@@ -26,15 +26,16 @@ class User(models.Model):
     """
 
     # Budget percentages for blank budgets
-    DEFAULT_MANDATORY_BUDGET_PCT = 25.0
-    DEFAULT_MORTGAGE_BUDGET_PCT = 25.0
-    DEFAULT_DGR_BUDGET_PCT = 35.0
+    DEFAULT_MANDATORY_BUDGET_PCT = 16.0
+    DEFAULT_MORTGAGE_BUDGET_PCT = 29.0
+    DEFAULT_DGR_BUDGET_PCT = 25.0
     DEFAULT_DISC_BUDGET_PCT = 100 - DEFAULT_MANDATORY_BUDGET_PCT - DEFAULT_MORTGAGE_BUDGET_PCT - DEFAULT_DGR_BUDGET_PCT
 
     name = models.CharField(max_length=160)
-    date_of_birth = models.DateField(name='Date of Birth')
-    retirement_age = models.DecimalField(name='Retirement Age', decimal_places=2)
-    percent_withdrawal_at_retirement = models.DecimalField(name='Percent withdrawal at retirement', decimal_places=2, default=4.0)
+    date_of_birth = models.DateField(verbose_name='Date of Birth')
+    retirement_age = models.DecimalField(verbose_name='Retirement Age', decimal_places=2, max_digits=4)
+    percent_withdrawal_at_retirement = models.DecimalField(verbose_name='Percent withdrawal at retirement',
+                                                           decimal_places=2, default=4.0, max_digits=5)
 
     def return_retirement_timestamp(self):
         """ Returns the timestamp at retirement age. """
@@ -54,10 +55,9 @@ class User(models.Model):
 
     def return_takehome_pay_month_year(self, month, year):
         """ Calculates the take home pay for a given month and year."""
-        user_accounts = Account.filter(user=self)
+        user_accounts = Account.objects.filter(user=self)
         #incomes_for_acct = Income.objects.filter()
         return 420.69
-
 
     def set_budget_month_year(self, month, year):
         """ Set monthly budget based on default percentages given the take home income."""
@@ -97,7 +97,7 @@ class Withdrawal(models.Model):
     """ Withdrawal for a given account.
 
     """
-    account = models.ForeignKey(Account)
+    account = models.ForeignKey(Account, on_delete=models.CASCADE)
     amount = models.FloatField(verbose_name='Amount')
 
 
@@ -105,7 +105,7 @@ class Deposit(models.Model):
     """ Deposit for a given account.
 
     """
-    account = models.ForeignKey(Account)
+    account = models.ForeignKey(Account, on_delete=models.CASCADE)
     amount = models.FloatField(verbose_name='Amount')
 
 
@@ -115,8 +115,14 @@ class SavingsAccount(Account):
 
 class RetirementAccount(Account):
     """ 401k, IRA"""
-    interest_rate = models.FloatField(verbose_name='Monthly Interest')
-    pass
+    monthly_interest_rate = models.FloatField(verbose_name='Monthly Interest')
+
+    def get_roi(self):
+        pass
+
+    def calculate_total_at_date(self):
+        """Estimates the total amount at a certain point in time based on the monthly interest rate."""
+        pass
 
 
 class Expense(models.Model):
@@ -138,4 +144,13 @@ class Income(models.Model):
 
 class MonthlyBudget(models.Model):
     """ The monthly budgets set for a given user."""
-    pass
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    date = models.DateField(name='Date', default=now)
+    month = models.CharField(max_length=128, null=True, blank=True)
+    year = models.IntegerField(null=True, blank=True)
+
+    mandatory = models.FloatField()
+    statutory = models.FloatField()
+    mortgage = models.FloatField()
+    debts_goals_retirement = models.FloatField()
+    discretionary = models.FloatField()

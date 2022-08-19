@@ -10,7 +10,7 @@ from finances.models import User, Account, Income
 class IncomeTestCase(TestCase):
 
     def setUp(self) -> None:
-        user = User.objects.create(name='TestUser', date_of_birth='01/01/1975', retirement_age=65.0)
+        user = User.objects.create(name='TestUser', date_of_birth='1975-01-01', retirement_age=65.0)
         account = Account.objects.create(user=user, name='TestAccount')
         Income.objects.create(account=account, category='TestCategory', description='TestDescription', amount=420.69)
 
