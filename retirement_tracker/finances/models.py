@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.timezone import now
+from django.utils.text import slugify
 
 
 class User(models.Model):
@@ -126,7 +127,39 @@ class RetirementAccount(Account):
 
 
 class Expense(models.Model):
-    pass
+    BUDGET_GROUP_CHOICES = (
+        ('Mandatory', 'Mandatory'),
+        ('Mortgage', 'Mortgage'),
+        ('Debts, Goals, Retirement', 'Debts, Goals, Retirement'),
+        ('Discretionary', 'Discretionary'),
+        ('Statutory', 'Statutory'),
+    )
+    account = models.ForeignKey(Account, on_delete=models.CASCADE)
+    expense_date = models.DateField(default=now)
+    budget_group = models.CharField(max_length=200, choices=BUDGET_GROUP_CHOICES)
+    category = models.CharField(max_length=200)
+    where_bought = models.CharField(max_length=64)
+    description = models.CharField(max_length=200)
+    amount = models.DecimalField(max_digits=8, decimal_places=2)
+    slug_field = models.SlugField(null=True, blank=True)
+    # Optional group for any specific purpose (e.g., vacation in Hawaii)
+    group = models.CharField(max_length=100, null=True, blank=True)
+
+    def __str__(self):
+        return "{}\t{}\t{:50}\t{}\t{}\t{}".format(self.date,
+                                                  self.account.name,
+                                                  self.budget_group,
+                                                  self.where_bought,
+                                                  self.description,
+                                                  self.amount)
+
+    def save(self, *args, **kwargs):
+        if not self.slug_field:
+            self.slug_field = slugify(self.description)
+        super(Expense, self).save(*args, **kwargs)
+
+    class Meta:
+        unique_together = ['account', 'date', 'description', 'amount']
 
 
 class Income(models.Model):
@@ -141,12 +174,15 @@ class Income(models.Model):
     def __str__(self):
         return "{} on {} - {}".format(self.description, self.date, self.amount)
 
+    class Meta:
+        unique_together = ['account', 'date', 'description', 'amount']
+
 
 class MonthlyBudget(models.Model):
     """ The monthly budgets set for a given user."""
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     date = models.DateField(name='Date', default=now)
-    month = models.CharField(max_length=128, null=True, blank=True)
+    month = models.CharField(max_length=18, null=True, blank=True)
     year = models.IntegerField(null=True, blank=True)
 
     mandatory = models.FloatField()
@@ -154,3 +190,14 @@ class MonthlyBudget(models.Model):
     mortgage = models.FloatField()
     debts_goals_retirement = models.FloatField()
     discretionary = models.FloatField()
+
+    def save(self, *args, **kwargs):
+        self.month = self.date.strftime('%B')
+        self.year = int(self.date.strftime('%Y'))
+        super(MonthlyBudget, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return "Budget for {}, {}".format(self.month, self.year)
+
+    class Meta:
+        unique_together = ["month", "year"]
