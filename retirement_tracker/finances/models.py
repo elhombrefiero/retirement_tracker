@@ -135,7 +135,7 @@ class Expense(models.Model):
         ('Statutory', 'Statutory'),
     )
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
-    expense_date = models.DateField(default=now)
+    date = models.DateField(default=now)
     budget_group = models.CharField(max_length=200, choices=BUDGET_GROUP_CHOICES)
     category = models.CharField(max_length=200)
     where_bought = models.CharField(max_length=64)
