@@ -1,6 +1,10 @@
 from django.db import models
+from django.db.models import Sum
 from django.utils.timezone import now
 from django.utils.text import slugify
+
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 
 class User(models.Model):
@@ -57,7 +61,7 @@ class User(models.Model):
     def return_takehome_pay_month_year(self, month, year):
         """ Calculates the take home pay for a given month and year."""
         user_accounts = Account.objects.filter(user=self)
-        #incomes_for_acct = Income.objects.filter()
+        # incomes_for_acct = Income.objects.filter()
         return 420.69
 
     def set_budget_month_year(self, month, year):
@@ -85,12 +89,53 @@ class Account(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def return_balance(self):
-        pass
+        """ Calculates the balance for all time."""
 
-    def return_balance_month_year(self):
-        pass
+        all_income = Income.objects.filter(account=self).aggregate(total=Sum('amount'))['total']
+        all_income = all_income if all_income is not None else 0.0
+        all_expense = Expense.objects.filter(account=self).aggregate(total=Sum('amount'))['total']
+        all_expense = all_expense if all_expense is not None else 0.0
 
-    def estimate_balance_month_year(self):
+        return all_income - all_expense
+
+    def return_balance_year(self, year: int):
+
+        start_datetime = datetime(year, 1, 1)
+        end_datetime = datetime(year+1, 1, 1) + relativedelta(seconds=-1)
+
+        all_income = Income.objects.filter(account=self, date__ge=start_datetime, date__lt=end_datetime)
+        all_income = all_income.aggregate(total=Sum('amount'))['total']
+        all_income = all_income if all_income is not None else 0.0
+
+        all_expense = Expense.objects.filter(acount=self, date__ge=start_datetime, date__lt=end_datetime)
+        all_expense = all_expense.aggregate(total=Sum('amount'))['total']
+        all_expense = all_expense if all_expense is not None else 0.0
+
+        return all_income - all_expense
+
+    def return_balance_up_to_month_year(self, month: str, year: int):
+        """ Returns the balance up to the start of the month and year.
+
+        For example, a lookup of July, 2020 will return the balance up to 11:59pm on June, 30, 2020 """
+
+        up_to_datetime = datetime.strptime(f'{year}-{month}-01', '%Y-%B-%d')
+        up_to_datetime = up_to_datetime + relativedelta(seconds=-1)
+
+        all_income = Income.objects.filter(account=self, date__lt=up_to_datetime)
+        all_income = all_income.aggregate(total=Sum('amount'))['total']
+        all_income = all_income if all_income is not None else 0.0
+
+        all_expense = Expense.objects.filter(acount=self, date__lt=up_to_datetime)
+        all_expense = all_expense.aggregate(total=Sum('amount'))['total']
+        all_expense = all_expense if all_expense is not None else 0.0
+
+        return all_income - all_expense
+
+    def estimate_balance_month_year(self, month: str, year: int, num_of_years=0, num_of_months=6):
+        """ Performs a linear extrapolation of balance vs time given the average of the last entries in the account
+
+        By default uses the entries from the final six months for the extrapolation.
+        """
         pass
 
 
