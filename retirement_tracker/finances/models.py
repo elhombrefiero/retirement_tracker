@@ -143,6 +143,8 @@ class Withdrawal(models.Model):
     """ Withdrawal for a given account.
 
     """
+    date = models.DateField(default=now)
+    description = models.CharField(max_length=250)
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     amount = models.FloatField(verbose_name='Amount')
 
@@ -151,11 +153,36 @@ class Deposit(models.Model):
     """ Deposit for a given account.
 
     """
+    date = models.DateField(default=now)
+    description = models.CharField(max_length=250)
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     amount = models.FloatField(verbose_name='Amount')
 
 
-class SavingsAccount(Account):
+class Transfer(models.Model):
+    """ Transfer of money from account 1 to account 2. """
+
+    date = models.DateField(default=now)
+    description = models.CharField(max_length=250)
+    account_from = models.ForeignKey(Account, on_delete=models.CASCADE)
+    account_to = models.ForeignKey(Account, on_delete=models.CASCADE)
+    amount = models.FloatField(verbose_name='Amount')
+
+    def save(self, *args, **kwargs):
+        withdrawal_obj = Withdrawal.objects.create(date=self.date,
+                                                   description=self.description,
+                                                   account=self.account_from,
+                                                   amount=self.amount)
+        deposit_obj = Deposit.objects.create(date=self.date,
+                                             description=self.description,
+                                             account=self.account_to,
+                                             amount=self.amount)
+        withdrawal_obj.save()
+        deposit_obj.save()
+        self.save(*args, **kwargs)
+
+
+class TradingAccount(Account):
     pass
 
 
@@ -166,7 +193,7 @@ class RetirementAccount(Account):
     def get_roi(self):
         pass
 
-    def calculate_total_at_date(self):
+    def estimate_balance_month_year(self, month: str, year: int, num_of_years=0, num_of_months=6):
         """Estimates the total amount at a certain point in time based on the monthly interest rate."""
         pass
 
@@ -179,6 +206,7 @@ class Expense(models.Model):
         ('Discretionary', 'Discretionary'),
         ('Statutory', 'Statutory'),
     )
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     date = models.DateField(default=now)
     budget_group = models.CharField(max_length=200, choices=BUDGET_GROUP_CHOICES)
@@ -208,6 +236,7 @@ class Expense(models.Model):
 
 
 class Income(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     date = models.DateField(default=now)
     category = models.CharField(max_length=128)
