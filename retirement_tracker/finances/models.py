@@ -38,7 +38,7 @@ class User(models.Model):
 
     name = models.CharField(max_length=160)
     date_of_birth = models.DateField(verbose_name='Date of Birth')
-    retirement_age = models.DecimalField(verbose_name='Retirement Age', decimal_places=2, max_digits=4)
+    retirement_age = models.DecimalField(verbose_name='Retirement Age', decimal_places=2, max_digits=4, default=65.0)
     percent_withdrawal_at_retirement = models.DecimalField(verbose_name='Percent withdrawal at retirement',
                                                            decimal_places=2, default=4.0, max_digits=5)
 
@@ -70,6 +70,19 @@ class User(models.Model):
         # Get the
         pass
 
+    def get_earliest_retirement_date(self):
+        """ Returns the date at which the user is eligible for early retirement.
+
+        Assumes the age 59.5 based on 2022 rules."""
+
+        pass
+
+    def get_latest_retirement_date(self):
+        """ Returns the latest date the user can retire without any penalty.
+
+        Assumes a credit of 8% for each year based on ssa.gov"""
+
+        pass
 
 class Account(models.Model):
     """ Base accounts for a given user.
@@ -139,6 +152,9 @@ class Account(models.Model):
         pass
 
 
+    def return_balance_month_year(self):
+        pass
+
 class Withdrawal(models.Model):
     """ Withdrawal for a given account.
 
@@ -183,18 +199,50 @@ class Transfer(models.Model):
 
 
 class TradingAccount(Account):
-    pass
+    """ Account with trading stocks.
 
+        Functions:
+        get_roi - Calculates the return on interest based on the prior number of months.
+        get_time_to_reach_amount - Calculates the date at which a goal amount is reached .
+        estimate_balance_month_year - Calculates the balance the account will have a certain number of months and years
+         after a certain point in time.
+        """
 
-class RetirementAccount(Account):
-    """ 401k, IRA"""
-    monthly_interest_rate = models.FloatField(verbose_name='Monthly Interest')
+    def get_roi(self, num_of_months=6):
+        """ Calculates the return on interest based on the prior number of months.
 
-    def get_roi(self):
+        """
+        # Get the rolling average of the previous num_of_months worth of data
+
+        # Use that information to then calculate effective interest based on account balance
+        pass
+
+    def get_time_to_reach_amount(self, amount: float):
         pass
 
     def estimate_balance_month_year(self, month: str, year: int, num_of_years=0, num_of_months=6):
-        """Estimates the total amount at a certain point in time based on the monthly interest rate."""
+        """Estimates the total amount at a certain point in time based on the balance trend."""
+        starting_balance = self.return_balance_up_to_month_year(month, year)
+        roi = self.get_roi(num_of_months)
+
+
+        pass
+
+
+class RetirementAccount(TradingAccount):
+    """ 401k, IRA, HSA
+
+        Given that these are retirement accounts, the additional functions add withdrawal rates into the equations.
+
+        Functions:
+        return_balance_month_year_with_yearly_withdrawal - Returns the balance as a function of time with a yearly withdrawal rate
+    """
+
+    yearly_withdrawal_rate=models.DecimalField(verbose_name='Withdrawal Rate in Percentage',
+                                               max_digits=5, decimal_places=2, default=4.0)
+
+    def return_balance_month_year(self):
+        """Calculates the balance at a certain point in time, but includes a withdrawal based on the user input."""
         pass
 
 
