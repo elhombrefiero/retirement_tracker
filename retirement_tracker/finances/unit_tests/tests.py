@@ -4,7 +4,7 @@ from retirement_tracker.finances.models import Account, User
 # Create your tests here.
 
 
-# class UserTestCases(TestCase):
+# class UserTestCase(TestCase):
 #
 #     def setUp(self):
 #         User.objects.create()
