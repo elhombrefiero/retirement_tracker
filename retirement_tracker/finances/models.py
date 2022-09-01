@@ -274,6 +274,35 @@ class RetirementAccount(TradingAccount):
         """Calculates the balance at a certain point in time, but includes a withdrawal based on the user input."""
         pass
 
+    def return_withdrawal_info(self, retirement_date: datetime.datetime,
+                               yearly_withdrawal_pct: float,
+                               age_at_retirement=65,
+                               expected_death_age=100):
+        """Estimates the balance in the retirement account given a yearly withdrawal.
+
+
+        """
+        return_info = {}
+        balances_at_date = {}
+        date_after_retirement = retirement_date
+        date_at_death = retirement_date + relativedelta(years=expected_death_age - age_at_retirement)
+        monthly_withdrawal_pct = yearly_withdrawal_pct / 12.0
+        retirement_month = retirement_date.strftime('%B')
+        retirement_year = retirement_date.strftime('%Y')
+        balance = self.return_balance_month_year(retirement_month, retirement_year)
+
+        while date_after_retirement < date_at_death:
+            # Balance will be reduced by the monthly withdrawal pct
+            balance = (100.0 - monthly_withdrawal_pct) / 100.0 * balance
+
+            # Balance increased by the monthly interest rate
+            balance = (100.0 + self.monthly_interest_rate) / 100.0 * balance
+
+            date_after_retirement = date_after_retirement + relativedelta(months=+1)
+        # return_info['date_to_empty'] = SOME DATE
+
+        return return_info
+
 
 class Expense(models.Model):
     BUDGET_GROUP_CHOICES = (
