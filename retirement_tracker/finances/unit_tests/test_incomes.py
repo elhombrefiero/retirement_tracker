@@ -42,3 +42,5 @@ class IncomeTestCase(TestCase):
     def test_cumulative_income_expense(self):
         pass
 
+    def test_get_latest_date(self):
+        pass

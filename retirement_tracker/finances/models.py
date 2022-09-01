@@ -1,5 +1,5 @@
 from django.db import models
-from django.db.models import Sum
+from django.db.models import Sum, Max
 from django.utils.timezone import now
 from django.utils.text import slugify
 
@@ -84,6 +84,7 @@ class User(models.Model):
 
         pass
 
+
 class Account(models.Model):
     """ Base accounts for a given user.
 
@@ -151,9 +152,15 @@ class Account(models.Model):
         """
         pass
 
-
     def return_balance_month_year(self):
         pass
+
+    def return_latest_date(self):
+        """ Looks at all entries and determines the latest database date for the account."""
+        # TODO: Fix
+        latest_date = datetime.today()
+        return latest_date
+
 
 class Withdrawal(models.Model):
     """ Withdrawal for a given account.
@@ -180,8 +187,8 @@ class Transfer(models.Model):
 
     date = models.DateField(default=now)
     description = models.CharField(max_length=250)
-    account_from = models.ForeignKey(Account, on_delete=models.CASCADE)
-    account_to = models.ForeignKey(Account, on_delete=models.CASCADE)
+    account_from = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='from_account')
+    account_to = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='to_account')
     amount = models.FloatField(verbose_name='Amount')
 
     def save(self, *args, **kwargs):
@@ -211,11 +218,21 @@ class TradingAccount(Account):
     def get_roi(self, num_of_months=6):
         """ Calculates the return on interest based on the prior number of months.
 
+            Returns rate of change (% / month)
         """
-        # Get the rolling average of the previous num_of_months worth of data
+        # Get the rolling average of the last num_of_months worth of data
+        latest_date = self.return_latest_date()
+        earliest_date = latest_date + relativedelta(months=-1*num_of_months)
 
         # Use that information to then calculate effective interest based on account balance
-        pass
+        earliest_balance = self.return_balance_up_to_month_year(earliest_date.strftime('%B'),
+                                                                int(earliest_date.strftime('%Y')))
+        latest_balance = self.return_balance_up_to_month_year(latest_date.strftime('%B'),
+                                                              int(latest_date.strftime('%Y')))
+
+        roi = (latest_balance - earliest_balance) / num_of_months * 100
+
+        return roi
 
     def get_time_to_reach_amount(self, amount: float):
         pass
@@ -224,7 +241,6 @@ class TradingAccount(Account):
         """Estimates the total amount at a certain point in time based on the balance trend."""
         starting_balance = self.return_balance_up_to_month_year(month, year)
         roi = self.get_roi(num_of_months)
-
 
         pass
 
