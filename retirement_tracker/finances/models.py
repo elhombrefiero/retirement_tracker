@@ -6,6 +6,10 @@ from django.utils.text import slugify
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
+# TODO: Add a stock model, (stock name, purchase date, number of stocks)
+# TODO: Add stock model to trading account.
+#  Update trading account to use the stock information to determine the net worth over time.
+
 
 class User(models.Model):
     """ User class for the retirement tracker.
@@ -90,17 +94,26 @@ class Account(models.Model):
 
     Name
     URL
+    Monthly interest in percent (Use 0.0 for checking accounts)
 
-    Deposits
-    Withdrawals
+    Database relations:
+        User
+        Deposits
+        Withdrawals
 
-    Return the balance for all time
-    Return balance for given month/year
-    Estimate balance at month/year
+    Functions:
+        return_balance: Return the balance for all time
+        return_balance_up_to_month_year: Returns the cumulative balance at the start of the month year
+        return_balance_year: Return the balance for the requested year
+        return_balance_month_year: Return balance for requested month/year
+        estimate_balance_month_year: Performs a linear extrapolation of the balance up to the requested month/year
+        return_latest_date: returns the latest database date for the account
     """
     name = models.CharField(max_length=160)
     url = models.URLField(name="Account URL", blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    monthly_interest_pct = models.DecimalField(verbose_name='Monthly interest in percent',
+                                               max_digits=4, decimal_places=2, default=0.0)
 
     def return_balance(self):
         """ Calculates the balance for all time."""
@@ -127,6 +140,9 @@ class Account(models.Model):
 
         return all_income - all_expense
 
+    def return_balance_month_year(self, month: str, year: int):
+        pass
+
     def return_balance_up_to_month_year(self, month: str, year: int):
         """ Returns the balance up to the start of the month and year.
 
@@ -150,9 +166,6 @@ class Account(models.Model):
 
         By default uses the entries from the final six months for the extrapolation.
         """
-        pass
-
-    def return_balance_month_year(self):
         pass
 
     def return_latest_date(self):
