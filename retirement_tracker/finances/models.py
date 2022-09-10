@@ -21,7 +21,7 @@ class User(models.Model):
 
     DB Related Attributes:
     Checking Accounts
-    Saving Accounts / Stocks
+    Trading Accounts (Stocks)
     Retirement Account
     Incomes
     Expenses
@@ -54,9 +54,38 @@ class User(models.Model):
         """ Calculates estimated retirement overview. """
         pass
 
-    def estimate_budget_for_month_year(self, month, year):
-        """ Returns estimated budget values based on takehome pay and budget expenses."""
-        pass
+    def estimate_budget_for_month_year(self, month:str, year:int):
+        """ Estimates and sets monthly budget values based on takehome pay and budget expenses."""
+
+        # Get accounts associated with the user
+        accounts = self.account_set.all()
+
+        # Get the total income from base accounts for the current month/year
+        total_income = 0
+        statutory = 0
+        for account in accounts:
+            total_income += account.return_income_month_year(month, year)
+            statutory += account.return_statutory_month_year(month, year)
+
+        takehome = total_income - statutory
+        thisdate = datetime.strptime(f'{month},{year}', '%B,%Y')
+        budget_mort = takehome * self.DEFAULT_MORTGAGE_BUDGET_PCT / 100.0
+        budget_mand = takehome * self.DEFAULT_MANDATORY_BUDGET_PCT / 100.0
+        budget_dgr = takehome * self.DEFAULT_DGR_BUDGET_PCT / 100.0
+        budget_disc = takehome * self.DEFAULT_DISC_BUDGET_PCT / 100.0
+
+        try:
+            mbudget = MonthlyBudget.objects.get(user=self, month=month, year=year)
+        except MonthlyBudget.DoesNotExist:
+            mbudget = MonthlyBudget.objects.create(user=self, date=thisdate)
+
+        mbudget.mandatory = budget_mand
+        mbudget.mortgage = budget_mort
+        mbudget.statutory = statutory
+        mbudget.debts_goals_retirement = budget_dgr
+        mbudget.discretionary = budget_disc
+
+        mbudget.save()
 
     def get_total_for_month_year(self, month, year):
         """ Calculates the total balance for the given month and year"""
@@ -141,6 +170,12 @@ class Account(models.Model):
         return all_income - all_expense
 
     def return_balance_month_year(self, month: str, year: int):
+        pass
+
+    def return_income_month_year(self, month: str, year: int):
+        pass
+
+    def return_statutory_month_year(self, month: str, year: int):
         pass
 
     def return_balance_up_to_month_year(self, month: str, year: int):
@@ -274,7 +309,7 @@ class RetirementAccount(TradingAccount):
         """Calculates the balance at a certain point in time, but includes a withdrawal based on the user input."""
         pass
 
-    def return_withdrawal_info(self, retirement_date: datetime.datetime,
+    def return_withdrawal_info(self, retirement_date: datetime,
                                yearly_withdrawal_pct: float,
                                age_at_retirement=65,
                                expected_death_age=100):
@@ -377,7 +412,7 @@ class MonthlyBudget(models.Model):
         super(MonthlyBudget, self).save(*args, **kwargs)
 
     def __str__(self):
-        return "Budget for {}, {}".format(self.month, self.year)
+        return "{}'s budget for {}, {}".format(self.user, self.month, self.year)
 
     class Meta:
         unique_together = ["month", "year"]
