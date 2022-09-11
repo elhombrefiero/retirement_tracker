@@ -152,7 +152,7 @@ class Account(models.Model):
         all_expense = Expense.objects.filter(account=self).aggregate(total=Sum('amount'))['total']
         all_expense = all_expense if all_expense is not None else 0.0
 
-        return all_income - all_expense
+        return float(all_income) - float(all_expense)
 
     def return_balance_year(self, year: int):
 
@@ -167,7 +167,7 @@ class Account(models.Model):
         all_expense = all_expense.aggregate(total=Sum('amount'))['total']
         all_expense = all_expense if all_expense is not None else 0.0
 
-        return all_income - all_expense
+        return float(all_income) - float(all_expense)
 
     def return_balance_month_year(self, month: str, year: int):
         pass
@@ -194,7 +194,7 @@ class Account(models.Model):
         all_expense = all_expense.aggregate(total=Sum('amount'))['total']
         all_expense = all_expense if all_expense is not None else 0.0
 
-        return all_income - all_expense
+        return float(all_income) - float(all_expense)
 
     def estimate_balance_month_year(self, month: str, year: int, num_of_years=0, num_of_months=6):
         """ Performs a linear extrapolation of balance vs time given the average of the last entries in the account
