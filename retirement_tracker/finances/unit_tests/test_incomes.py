@@ -15,7 +15,7 @@ TEST_USER = 'TestUser'
 
 class IncomeTestCase(TestCase):
     """ Test for various things in user,income.
-    User is named TestUser, aged 35
+    User is named TestUser, aged 65 (about to retire)
         Has two checking accounts, one savings account, one brokerage account, one stock account, one IRA, and one 401k
 
     Test_Checking1 has two incomes:
@@ -25,7 +25,14 @@ class IncomeTestCase(TestCase):
         $20 at the start of the next month. $20 at the end of the next month.
     Test_Saving1 has one income:
         $35 at the start of the month
-    Test_Brokerage (Trading
+    Test_Brokerage (TradingAccount) has one income:
+        $5000 at the time of retirement
+    Test_401k (RetirementAccount) has two incomes:
+        $20k at age 40
+        $20k at age 65
+    TestUser will withdraw 4% from Retirement Accounts at the time of retirement
+
+
     """
     def setUp(self) -> None:
         today_date = now()
