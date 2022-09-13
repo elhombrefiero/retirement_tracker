@@ -37,18 +37,34 @@ class IncomeTestCase(TestCase):
     def setUp(self) -> None:
         today_date = now()
         first_day_of_month = datetime.strptime(today_date.strftime('%Y-%m-01'), '%Y-%m-%d')
-        last_day_of_month = first_day_of_month + relativedelta(months=+1) + relativedelta(days=-1)
+        last_day_of_month = first_day_of_month + relativedelta(months=+1, days=-1)
+        first_day_next_month = first_day_of_month + relativedelta(months=+1)
+        last_day_next_month = first_day_next_month + relativedelta(months=+1, days=-1)
         user1_date_of_birth = (first_day_of_month + relativedelta(years=-65)).strftime('%Y-%m-%d')
+        date_15years_ago = first_day_of_month + relativedelta(years=-15)
         user = User.objects.create(name=TEST_USER, date_of_birth=user1_date_of_birth, retirement_age=65.0)
-        caccount = Account.objects.create(user=user, name='TestAccount')
+        caccount = Account.objects.create(user=user, name='Test_Checking1')
+        caccount2 = Account.objects.create(user=user, name='Test_Checking2')
+        saccount = Account.objects.create(user=user, name='Test_Savings')
+        tacct = Account.objects.create(user=user, name='Test_Brokerage')
+        ret_401k = Account.objects.create(user=user, name='Test_401k')
         Income.objects.create(user=user, account=caccount, date=first_day_of_month, category='TestCategory', description='TestDescription', amount=50.0)
         Income.objects.create(user=user, account=caccount, date=last_day_of_month, category='TestCategory', description='TestDescription', amount=75.0)
+        Income.objects.create(user=user, account=caccount2, date=first_day_of_month, category='TestCategory', description='TestDescription', amount=10.0)
+        Income.objects.create(user=user, account=caccount2, date=last_day_of_month, category='TestCategory', description='TestDescription', amount=10.0)
+        Income.objects.create(user=user, account=caccount2, date=first_day_next_month, category='TestCategory', description='TestDescription', amount=20.0)
+        Income.objects.create(user=user, account=caccount2, date=last_day_next_month, category='TestCategory', description='TestDescription', amount=20.0)
+        Income.objects.create(user=user, account=saccount, date=first_day_of_month, category='TestCategory',
+                              description='TestDescription', amount=35.0)
+        Income.objects.create(user=user, account=tacct, date=first_day_of_month, category='TestCategory', description='TestDescription', amount=5000.0)
+        Income.objects.create(user=user, account=ret_401k, date=first_day_of_month, category='TestCategory', description='TestDescription', amount=20000.0)
+        Income.objects.create(user=user, account=ret_401k, date=date_15years_ago, category='TestCategory', description='TestDescription', amount=20000.0)
         #Expense.objects.create(account=account, budget_group='Mandatory', category='TestCategory',
         #                       where_bought='TestLocation', description='TestExpenseDescription', amount=100.00)
 
     def test_check_acct1_balance(self):
         """ Checks that the first account has the proper balance """
-        caccount = Account.objects.get(name='TestAccount')
+        caccount = Account.objects.get(name='Test_Checking1')
         cacct_balance = caccount.return_balance()
 
         self.assertEqual(cacct_balance, 125.0)
@@ -61,21 +77,35 @@ class IncomeTestCase(TestCase):
         Month 1:
 
             checking account: 125
-            checking account 2: 60
+            checking account 2: 20
             Savings 1: 35
             Brokerage: $5000
-            401k: $40000
+            401k: $20000
+
+            Total: $25180
 
         Month 2:
 
-        45220
+            checking account 2: 40
+
+
 
         """
         user = User.objects.get(name=TEST_USER)
+        today_date = now()
+        month = today_date.strftime('%B')
+        year = today_date.strftime('%Y')
+
+        next_month_date = today_date + relativedelta(months=+1)
+        next_month_month = next_month_date.strftime('%B')
+        next_month_year = next_month_date.strftime('%Y')
 
         # Get today's date and get the month and year
-        balance = user.get_total_for_month_year('January', 2022)
-        self.assertEqual(balance, 45220.0)
+        this_month_balance = user.get_total_for_month_year(month, year)
+        self.assertEqual(this_month_balance, 25180.0)
+
+        next_month_balance = user.get_total_for_month_year(next_month_month, next_month_year)
+        self.assertEqual(next_month_balance, 40.0)
 
     def test_account_balances(self):
         """ Check the correct balances of the different accounts.
@@ -84,21 +114,22 @@ class IncomeTestCase(TestCase):
 
 
         """
+        self.skipTest('Implement later')
 
     def test_no_duplicate_income(self):
         """ Try to add an identical entry to an account and verify the error.
 
         Try to add an identical entry to a different account and verify that it goes through.
         """
-        pass
+        self.skipTest('Implement later')
 
     def test_get_attribute_total(self):
         """ Add two entries with the same category name in the same month/year and verify their total is captured. """
-        pass
+        self.skipTest('Implement later')
 
     def test_cumulative_income_expense(self):
-        pass
+        self.skipTest('Implement later')
 
     def test_get_latest_date(self):
         """ Check the latest date of each account."""
-        pass
+        self.skipTest('Implement later')

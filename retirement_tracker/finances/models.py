@@ -89,7 +89,12 @@ class User(models.Model):
 
     def get_total_for_month_year(self, month, year):
         """ Calculates the total balance for the given month and year"""
-        pass
+        tot = 0
+        user_accounts = self.account_set.all()
+        for account in user_accounts:
+            tot += account.return_balance_month_year(month, year)
+
+        return tot
 
     def return_takehome_pay_month_year(self, month, year):
         """ Calculates the take home pay for a given month and year."""
@@ -170,7 +175,20 @@ class Account(models.Model):
         return float(all_income) - float(all_expense)
 
     def return_balance_month_year(self, month: str, year: int):
-        pass
+        """ Gets the total balance of the account for a given month"""
+
+        start_datetime = datetime.strptime(f'{month}-1-{year}', '%B-%d-%Y')
+        end_datetime = start_datetime + relativedelta(months=+1, seconds=-1)
+
+        month_income = Income.objects.filter(account=self, date__gte=start_datetime, date__lte=end_datetime)
+        month_income = month_income.aggregate(total=Sum('amount'))['total']
+        month_income = month_income if month_income is not None else 0.0
+
+        month_expense = Expense.objects.filter(account=self, date__gte=start_datetime, date__lte=end_datetime)
+        month_expense = month_expense.aggregate(total=Sum('amount'))['total']
+        month_expense = month_expense if month_expense is not None else 0.0
+
+        return float(month_income) - float(month_expense)
 
     def return_income_month_year(self, month: str, year: int):
         pass
@@ -301,7 +319,6 @@ class RetirementAccount(TradingAccount):
         Functions:
         return_balance_month_year_with_yearly_withdrawal - Returns the balance as a function of time with a yearly withdrawal rate
     """
-
     yearly_withdrawal_rate=models.DecimalField(verbose_name='Withdrawal Rate in Percentage',
                                                max_digits=5, decimal_places=2, default=4.0)
 
