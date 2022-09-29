@@ -46,6 +46,7 @@ class User(models.Model):
     percent_withdrawal_at_retirement = models.DecimalField(verbose_name='Percent withdrawal at retirement',
                                                            decimal_places=2, default=4.0, max_digits=5)
 
+    # TODO: Add a trading and retirement account total routines.
     def return_retirement_timestamp(self):
         """ Returns the timestamp at retirement age. """
         pass
@@ -56,6 +57,8 @@ class User(models.Model):
 
     def estimate_budget_for_month_year(self, month:str, year:int):
         """ Estimates and sets monthly budget values based on takehome pay and budget expenses."""
+        # TODO: Only account for base account, not retirement or trading accounts.
+        #  For example, use Accounts.objects.exclude(name_in=non_account_names)
 
         # Get accounts associated with the user
         accounts = self.account_set.all()
@@ -90,7 +93,13 @@ class User(models.Model):
     def get_total_for_month_year(self, month, year):
         """ Calculates the total balance for the given month and year"""
         tot = 0
+        user_ret_accts = [acct.name for acct in RetirementAccount.objects.filter(user=self)]
+        user_trade_accts = [acct.name for acct in TradingAccount.objects.filter(user=self)]
         user_accounts = self.account_set.all()
+
+        user_accounts = user_accounts.exclude(name__in=user_ret_accts)
+        user_accounts = user_accounts.exclude(name__in=user_trade_accts)
+
         for account in user_accounts:
             tot += account.return_balance_month_year(month, year)
 
@@ -98,9 +107,14 @@ class User(models.Model):
 
     def return_takehome_pay_month_year(self, month, year):
         """ Calculates the take home pay for a given month and year."""
+        income = 0
+        stat_expenses = 0
         user_accounts = Account.objects.filter(user=self)
-        # incomes_for_acct = Income.objects.filter()
-        return 420.69
+        for acct in user_accounts:
+            income += acct.return_income_month_year(month, year)
+            stat_expenses += acct.return_statutory_month_year(month, year)
+
+        return income - stat_expenses
 
     def set_budget_month_year(self, month, year):
         """ Set monthly budget based on default percentages given the take home income."""
@@ -311,7 +325,7 @@ class TradingAccount(Account):
         pass
 
 
-class RetirementAccount(TradingAccount):
+class RetirementAccount(Account):
     """ 401k, IRA, HSA
 
         Given that these are retirement accounts, the additional functions add withdrawal rates into the equations.
@@ -321,6 +335,12 @@ class RetirementAccount(TradingAccount):
     """
     yearly_withdrawal_rate=models.DecimalField(verbose_name='Withdrawal Rate in Percentage',
                                                max_digits=5, decimal_places=2, default=4.0)
+
+    def get_roi(self):
+        pass
+
+    def estimate_balance_month_year(self, month: str, year: int, num_of_years=0, num_of_months=6):
+        pass
 
     def return_balance_month_year(self):
         """Calculates the balance at a certain point in time, but includes a withdrawal based on the user input."""
@@ -354,6 +374,9 @@ class RetirementAccount(TradingAccount):
         # return_info['date_to_empty'] = SOME DATE
 
         return return_info
+
+    def get_time_to_reach_amount(self):
+        pass
 
 
 class Expense(models.Model):

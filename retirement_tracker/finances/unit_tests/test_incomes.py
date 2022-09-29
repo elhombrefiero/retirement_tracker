@@ -4,7 +4,7 @@
 from django.test import TestCase
 
 # Other Imports
-from finances.models import User, Account, Income, Expense
+from finances.models import User, Account, Income, Expense, RetirementAccount, TradingAccount
 from django.utils.timezone import now
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -46,8 +46,8 @@ class IncomeTestCase(TestCase):
         caccount = Account.objects.create(user=user, name='Test_Checking1')
         caccount2 = Account.objects.create(user=user, name='Test_Checking2')
         saccount = Account.objects.create(user=user, name='Test_Savings')
-        tacct = Account.objects.create(user=user, name='Test_Brokerage')
-        ret_401k = Account.objects.create(user=user, name='Test_401k')
+        tacct = TradingAccount.objects.create(user=user, name='Test_Brokerage')
+        ret_401k = RetirementAccount.objects.create(user=user, name='Test_401k')
         Income.objects.create(user=user, account=caccount, date=first_day_of_month, category='TestCategory', description='TestDescription', amount=50.0)
         Income.objects.create(user=user, account=caccount, date=last_day_of_month, category='TestCategory', description='TestDescription', amount=75.0)
         Income.objects.create(user=user, account=caccount2, date=first_day_of_month, category='TestCategory', description='TestDescription', amount=10.0)
@@ -76,11 +76,14 @@ class IncomeTestCase(TestCase):
 
         Month 1:
 
-            checking account: 125
-            checking account 2: 20
-            Savings 1: 35
-            Brokerage: $5000
-            401k: $20000
+            Checking Account totals:
+                checking account: 125
+                checking account 2: 20
+                Savings 1: 35
+                Total: 180
+            Retirement:
+                Brokerage: $5000
+                401k: $20000
 
             Total: $25180
 
@@ -102,7 +105,7 @@ class IncomeTestCase(TestCase):
 
         # Get today's date and get the month and year
         this_month_balance = user.get_total_for_month_year(month, year)
-        self.assertEqual(this_month_balance, 25180.0)
+        self.assertEqual(this_month_balance, 180.0)
 
         next_month_balance = user.get_total_for_month_year(next_month_month, next_month_year)
         self.assertEqual(next_month_balance, 40.0)
