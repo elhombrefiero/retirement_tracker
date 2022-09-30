@@ -46,27 +46,46 @@ class User(models.Model):
     percent_withdrawal_at_retirement = models.DecimalField(verbose_name='Percent withdrawal at retirement',
                                                            decimal_places=2, default=4.0, max_digits=5)
 
-    # TODO: Add a trading and retirement account total routines.
     def return_retirement_timestamp(self):
-        """ Returns the timestamp at retirement age. """
+        """ Returns the timestamp at retirement age.
+            Assumes that the months are
+         """
+        num_months = int(float(self.retirement_age) * 12.0)
+        ret_datetime = self.date_of_birth + relativedelta(months=num_months)
+        return ret_datetime
+
+    def return_retirement_acct_total(self):
+        pass
+
+    def return_trading_acct_total(self):
         pass
 
     def estimate_retirement_finances(self):
         """ Calculates estimated retirement overview. """
         pass
 
-    def estimate_budget_for_month_year(self, month:str, year:int):
+    def return_checking_accts(self):
+        """ Returns only the checking account objects"""
+
+        user_ret_accts = [acct.name for acct in RetirementAccount.objects.filter(user=self)]
+        user_trade_accts = [acct.name for acct in TradingAccount.objects.filter(user=self)]
+        user_accounts = self.account_set.all()
+
+        user_accounts = user_accounts.exclude(name__in=user_ret_accts)
+        user_accounts = user_accounts.exclude(name__in=user_trade_accts)
+
+        return user_accounts
+
+    def estimate_budget_for_month_year(self, month: str, year: int):
         """ Estimates and sets monthly budget values based on takehome pay and budget expenses."""
-        # TODO: Only account for base account, not retirement or trading accounts.
-        #  For example, use Accounts.objects.exclude(name_in=non_account_names)
 
         # Get accounts associated with the user
-        accounts = self.account_set.all()
+        user_accounts = self.return_checking_accts()
 
         # Get the total income from base accounts for the current month/year
         total_income = 0
         statutory = 0
-        for account in accounts:
+        for account in user_accounts:
             total_income += account.return_income_month_year(month, year)
             statutory += account.return_statutory_month_year(month, year)
 
@@ -93,12 +112,7 @@ class User(models.Model):
     def get_total_for_month_year(self, month, year):
         """ Calculates the total balance for the given month and year"""
         tot = 0
-        user_ret_accts = [acct.name for acct in RetirementAccount.objects.filter(user=self)]
-        user_trade_accts = [acct.name for acct in TradingAccount.objects.filter(user=self)]
-        user_accounts = self.account_set.all()
-
-        user_accounts = user_accounts.exclude(name__in=user_ret_accts)
-        user_accounts = user_accounts.exclude(name__in=user_trade_accts)
+        user_accounts = self.return_checking_accts()
 
         for account in user_accounts:
             tot += account.return_balance_month_year(month, year)
