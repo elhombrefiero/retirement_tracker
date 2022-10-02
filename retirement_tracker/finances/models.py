@@ -180,9 +180,9 @@ class Account(models.Model):
     def return_balance(self):
         """ Calculates the balance for all time."""
 
-        all_income = Income.objects.filter(account=self).aggregate(total=Sum('amount'))['total']
+        all_income = Deposit.objects.filter(account=self).aggregate(total=Sum('amount'))['total']
         all_income = all_income if all_income is not None else 0.0
-        all_expense = Expense.objects.filter(account=self).aggregate(total=Sum('amount'))['total']
+        all_expense = Withdrawal.objects.filter(account=self).aggregate(total=Sum('amount'))['total']
         all_expense = all_expense if all_expense is not None else 0.0
 
         return float(all_income) - float(all_expense)
@@ -192,11 +192,11 @@ class Account(models.Model):
         start_datetime = datetime(year, 1, 1)
         end_datetime = datetime(year+1, 1, 1) + relativedelta(seconds=-1)
 
-        all_income = Income.objects.filter(account=self, date__ge=start_datetime, date__lt=end_datetime)
+        all_income = Deposit.objects.filter(account=self, date__ge=start_datetime, date__lt=end_datetime)
         all_income = all_income.aggregate(total=Sum('amount'))['total']
         all_income = all_income if all_income is not None else 0.0
 
-        all_expense = Expense.objects.filter(acount=self, date__ge=start_datetime, date__lt=end_datetime)
+        all_expense = Withdrawal.objects.filter(acount=self, date__ge=start_datetime, date__lt=end_datetime)
         all_expense = all_expense.aggregate(total=Sum('amount'))['total']
         all_expense = all_expense if all_expense is not None else 0.0
 
@@ -205,24 +205,42 @@ class Account(models.Model):
     def return_balance_month_year(self, month: str, year: int):
         """ Gets the total balance of the account for a given month"""
 
-        start_datetime = datetime.strptime(f'{month}-1-{year}', '%B-%d-%Y')
-        end_datetime = start_datetime + relativedelta(months=+1, seconds=-1)
+        month_income = self.return_income_month_year(month, year)
 
-        month_income = Income.objects.filter(account=self, date__gte=start_datetime, date__lte=end_datetime)
-        month_income = month_income.aggregate(total=Sum('amount'))['total']
-        month_income = month_income if month_income is not None else 0.0
-
-        month_expense = Expense.objects.filter(account=self, date__gte=start_datetime, date__lte=end_datetime)
-        month_expense = month_expense.aggregate(total=Sum('amount'))['total']
-        month_expense = month_expense if month_expense is not None else 0.0
+        month_expense = self.return_expense_month_year(month, year)
 
         return float(month_income) - float(month_expense)
 
     def return_income_month_year(self, month: str, year: int):
-        pass
+        start_datetime = datetime.strptime(f'{month}-1-{year}', '%B-%d-%Y')
+        end_datetime = start_datetime + relativedelta(months=+1, seconds=-1)
+
+        month_income = Deposit.objects.filter(account=self, date__gte=start_datetime, date__lte=end_datetime)
+        month_income = month_income.aggregate(total=Sum('amount'))['total']
+        month_income = month_income if month_income is not None else 0.0
+
+        return month_income
+
+    def return_expense_month_year(self, month: str, year: int):
+        start_datetime = datetime.strptime(f'{month}-1-{year}', '%B-%d-%Y')
+        end_datetime = start_datetime + relativedelta(months=+1, seconds=-1)
+
+        month_expense = Withdrawal.objects.filter(account=self, date__gte=start_datetime, date__lte=end_datetime)
+        month_expense = month_expense.aggregate(total=Sum('amount'))['total']
+        month_expense = month_expense if month_expense is not None else 0.0
+
+        return month_expense
 
     def return_statutory_month_year(self, month: str, year: int):
-        pass
+        start_datetime = datetime.strptime(f'{month}-1-{year}', '%B-%d-%Y')
+        end_datetime = start_datetime + relativedelta(months=+1, seconds=-1)
+
+        month_expense = Withdrawal.objects.filter(account=self, date__gte=start_datetime, date__lte=end_datetime)
+        month_expense.filter(budget_group='Statutory')
+        month_expense = month_expense.aggregate(total=Sum('amount'))['total']
+        month_expense = month_expense if month_expense is not None else 0.0
+
+        return month_expense
 
     def return_balance_up_to_month_year(self, month: str, year: int):
         """ Returns the balance up to the start of the month and year.
@@ -232,11 +250,11 @@ class Account(models.Model):
         up_to_datetime = datetime.strptime(f'{year}-{month}-01', '%Y-%B-%d')
         up_to_datetime = up_to_datetime + relativedelta(seconds=-1)
 
-        all_income = Income.objects.filter(account=self, date__lt=up_to_datetime)
+        all_income = Deposit.objects.filter(account=self, date__lt=up_to_datetime)
         all_income = all_income.aggregate(total=Sum('amount'))['total']
         all_income = all_income if all_income is not None else 0.0
 
-        all_expense = Expense.objects.filter(acount=self, date__lt=up_to_datetime)
+        all_expense = Withdrawal.objects.filter(acount=self, date__lt=up_to_datetime)
         all_expense = all_expense.aggregate(total=Sum('amount'))['total']
         all_expense = all_expense if all_expense is not None else 0.0
 
@@ -251,8 +269,10 @@ class Account(models.Model):
 
     def return_latest_date(self):
         """ Looks at all entries and determines the latest database date for the account."""
-        # TODO: Fix
-        latest_date = datetime.today()
+        latest_withdrawal_date = Withdrawal.objects.filter(account=self).latest('date').date
+        latest_deposit_date = Deposit.objects.filter(account=self).latest('date').date
+
+        latest_date = max(latest_deposit_date, latest_withdrawal_date)
         return latest_date
 
 
@@ -328,15 +348,56 @@ class TradingAccount(Account):
 
         return roi
 
-    def get_time_to_reach_amount(self, amount: float):
-        pass
+    def get_time_to_reach_amount(self, amount: float, num_of_months=6):
+        """ Calculate the amount of time it will take to reach a financial goal.
+
+        Defaults to using the last six months' worth of data.
+            y = mx + b
+        where:
+            x = seconds after epoch
+            y = amount
+            m = amount per second
+            b = amount at time 0
+
+        b will be calculated by taking the amount at y1 and subtracting m*x1
+        From there, the value of x will be determined for the requested amount
+            x = (y-b)/m
+            """
+        balance = self.return_balance()
+        epoch = datetime(1970,1,1)
+        latest_date = self.return_latest_date()
+        latest_date_to_seconds = (latest_date - epoch).total_seconds()
+        previous_date = latest_date + relativedelta(months=-1*num_of_months)
+        previous_date_to_seconds = (previous_date - epoch).total_seconds()
+        balance_previous = self.return_balance_up_to_month_year(previous_date.strftime('%B'),
+                                                                previous_date.stftime('%Y'))
+        m = (balance - balance_previous) / (latest_date_to_seconds - previous_date_to_seconds)
+        b = balance_previous - m * previous_date_to_seconds
+        time_to_reach = (balance - b) / m
+
+        return time_to_reach
 
     def estimate_balance_month_year(self, month: str, year: int, num_of_years=0, num_of_months=6):
-        """Estimates the total amount at a certain point in time based on the balance trend."""
-        starting_balance = self.return_balance_up_to_month_year(month, year)
-        roi = self.get_roi(num_of_months)
+        """Estimates the total amount at a certain point in time based on the balance trend.
 
-        pass
+            Returns:
+                dictionary with beginning date, beginning balance, end date, and end balance
+        """
+        balance = self.return_balance_up_to_month_year(month, year)
+        roi = self.get_roi(num_of_months)
+        date = datetime.strptime(f'{month}-01-{year}', '%B-%d-%Y')
+        tot_months = num_of_years * 12 + num_of_months
+        end_date = date + relativedelta(num_of_months=tot_months)
+        json_return = {'beginning date': date, 'beginning balance': balance, 'end date': end_date}
+
+        while date <= end_date:
+
+            balance = balance + balance * roi / 100.0
+            date = date + relativedelta(months=+1)
+
+        json_return['end balance'] = balance
+
+        return json_return
 
 
 class RetirementAccount(Account):
@@ -385,7 +446,6 @@ class RetirementAccount(Account):
             balance = (100.0 + self.monthly_interest_rate) / 100.0 * balance
 
             date_after_retirement = date_after_retirement + relativedelta(months=+1)
-        # return_info['date_to_empty'] = SOME DATE
 
         return return_info
 
