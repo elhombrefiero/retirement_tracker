@@ -123,32 +123,46 @@ class User(models.Model):
         """ Calculates the take home pay for a given month and year."""
         income = 0
         stat_expenses = 0
-        user_accounts = Account.objects.filter(user=self)
+        user_accounts = self.return_checking_accts()
         for acct in user_accounts:
             income += acct.return_income_month_year(month, year)
             stat_expenses += acct.return_statutory_month_year(month, year)
 
         return income - stat_expenses
 
-    def set_budget_month_year(self, month, year):
-        """ Set monthly budget based on default percentages given the take home income."""
+    def set_budget_month_year(self, month, year, statutory, budget_mand, budget_mort, budget_dgr, budget_disc):
+        """ Set monthly budget based on user inputs."""
 
-        # Get the
-        pass
+        month_year_dt = datetime.strptime(f'{month}-01-{year}', '%B-%d-%Y')
+
+        try:
+            mbudget = MonthlyBudget.objects.get(user=self, month=month, year=year)
+        except MonthlyBudget.DoesNotExist:
+            mbudget = MonthlyBudget.objects.create(user=self, date=month_year_dt)
+
+        mbudget.mandatory = budget_mand
+        mbudget.mortgage = budget_mort
+        mbudget.debts_goals_retirement = budget_dgr
+        mbudget.discretionary = budget_disc
+        mbudget.statutory = statutory
+
+        mbudget.save()
 
     def get_earliest_retirement_date(self):
         """ Returns the date at which the user is eligible for early retirement.
 
-        Assumes the age 59.5 based on 2022 rules."""
+        Assumes the age 59.5 (i.e., 714 months) based on 2022 rules."""
 
-        pass
+        earliest_rt = self.retirement_age + relativedelta(months=+714)
+        return earliest_rt
 
     def get_latest_retirement_date(self):
-        """ Returns the latest date the user can retire without any penalty.
+        """ Returns the latest date the user can retire.
 
-        Assumes a credit of 8% for each year based on ssa.gov"""
+        70 years based on ssn.gov"""
 
-        pass
+        latest_rt_dt = self.retirement_age + relativedelta(months=840)
+        return latest_rt_dt
 
 
 class Account(models.Model):
@@ -274,6 +288,14 @@ class Account(models.Model):
 
         latest_date = max(latest_deposit_date, latest_withdrawal_date)
         return latest_date
+
+    def return_earliest_date(self):
+        """ Looks at all entries and determines the latest database date for the account."""
+        earliest_withdrawal_date = Withdrawal.objects.filter(account=self).earliest('date').date
+        earliest_deposit_date = Deposit.objects.filter(account=self).earliest('date').date
+
+        earliest_date = min(earliest_deposit_date, earliest_withdrawal_date)
+        return earliest_date
 
 
 class Withdrawal(models.Model):
