@@ -506,6 +506,18 @@ class Expense(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug_field:
             self.slug_field = slugify(self.description)
+        try:
+            withdrawalobj = Withdrawal.objects.get(account=self.account,
+                                                   date=self.date,
+                                                   description=self.description)
+        except Withdrawal.DoesNotExist:
+            withdrawalobj = Withdrawal.objects.create(account=self.account,
+                                                      date=self.date,
+                                                      description=self.description,
+                                                      amount=self.amount)
+        else:
+            withdrawalobj.amount = self.amount
+        withdrawalobj.save()
         super(Expense, self).save(*args, **kwargs)
 
     class Meta:
@@ -524,6 +536,22 @@ class Income(models.Model):
 
     def __str__(self):
         return "{} on {} - {}".format(self.description, self.date, self.amount)
+
+    def save(self, *args, **kwargs):
+        try:
+            depositobj = Deposit.objects.get(account=self.account,
+                                             date=self.date,
+                                             description=self.description)
+        except Deposit.DoesNotExist:
+            depositobj = Deposit.objects.create(account=self.account,
+                                                date=self.date,
+                                                description=self.description,
+                                                amount=self.amount)
+        else:
+            depositobj.amount = self.amount
+
+        depositobj.save()
+        super(Income, self).save(*args, **kwargs)
 
     class Meta:
         unique_together = ['account', 'date', 'description', 'amount']

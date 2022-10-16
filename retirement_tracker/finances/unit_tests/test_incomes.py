@@ -4,7 +4,7 @@
 from django.test import TestCase
 
 # Other Imports
-from finances.models import User, Account, Income, Expense, RetirementAccount, TradingAccount
+from finances.models import User, Account, Income, Expense, RetirementAccount, TradingAccount, Deposit, Withdrawal
 from django.utils.timezone import now
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -39,6 +39,7 @@ class IncomeTestCase(TestCase):
         first_day_of_month = datetime.strptime(today_date.strftime('%Y-%m-01'), '%Y-%m-%d')
         last_day_of_month = first_day_of_month + relativedelta(months=+1, days=-1)
         first_day_next_month = first_day_of_month + relativedelta(months=+1)
+        self.first_day_next_month = first_day_next_month
         last_day_next_month = first_day_next_month + relativedelta(months=+1, days=-1)
         user1_date_of_birth = (first_day_of_month + relativedelta(years=-65)).strftime('%Y-%m-%d')
         date_15years_ago = first_day_of_month + relativedelta(years=-15)
@@ -61,6 +62,21 @@ class IncomeTestCase(TestCase):
         Income.objects.create(user=user, account=ret_401k, date=date_15years_ago, category='TestCategory', description='TestDescription', amount=20000.0)
         #Expense.objects.create(account=account, budget_group='Mandatory', category='TestCategory',
         #                       where_bought='TestLocation', description='TestExpenseDescription', amount=100.00)
+
+    def test_deposit_created_with_income(self):
+        today_date = now()
+        first_day_of_month = datetime.strptime(today_date.strftime('%Y-%m-01'), '%Y-%m-%d')
+        caccount = Account.objects.get(name='Test_Checking1')
+        try:
+            dep_obj = Deposit.objects.get(account=caccount,
+                                          date=first_day_of_month,
+                                          description='TestDescription')
+        except Deposit.DoesNotExist:
+            dep_obj.amount = 0.0
+        self.assertEqual(dep_obj.amount, 50.0)
+
+    def test_withdrawal_created_with_expense(self):
+        self.skipTest('Implement')
 
     def test_check_acct1_balance(self):
         """ Checks that the first account has the proper balance """
