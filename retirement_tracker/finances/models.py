@@ -109,12 +109,20 @@ class User(models.Model):
 
         mbudget.save()
 
-    def get_total_for_month_year(self, month, year):
+    def get_checking_total_month_year(self, month, year):
         """ Calculates the total balance for the given month and year"""
         tot = 0
         user_accounts = self.return_checking_accts()
 
         for account in user_accounts:
+            tot += account.return_balance_month_year(month, year)
+
+        return tot
+
+    def get_ret_total_month_year(self, month, year):
+        usr_ret_accts = RetirementAccount.objects.filter(user=self)
+        tot = 0.0
+        for account in usr_ret_accts:
             tot += account.return_balance_month_year(month, year)
 
         return tot
@@ -439,9 +447,10 @@ class RetirementAccount(Account):
     def estimate_balance_month_year(self, month: str, year: int, num_of_years=0, num_of_months=6):
         pass
 
-    def return_balance_month_year(self):
+    def return_balance_month_year(self, month, year):
         """Calculates the balance at a certain point in time, but includes a withdrawal based on the user input."""
-        pass
+        #TODO: Fill this one
+        return 0.0
 
     def return_withdrawal_info(self, retirement_date: datetime,
                                yearly_withdrawal_pct: float,

@@ -60,8 +60,8 @@ class IncomeTestCase(TestCase):
         Income.objects.create(user=user, account=tacct, date=first_day_of_month, category='TestCategory', description='TestDescription', amount=5000.0)
         Income.objects.create(user=user, account=ret_401k, date=first_day_of_month, category='TestCategory', description='TestDescription', amount=20000.0)
         Income.objects.create(user=user, account=ret_401k, date=date_15years_ago, category='TestCategory', description='TestDescription', amount=20000.0)
-        #Expense.objects.create(account=account, budget_group='Mandatory', category='TestCategory',
-        #                       where_bought='TestLocation', description='TestExpenseDescription', amount=100.00)
+        Expense.objects.create(user=user, account=caccount, date=first_day_of_month, budget_group='Mandatory', category='TestCategory',
+                               where_bought='TestLocation', description='TestExpenseDescription', amount=100.00)
 
     def test_deposit_created_with_income(self):
         today_date = now()
@@ -76,14 +76,33 @@ class IncomeTestCase(TestCase):
         self.assertEqual(dep_obj.amount, 50.0)
 
     def test_withdrawal_created_with_expense(self):
-        self.skipTest('Implement')
+        today_date = now()
+        first_day_of_month = datetime.strptime(today_date.strftime('%Y-%m-01'), '%Y-%m-%d')
+        caccount = Account.objects.get(name='Test_Checking1')
+        try:
+            with_obj = Withdrawal.objects.get(account=caccount,
+                                              date=first_day_of_month,
+                                              description='TestExpenseDescription')
+        except Withdrawal.DoesNotExist:
+            with_obj.amount = 0.0
+
+        self.assertEqual(with_obj.amount, 100.0)
 
     def test_check_acct1_balance(self):
-        """ Checks that the first account has the proper balance """
+        """ Checks that the first account has the proper balance.
+
+         caccount has:
+             Two incomes in the first month. 50 and 75
+             One expense in the first month. 100.0
+             There are no entries in second month
+
+         Balance in the first and second months should be 25.0
+
+             """
         caccount = Account.objects.get(name='Test_Checking1')
         cacct_balance = caccount.return_balance()
 
-        self.assertEqual(cacct_balance, 125.0)
+        self.assertEqual(cacct_balance, 25.0)
 
     def test_user_incomes(self):
         """ Check that all of the incomes are accounted for the Test_User.
@@ -93,15 +112,16 @@ class IncomeTestCase(TestCase):
         Month 1:
 
             Checking Account totals:
-                checking account: 125
+                checking account: 25
                 checking account 2: 20
                 Savings 1: 35
-                Total: 180
+                Total: 80
             Retirement:
                 Brokerage: $5000
                 401k: $20000
+                Total: $25000
 
-            Total: $25180
+            Total: $25080
 
         Month 2:
 
@@ -120,11 +140,17 @@ class IncomeTestCase(TestCase):
         next_month_year = next_month_date.strftime('%Y')
 
         # Get today's date and get the month and year
-        this_month_balance = user.get_total_for_month_year(month, year)
-        self.assertEqual(this_month_balance, 180.0)
+        this_month_checking_balance = user.get_checking_total_month_year(month, year)
+        self.assertEqual(this_month_checking_balance, 80.0)
 
-        next_month_balance = user.get_total_for_month_year(next_month_month, next_month_year)
+        this_month_ret_balance = user.get_ret_total_month_year(month, year)
+        self.assertEqual(this_month_ret_balance, 25000.0)
+
+        next_month_balance = user.get_checking_total_month_year(next_month_month, next_month_year)
         self.assertEqual(next_month_balance, 40.0)
+
+        next_month_ret_balance = user.get_ret_total_month_year(next_month_month, next_month_year)
+        self.assertEqual(next_month_ret_balance, 0.0)
 
     def test_account_balances(self):
         """ Check the correct balances of the different accounts.
