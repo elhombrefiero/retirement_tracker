@@ -47,9 +47,7 @@ class User(models.Model):
                                                            decimal_places=2, default=4.0, max_digits=5)
 
     def return_retirement_timestamp(self):
-        """ Returns the timestamp at retirement age.
-            Assumes that the months are
-         """
+        """ Returns the timestamp at retirement age. """
         num_months = int(float(self.retirement_age) * 12.0)
         ret_datetime = self.date_of_birth + relativedelta(months=num_months)
         return ret_datetime
@@ -123,6 +121,14 @@ class User(models.Model):
         usr_ret_accts = RetirementAccount.objects.filter(user=self)
         tot = 0.0
         for account in usr_ret_accts:
+            tot += account.return_balance_month_year(month, year)
+
+        return tot
+
+    def get_trading_total_month_year(self, month, year):
+        user_trading_accts = TradingAccount.objects.filter(user=self)
+        tot = 0.0
+        for account in user_trading_accts:
             tot += account.return_balance_month_year(month, year)
 
         return tot
@@ -403,7 +409,7 @@ class TradingAccount(Account):
                                                                 previous_date.stftime('%Y'))
         m = (balance - balance_previous) / (latest_date_to_seconds - previous_date_to_seconds)
         b = balance_previous - m * previous_date_to_seconds
-        time_to_reach = (balance - b) / m
+        time_to_reach = (amount - b) / m
 
         return time_to_reach
 
