@@ -6,6 +6,7 @@ from django.utils.text import slugify
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
+
 # TODO: Add a stock model, (stock name, purchase date, number of stocks)
 # TODO: Add stock model to trading account.
 #  Update trading account to use the stock information to determine the net worth over time.
@@ -216,9 +217,8 @@ class Account(models.Model):
         return float(all_income) - float(all_expense)
 
     def return_balance_year(self, year: int):
-
         start_datetime = datetime(year, 1, 1)
-        end_datetime = datetime(year+1, 1, 1) + relativedelta(seconds=-1)
+        end_datetime = datetime(year + 1, 1, 1) + relativedelta(seconds=-1)
 
         all_income = Deposit.objects.filter(account=self, date__ge=start_datetime, date__lt=end_datetime)
         all_income = all_income.aggregate(total=Sum('amount'))['total']
@@ -289,11 +289,32 @@ class Account(models.Model):
         return float(all_income) - float(all_expense)
 
     def estimate_balance_month_year(self, month: str, year: int, num_of_years=0, num_of_months=6):
-        """ Performs a linear extrapolation of balance vs time given the average of the last entries in the account
+        """ Performs a linear interpolation of balance vs time given the average of the last entries in the account
 
-        By default uses the entries from the final six months for the extrapolation.
+        By default uses data from six months before the requested month/year for the extrapolation.
+
+         f(x) = y1 + ((x – x1) / (x2 – x1)) * (y2 – y1)
+
         """
-        pass
+        # TODO: Determine whether to interpolate or extrapolate based on the given month/year
+        req_date = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
+        req_date_seconds_epoch = req_date.timestamp()  # x
+
+        latest_date = self.return_latest_date()
+        latest_date_seconds_epoch = latest_date.timestamp()  # x2
+        latest_date_month = latest_date.strftime('%B')
+        latest_date_year = latest_date.strftime('%Y')
+        balance_at_latest_date = self.return_balance_up_to_month_year(latest_date_month, latest_date_year)  # y2
+
+        time_prior = latest_date + relativedelta(years=-1*num_of_years) + relativedelta(months=-1*num_of_months)
+        time_prior_seconds_epoch = time_prior.timestamp()  # x1
+        time_prior_month = time_prior.strftime('%B')
+        time_prior_year = time_prior.strftime('%Y')
+        balance_at_time_prior = self.return_balance_up_to_month_year(time_prior_month, time_prior_year)  # y1
+
+        estimated_balance = balance_at_time_prior + (req_date_seconds_epoch - time_prior_seconds_epoch) * (balance_at_latest_date - balance_at_time_prior) / (latest_date_seconds_epoch - time_prior_seconds_epoch)
+
+        return estimated_balance
 
     def return_latest_date(self):
         """ Looks at all entries and determines the latest database date for the account."""
@@ -372,7 +393,7 @@ class TradingAccount(Account):
         """
         # Get the rolling average of the last num_of_months worth of data
         latest_date = self.return_latest_date()
-        earliest_date = latest_date + relativedelta(months=-1*num_of_months)
+        earliest_date = latest_date + relativedelta(months=-1 * num_of_months)
 
         # Use that information to then calculate effective interest based on account balance
         earliest_balance = self.return_balance_up_to_month_year(earliest_date.strftime('%B'),
@@ -400,10 +421,10 @@ class TradingAccount(Account):
             x = (y-b)/m
             """
         balance = self.return_balance()
-        epoch = datetime(1970,1,1)
+        epoch = datetime(1970, 1, 1)
         latest_date = self.return_latest_date()
         latest_date_to_seconds = (latest_date - epoch).total_seconds()
-        previous_date = latest_date + relativedelta(months=-1*num_of_months)
+        previous_date = latest_date + relativedelta(months=-1 * num_of_months)
         previous_date_to_seconds = (previous_date - epoch).total_seconds()
         balance_previous = self.return_balance_up_to_month_year(previous_date.strftime('%B'),
                                                                 previous_date.stftime('%Y'))
@@ -427,7 +448,6 @@ class TradingAccount(Account):
         json_return = {'beginning date': date, 'beginning balance': balance, 'end date': end_date}
 
         while date <= end_date:
-
             balance = balance + balance * roi / 100.0
             date = date + relativedelta(months=+1)
 
@@ -444,18 +464,34 @@ class RetirementAccount(Account):
         Functions:
         return_balance_month_year_with_yearly_withdrawal - Returns the balance as a function of time with a yearly withdrawal rate
     """
-    yearly_withdrawal_rate=models.DecimalField(verbose_name='Withdrawal Rate in Percentage',
-                                               max_digits=5, decimal_places=2, default=4.0)
+    yearly_withdrawal_rate = models.DecimalField(verbose_name='Withdrawal Rate in Percentage',
+                                                 max_digits=5, decimal_places=2, default=4.0)
 
-    def get_roi(self):
-        pass
+    def get_roi(self, num_of_months):
+        """ Calculates the return on interest based on the prior number of months.
+
+            Returns rate of change (% / month)
+        """
+        # Get the rolling average of the last num_of_months worth of data
+        latest_date = self.return_latest_date()
+        earliest_date = latest_date + relativedelta(months=-1 * num_of_months)
+
+        # Use that information to then calculate effective interest based on account balance
+        earliest_balance = self.return_balance_up_to_month_year(earliest_date.strftime('%B'),
+                                                                int(earliest_date.strftime('%Y')))
+        latest_balance = self.return_balance_up_to_month_year(latest_date.strftime('%B'),
+                                                              int(latest_date.strftime('%Y')))
+
+        roi = (latest_balance - earliest_balance) / num_of_months * 100
+
+        return roi
 
     def estimate_balance_month_year(self, month: str, year: int, num_of_years=0, num_of_months=6):
         pass
 
     def return_balance_month_year(self, month, year):
         """Calculates the balance at a certain point in time, but includes a withdrawal based on the user input."""
-        #TODO: Fill this one
+        # TODO: Fill this one
         return 0.0
 
     def return_withdrawal_info(self, retirement_date: datetime,
