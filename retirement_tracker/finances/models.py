@@ -6,10 +6,16 @@ from django.utils.text import slugify
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
-
 # TODO: Add a stock model, (stock name, purchase date, number of stocks)
 # TODO: Add stock model to trading account.
 #  Update trading account to use the stock information to determine the net worth over time.
+BUDGET_GROUP_CHOICES = (
+    ('Mandatory', 'Mandatory'),
+    ('Mortgage', 'Mortgage'),
+    ('Debts, Goals, Retirement', 'Debts, Goals, Retirement'),
+    ('Discretionary', 'Discretionary'),
+    ('Statutory', 'Statutory'),
+)
 
 
 class User(models.Model):
@@ -54,14 +60,59 @@ class User(models.Model):
         return ret_datetime
 
     def return_retirement_acct_total(self):
+        # TODO: Complete
         pass
 
     def return_trading_acct_total(self):
+        # TODO: Complete
         pass
 
     def estimate_retirement_finances(self):
         """ Calculates estimated retirement overview. """
+        # TODO: Complete
         pass
+
+    def return_budget_group_balances_up_to_month_year(self, month, year):
+        """ Calculates how much of each budget group is left over up to a certain month and year.
+
+        """
+        beg_of_month_year = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
+        # Get the expenses from checking accounts and separate them by budget groups.
+        checking_accts = self.return_checking_accts()
+        expenses = Expense.objects.filter(account=checking_accts, date__lt=beg_of_month_year)
+        mand_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_CHOICES[0][0])
+        mort_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_CHOICES[1][0])
+        dgr_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_CHOICES[2][0])
+        disc_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_CHOICES[3][0])
+        stat_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_CHOICES[4][0])
+
+        mand_tot = mand_exp.aggregate(total=Sum('amount'))['total']
+        mort_tot = mort_exp.aggregate(total=Sum('amount'))['total']
+        dgr_tot = dgr_exp.aggregate(total=Sum('amount'))['total']
+        disc_tot = disc_exp.aggregate(total=Sum('amount'))['total']
+        stat_tot = stat_exp.aggregate(total=Sum('amount'))['total']
+
+        # Get the budget group totals up to current month/year
+        mbudgets = MonthlyBudget.objects.filter(user=self, date__lt=beg_of_month_year)
+        budget_mand_tot = mbudgets.aggregate(total=Sum('mandatory'))['total']
+        budget_mort_tot = mbudgets.aggregate(total=Sum('mortgage'))['total']
+        budget_dgr_tot = mbudgets.aggregate(total=Sum('debts_goals_retirement'))['total']
+        budget_disc_tot = mbudgets.aggregate(total=Sum('discretionary'))['total']
+        budget_stat_tot = mbudgets.aggregate(total=Sum('statutory'))['total']
+
+        # Subtract the expenses from the budgets
+        mand_balance = budget_mand_tot - mand_tot
+        mort_balance = budget_mort_tot - mort_tot
+        dgr_balance = budget_dgr_tot - dgr_tot
+        disc_balance = budget_disc_tot - disc_tot
+        stat_balance = budget_stat_tot - stat_tot
+
+        balances = {'mandatory': mand_balance,
+                    'mortgage': mort_balance,
+                    'dgr': dgr_balance,
+                    'discretionary': disc_balance,
+                    'statutory': stat_balance}
+        return balances
 
     def return_checking_accts(self):
         """ Returns only the checking account objects"""
@@ -306,13 +357,15 @@ class Account(models.Model):
         latest_date_year = latest_date.strftime('%Y')
         balance_at_latest_date = self.return_balance_up_to_month_year(latest_date_month, latest_date_year)  # y2
 
-        time_prior = latest_date + relativedelta(years=-1*num_of_years) + relativedelta(months=-1*num_of_months)
+        time_prior = latest_date + relativedelta(years=-1 * num_of_years) + relativedelta(months=-1 * num_of_months)
         time_prior_seconds_epoch = time_prior.timestamp()  # x1
         time_prior_month = time_prior.strftime('%B')
         time_prior_year = time_prior.strftime('%Y')
         balance_at_time_prior = self.return_balance_up_to_month_year(time_prior_month, time_prior_year)  # y1
 
-        estimated_balance = balance_at_time_prior + (req_date_seconds_epoch - time_prior_seconds_epoch) * (balance_at_latest_date - balance_at_time_prior) / (latest_date_seconds_epoch - time_prior_seconds_epoch)
+        estimated_balance = balance_at_time_prior + (req_date_seconds_epoch - time_prior_seconds_epoch) * (
+                balance_at_latest_date - balance_at_time_prior) / (
+                                    latest_date_seconds_epoch - time_prior_seconds_epoch)
 
         return estimated_balance
 
@@ -331,6 +384,11 @@ class Account(models.Model):
 
         earliest_date = min(earliest_deposit_date, earliest_withdrawal_date)
         return earliest_date
+
+    def return_time_to_reach_amount(self, amount: float, num_of_months=6):
+        """ Calculates the time to reach a certain amount based on the trendline from the previous few months"""
+        # TODO: Complete this one
+        return {'time': 0.0}
 
 
 class Withdrawal(models.Model):
@@ -487,7 +545,33 @@ class RetirementAccount(Account):
         return roi
 
     def estimate_balance_month_year(self, month: str, year: int, num_of_years=0, num_of_months=6):
-        pass
+        """ Performs a linear interpolation of balance vs time given the average of the last entries in the account
+
+        By default uses data from six months before the requested month/year for the extrapolation.
+
+         f(x) = y1 + ((x – x1) / (x2 – x1)) * (y2 – y1)
+
+        """
+        req_date = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
+        req_date_seconds_epoch = req_date.timestamp()  # x
+
+        latest_date = self.return_latest_date()
+        latest_date_seconds_epoch = latest_date.timestamp()  # x2
+        latest_date_month = latest_date.strftime('%B')
+        latest_date_year = latest_date.strftime('%Y')
+        balance_at_latest_date = self.return_balance_up_to_month_year(latest_date_month, latest_date_year)  # y2
+
+        time_prior = latest_date + relativedelta(years=-1 * num_of_years) + relativedelta(months=-1 * num_of_months)
+        time_prior_seconds_epoch = time_prior.timestamp()  # x1
+        time_prior_month = time_prior.strftime('%B')
+        time_prior_year = time_prior.strftime('%Y')
+        balance_at_time_prior = self.return_balance_up_to_month_year(time_prior_month, time_prior_year)  # y1
+
+        estimated_balance = balance_at_time_prior + (req_date_seconds_epoch - time_prior_seconds_epoch) * (
+                balance_at_latest_date - balance_at_time_prior) / (
+                                    latest_date_seconds_epoch - time_prior_seconds_epoch)
+
+        return estimated_balance
 
     def return_balance_month_year(self, month, year):
         """Calculates the balance at a certain point in time, but includes a withdrawal based on the user input."""
@@ -522,18 +606,11 @@ class RetirementAccount(Account):
 
         return return_info
 
-    def get_time_to_reach_amount(self):
+    def get_time_to_reach_amount(self, amount: float):
         pass
 
 
 class Expense(models.Model):
-    BUDGET_GROUP_CHOICES = (
-        ('Mandatory', 'Mandatory'),
-        ('Mortgage', 'Mortgage'),
-        ('Debts, Goals, Retirement', 'Debts, Goals, Retirement'),
-        ('Discretionary', 'Discretionary'),
-        ('Statutory', 'Statutory'),
-    )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     date = models.DateField(default=now)
