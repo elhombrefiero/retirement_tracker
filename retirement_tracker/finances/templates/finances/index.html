@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+  <title>Retirement Tracker Index</title>
+</head>
+<body>
+<!--Navbar-->
+<div class="top">
+  <div class="nav-bar">
+    <a class="nav-button" href="/finances">HOME</a>
+    <a class="nav-button" onclick="history.back()">GO BACK</a>
+  </div>
+</div>
+<!--End Navbar-->
+<h1>Welcome to the Retirement Tracker !</h1>
+<h1>Users</h1>
+{% for user in users %}
+<h2 class="user"><a href="/finances/user_overview={{user.id}}">{{user.name}}</a></h2>
+{% endfor %}
+</body>
+</html>

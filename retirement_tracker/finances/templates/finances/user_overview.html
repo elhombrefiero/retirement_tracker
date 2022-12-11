@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+  <title>{{user.name}}'s Accounts</title>
+</head>
+<body>
+<!--Navbar-->
+<div class="top">
+  <div class="nav-bar">
+    <a class="nav-button" href="/finances">HOME</a>
+    <a class="nav-button" onclick="history.back()">GO BACK</a>
+  </div>
+</div>
+<!--End Navbar-->
+<h1>Accounts:</h1>
+{% for account in accounts %}
+<h2 class="account"><a href="/finances/account_overview={{account.id}}">{{account.name}}</a></h2>
+{% endfor %}
+</body>
+</html>
