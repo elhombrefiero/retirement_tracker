@@ -8,12 +8,16 @@
 </head>
 <body>
 <!--Navbar-->
-<div class="top">
-  <div class="nav-bar">
-    <a class="nav-button" href="/finances">HOME</a>
-    <a class="nav-button" onclick="history.back()">GO BACK</a>
+<nav class="level">
+  <div class="level-left">
+    <p class="level-item">
+      <a class="button is-success" href="/finances">HOME</a>
+    </p>
+    <p class="level-item">
+      <a class="button is-success" onclick="history.back()">GO BACK</a>
+    </p>
   </div>
-</div>
+</nav>
 <!--End Navbar-->
 <h1>{{account.name}}</h1>
 <h2>{{balance}}</h2>
