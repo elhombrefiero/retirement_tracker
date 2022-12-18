@@ -3,6 +3,7 @@ from django.shortcuts import render, HttpResponseRedirect
 from finances.models import User, Account
 from finances.forms import UserForm
 
+
 # Create your views here.
 
 
@@ -21,19 +22,21 @@ def user_main(request, user_id: int):
     return render(request, 'finances/user_overview.html', {'user': user,
                                                            'accounts': user_accounts})
 
+
 def add_user(request):
     if request.method == 'POST':
         user_form = UserForm(request.POST)
         if user_form.is_valid():
-            user = User.object.create(name=user_form.cleaned_data['username'],
-                                      date_of_birth=user_form.cleaned_data['date_of_birth'],
-                                      retirement_age=user_form.cleaned_data['retirement_age'],
-                                      percent_withdrawal_at_retirement=user_form.cleaned_data['percent_withdrawal_at_retirement'])
+            user = User.objects.create(name=user_form.cleaned_data['name'],
+                                       date_of_birth=user_form.cleaned_data['date_of_birth'],
+                                       retirement_age=user_form.cleaned_data['retirement_age'],
+                                       percent_withdrawal_at_retirement=user_form.cleaned_data[
+                                           'percent_withdrawal_at_retirement'])
             user.save()
-            return HttpResponseRedirect(f'finances/user_overview={user.id}')
+            return HttpResponseRedirect(f'/finances/user_overview={user.id}')
     else:
         userform = UserForm()
-        return render(request, 'finances/add_user', {'form': userform})
+        return render(request, 'finances/add_user.html', {'form': userform})
 
 
 def account_overview(request, account_id: int):

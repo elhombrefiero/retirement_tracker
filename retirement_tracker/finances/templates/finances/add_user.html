@@ -19,5 +19,11 @@
   </div>
 </nav>
 <!--End Navbar-->
+<form action="/finances/add_user/" method="post">
+    {{ form.non_field_errors }}
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" value="Submit">
+</form>
 </body>
 </html>
