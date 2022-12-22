@@ -1,6 +1,6 @@
 from django import forms
 
-from finances.models import User
+from finances.models import User, Expense
 
 
 class UserForm(forms.ModelForm):
@@ -10,3 +10,10 @@ class UserForm(forms.ModelForm):
         model = User
         fields = '__all__'
 
+
+class ExpenseByLocForm(forms.ModelForm):
+    """ Add or update an expense."""
+
+    class Meta:
+        model = Expense
+        exclude = ['user', 'account']

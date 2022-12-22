@@ -230,6 +230,9 @@ class User(models.Model):
         latest_rt_dt = self.retirement_age + relativedelta(months=840)
         return latest_rt_dt
 
+    def __str__(self):
+        return self.name
+
 
 class Account(models.Model):
     """ Base accounts for a given user.
@@ -389,6 +392,9 @@ class Account(models.Model):
         """ Calculates the time to reach a certain amount based on the trendline from the previous few months"""
         # TODO: Complete this one
         return {'time': 0.0}
+
+    def __str__(self):
+        return self.name
 
 
 class Withdrawal(models.Model):

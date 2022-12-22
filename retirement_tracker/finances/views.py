@@ -1,7 +1,9 @@
 from django.shortcuts import render, HttpResponseRedirect
+from django.core.exceptions import BadRequest
+from django.forms import formset_factory
 
-from finances.models import User, Account
-from finances.forms import UserForm
+from finances.models import User, Account, BUDGET_GROUP_CHOICES
+from finances.forms import UserForm, ExpenseByLocForm
 
 
 # Create your views here.
@@ -44,3 +46,41 @@ def account_overview(request, account_id: int):
     balance = account.return_balance()
 
     return render(request, 'finances/account_overview.html', {'account': account, 'balance': balance})
+
+
+def add_expense_by_location_user_account(request, user_id: int, account_id: int, extrarows: int = 0):
+    """ For a given user and associated account, add one or more expenses to add to the database."""
+
+    try:
+        user = User.objects.get(id=user_id)
+    except:
+        return BadRequest('User does not exist')
+    try:
+        account = Account.objects.get(id=account_id, user=user)
+    except:
+        return BadRequest(f'Account is not for {user.name}')
+
+    initial_dict = {'user': user, 'account': account}
+    initial_dicts = [initial_dict]
+    if extrarows > 0:
+        for i in range(0, extrarows):
+            initial_dicts.append(initial_dict)
+    ExpenseFormSet = formset_factory(ExpenseByLocForm, extra=0)
+    formset = ExpenseFormSet(initial=initial_dicts)
+
+    if request.method == 'POST':
+        print('This is a post')
+
+    return render(request, 'finances/add_exp_loc_user_acct.html',
+                  {'user': user, 'account': account, 'formset': formset, 'extra': extrarows})
+    # initial_dict = {'user': user, 'account': account}
+
+    "TODO: Potentially create a different form that accepts multiple rows for expenses."
+    # if request.method == 'POST':
+    #     form = ExpenseForm(request.POST, initial=initial_dict)
+    #
+    #     if form.is_valid():
+    #         pass
+
+
+

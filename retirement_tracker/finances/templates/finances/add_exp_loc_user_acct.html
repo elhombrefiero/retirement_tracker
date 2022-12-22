@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Add Expense to User's Account</title>
+</head>
+<body>
+<p>User: {{user.name}}</p>
+<p>Account: {{account.name}}</p>
+<p>Extrarow: {{extra}}</p>
+<form method="post">
+  {% csrf_token %}
+  {{ formset.management_form }}
+  <table>
+    {% for form in formset %}
+    {{form}}
+    {% endfor %}
+  </table>
+  <input class="button" type="submit" value="Submit Form"/>
+</form>
+<input class="button" type="submit" onclick="add_row()" value="Add Row">
+</body>
+<script>
+function add_row() {
+  let num_extra_row = {{extra}} + 1
+  window.location.replace("/finances/user={{user.id}}/account={{account.id}}/enter_expense_by_location/extra="+num_extra_row)
+}
+</script>
+</html>
