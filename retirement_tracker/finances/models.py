@@ -60,15 +60,30 @@ class User(models.Model):
         return ret_datetime
 
     def return_retirement_acct_total(self):
-        # TODO: Complete
-        pass
+        tot_ret_amt = 0.0
+        user_ret_accts = RetirementAccount.objects.filter(user=self)
+
+        for ret_acct in user_ret_accts:
+            tot_ret_amt += ret_acct.return_balance()
+
+        return tot_ret_amt
 
     def return_trading_acct_total(self):
-        # TODO: Complete
-        pass
+        tot_trade_amt = 0.0
+        user_trade_accts = TradingAccount.objects.filter(user=self)
+
+        for ret_acct in user_trade_accts:
+            tot_trade_amt += ret_acct.return_balance()
+
+        return tot_trade_amt
 
     def estimate_retirement_finances(self):
-        """ Calculates estimated retirement overview. """
+        """ Calculates estimated retirement overview.
+
+        Calculate the amount each retirement account will have at the time of retirement.
+
+        Convert the yearly withdrawal rate to a monthly withdrawal rate.
+        """
         # TODO: Complete
         pass
 
@@ -525,11 +540,16 @@ class RetirementAccount(Account):
 
         Given that these are retirement accounts, the additional functions add withdrawal rates into the equations.
 
+        Variables:
+        yearly_withdrawal_rate - Withdrawal rate per year, in percentage (default = 4.0)
+        target_amount - Target amount for account to have at retirement
+
         Functions:
         return_balance_month_year_with_yearly_withdrawal - Returns the balance as a function of time with a yearly withdrawal rate
     """
     yearly_withdrawal_rate = models.DecimalField(verbose_name='Withdrawal Rate in Percentage',
                                                  max_digits=5, decimal_places=2, default=4.0)
+    target_amount = models.DecimalField(verbose_name='Target Amount at Retirement', max_digits=12, decimal_places=2)
 
     def get_roi(self, num_of_months):
         """ Calculates the return on interest based on the prior number of months.
@@ -557,6 +577,7 @@ class RetirementAccount(Account):
 
          f(x) = y1 + ((x – x1) / (x2 – x1)) * (y2 – y1)
 
+        TODO: Account for withdrawal rate when the date is above the retirement date.
         """
         req_date = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         req_date_seconds_epoch = req_date.timestamp()  # x
@@ -587,19 +608,23 @@ class RetirementAccount(Account):
     def return_withdrawal_info(self, retirement_date: datetime,
                                yearly_withdrawal_pct: float,
                                age_at_retirement=65,
-                               expected_death_age=100):
+                               expected_death_age=85):
         """Estimates the balance in the retirement account given a yearly withdrawal.
 
 
         """
-        return_info = {}
-        balances_at_date = {}
+        balances_at_date = {
+            'date': [],
+            'balance': []
+        }
         date_after_retirement = retirement_date
         date_at_death = retirement_date + relativedelta(years=expected_death_age - age_at_retirement)
         monthly_withdrawal_pct = yearly_withdrawal_pct / 12.0
         retirement_month = retirement_date.strftime('%B')
         retirement_year = retirement_date.strftime('%Y')
         balance = self.return_balance_month_year(retirement_month, retirement_year)
+        balances_at_date['date'].append(date_after_retirement)
+        balances_at_date['balance'].append(balance)
 
         while date_after_retirement < date_at_death:
             # Balance will be reduced by the monthly withdrawal pct
@@ -610,7 +635,10 @@ class RetirementAccount(Account):
 
             date_after_retirement = date_after_retirement + relativedelta(months=+1)
 
-        return return_info
+            balances_at_date['date'].append(date_after_retirement)
+            balances_at_date['balance'].append(balance)
+
+        return balances_at_date
 
     def get_time_to_reach_amount(self, amount: float):
         pass
@@ -713,4 +741,4 @@ class MonthlyBudget(models.Model):
         return "{}'s budget for {}, {}".format(self.user, self.month, self.year)
 
     class Meta:
-        unique_together = ["month", "year"]
+        unique_together = ['month', 'year']
