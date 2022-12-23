@@ -53,7 +53,7 @@ class User(models.Model):
     percent_withdrawal_at_retirement = models.DecimalField(verbose_name='Percent withdrawal at retirement',
                                                            decimal_places=2, default=4.0, max_digits=5)
 
-    def return_retirement_timestamp(self):
+    def return_retirement_datetime(self):
         """ Returns the timestamp at retirement age. """
         num_months = int(float(self.retirement_age) * 12.0)
         ret_datetime = self.date_of_birth + relativedelta(months=num_months)
@@ -78,14 +78,22 @@ class User(models.Model):
         return tot_trade_amt
 
     def estimate_retirement_finances(self):
-        """ Calculates estimated retirement overview.
+        """ Calculate the amount each retirement account will have at the time of retirement.
 
-        Calculate the amount each retirement account will have at the time of retirement.
-
-        Convert the yearly withdrawal rate to a monthly withdrawal rate.
+        Calculates estimated retirement overview.
         """
-        # TODO: Complete
-        pass
+        ret_balances = {}
+        ret_date = self.return_retirement_datetime()
+        ret_month = ret_date.strftime('%B')
+        ret_year = ret_date.strftime('%Y')
+        ret_accts = RetirementAccount.objects.filter(user=self)
+
+        for ret_acct in ret_accts:
+            name = ret_acct.name
+            balance = ret_acct.return_balance_up_to_month_year(ret_month, ret_year)
+            ret_balances.update({name: balance})
+
+        return ret_balances
 
     def return_budget_group_balances_up_to_month_year(self, month, year):
         """ Calculates how much of each budget group is left over up to a certain month and year.
