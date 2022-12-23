@@ -2,8 +2,8 @@ from django.shortcuts import render, HttpResponseRedirect
 from django.core.exceptions import BadRequest
 from django.forms import formset_factory
 
-from finances.models import User, Account, Expense
-from finances.forms import UserForm, ExpenseByLocForm
+from finances.models import User, Account, Expense, TradingAccount, RetirementAccount
+from finances.forms import UserForm, ExpenseByLocForm, AddAccountForm, AddTradingAccountForm, AddRetirementAccountForm
 
 
 # Create your views here.
@@ -46,6 +46,59 @@ def account_overview(request, account_id: int):
     balance = account.return_balance()
 
     return render(request, 'finances/account_overview.html', {'account': account, 'balance': balance})
+
+
+def add_account_to_user(request, user_id: int):
+    user = User.objects.get(id=user_id)
+
+    if request.method == 'POST':
+        add_account_form = AddAccountForm(request.POST)
+        if add_account_form.is_valid():
+            account = Account.objects.create(user=user,
+                                             name=add_account_form.cleaned_data['name'],
+                                             url=add_account_form.cleaned_data['url'],
+                                             monthly_interest_pct=add_account_form.cleaned_data['monthly_interest_pct'])
+            account.save()
+            return HttpResponseRedirect(f'/finances/account_overview={account.id}')
+    else:
+        add_account_form = AddAccountForm()
+        return render(request, f'finances/user={user.id}/add_account_to_user', {'form': add_account_form})
+
+
+def add_trading_account_to_user(request, user_id: int):
+    user = User.objects.get(id=user_id)
+
+    if request.method == 'POST':
+        add_account_form = AddTradingAccountForm(request.POST)
+        if add_account_form.is_valid():
+            account = TradingAccount.objects.create(user=user,
+                                                    name=add_account_form.cleaned_data['name'],
+                                                    url=add_account_form.cleaned_data['url'],
+                                                    monthly_interest_pct=add_account_form.cleaned_data[
+                                                        'monthly_interest_pct'])
+            account.save()
+            return HttpResponseRedirect(f'/finances/account_overview={account.id}')
+    else:
+        add_account_form = AddTradingAccountForm()
+        return render(request, f'finances/user={user.id}/add_trading_account', {'form': add_account_form})
+
+
+def add_retirement_account_to_user(request, user_id: int):
+    user = User.objects.get(id=user_id)
+
+    if request.method == 'POST':
+        add_account_form = AddRetirementAccountForm(request.POST)
+        if add_account_form.is_valid():
+            account = RetirementAccount.objects.create(user=user,
+                                                       name=add_account_form.cleaned_data['name'],
+                                                       url=add_account_form.cleaned_data['url'],
+                                                       monthly_interest_pct=add_account_form.cleaned_data[
+                                                           'monthly_interest_pct'])
+            account.save()
+            return HttpResponseRedirect(f'/finances/account_overview={account.id}')
+    else:
+        add_account_form = AddRetirementAccountForm()
+        return render(request, f'finances/user={user.id}/add_retirement_account', {'form': add_account_form})
 
 
 def add_expense_by_location_user_account(request, user_id: int, account_id: int, extrarows: int = 0):

@@ -19,6 +19,13 @@ urlpatterns = [
     path('account_overview=<int:account_id>/', views.account_overview, name='account_overview'),
     # Ex. /finances/add_user
     path('add_user/', views.add_user, name='add_user'),
+    # Ex. /finances/user=<user_id>/add_account
+    path('user=<int:user_id>/add_account', views.add_account_to_user, name='add_account_to_user'),
+    # Ex. /finances/user=<user_id>/add_trading_account
+    path('user=<int:user_id>/add_trading_account', views.add_trading_account_to_user, name='add_trading_account_to_user'),
+    # Ex. /finances/user=<user_id>/add_retirement_account
+    path('user=<int:user_id>/add_retirement_account', views.add_retirement_account_to_user,
+         name='add_retirement_account_to_user'),
     # Ex. /finances/user=user_id/account=account_id/enter_expense_by_location/extra=0
     path('user=<int:user_id>/account=<int:account_id>/enter_expense_by_location/extra=<int:extrarows>',
          views.add_expense_by_location_user_account, name='add_exp_by_loc'),
