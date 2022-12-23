@@ -2,7 +2,7 @@ from django.shortcuts import render, HttpResponseRedirect
 from django.core.exceptions import BadRequest
 from django.forms import formset_factory
 
-from finances.models import User, Account, BUDGET_GROUP_CHOICES
+from finances.models import User, Account, Expense
 from finances.forms import UserForm, ExpenseByLocForm
 
 
@@ -69,18 +69,24 @@ def add_expense_by_location_user_account(request, user_id: int, account_id: int,
     formset = ExpenseFormSet(initial=initial_dicts)
 
     if request.method == 'POST':
-        print('This is a post')
-
+        formset = ExpenseFormSet(request.POST)
+        if formset.is_valid():
+            for form in formset:
+                new_expense = Expense.objects.create(user=user, account=account,
+                                                     date=form.cleaned_data['date'],
+                                                     budget_group=form.cleaned_data['budget_group'],
+                                                     category=form.cleaned_data['category'],
+                                                     where_bought=form.cleaned_data['where_bought'],
+                                                     description=form.cleaned_data['description'],
+                                                     amount=form.cleaned_data['amount'],
+                                                     slug_field=form.cleaned_data['slug_field'],
+                                                     group=form.cleaned_data['group']
+                                                     )
+                new_expense.save()
+            return HttpResponseRedirect(f'/finances/user={user.id}/account={account.id}/enter_expense_by_location'
+                                        f'/extra=0')
+        else:
+            return render(request, 'finances/add_exp_loc_user_acct.html',
+                          {'user': user, 'account': account, 'formset': formset, 'extra': extrarows})
     return render(request, 'finances/add_exp_loc_user_acct.html',
                   {'user': user, 'account': account, 'formset': formset, 'extra': extrarows})
-    # initial_dict = {'user': user, 'account': account}
-
-    "TODO: Potentially create a different form that accepts multiple rows for expenses."
-    # if request.method == 'POST':
-    #     form = ExpenseForm(request.POST, initial=initial_dict)
-    #
-    #     if form.is_valid():
-    #         pass
-
-
-

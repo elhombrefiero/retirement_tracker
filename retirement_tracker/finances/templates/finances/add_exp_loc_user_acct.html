@@ -2,12 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Add Expense to User's Account</title>
+  <title>Add Expense to {{user.name}}'s Account {{account.name}}</title>
 </head>
 <body>
-<p>User: {{user.name}}</p>
-<p>Account: {{account.name}}</p>
-<p>Extrarow: {{extra}}</p>
 <form method="post">
   {% csrf_token %}
   {{ formset.management_form }}
@@ -19,10 +16,15 @@
   <input class="button" type="submit" value="Submit Form"/>
 </form>
 <input class="button" type="submit" onclick="add_row()" value="Add Row">
+<input class="button" type="submit" onclick="delete_row()" value="Delete Row">
 </body>
 <script>
 function add_row() {
   let num_extra_row = {{extra}} + 1
+  window.location.replace("/finances/user={{user.id}}/account={{account.id}}/enter_expense_by_location/extra="+num_extra_row)
+}
+function delete_row() {
+  let num_extra_row = Math.max({{extra}} - 1, 0)
   window.location.replace("/finances/user={{user.id}}/account={{account.id}}/enter_expense_by_location/extra="+num_extra_row)
 }
 </script>
