@@ -12,6 +12,30 @@ from finances.forms import UserForm, ExpenseByLocForm, AddAccountForm, AddTradin
 
 # Create your views here.
 
+class UserView(DetailView):
+    model = User
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['accounts'] = Account.objects.filter(user=self.object)
+        return context
+
+
+class UserCreateView(CreateView):
+    model = User
+    fields = '__all__'
+
+
+class UserUpdateView(UpdateView):
+    model = User
+    fields = '__all__'
+
+
+class UserDeleteView(DeleteView):
+    model = User
+    success_url = '/finances'
+
+
 class AccountCreateView(CreateView):
     model = Account
     fields = '__all__'
@@ -32,9 +56,11 @@ class AccountView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
         # Get the latest incomes associated with this account
-        context['incomes'] = Income.objects.filter(account=kwargs['account']).order_by('-date')[:-10]
-        context['expenses'] = Expense.objects.filter(account=kwargs['account']).order_by('-date')[:-10]
+        context['incomes'] = Income.objects.filter(account=self.object).order_by('-date')[:10]
+        context['expenses'] = Expense.objects.filter(account=self.object).order_by('-date')[:10]
+        context['balance'] = self.object.return_balance()
         return context
 
 
@@ -45,53 +71,11 @@ def index(request):
     return render(request, 'finances/index.html', {'users': users})
 
 
-def user_main(request, user_id: int):
-    """ Contains links for each account for the user. """
-    user = User.objects.get(id=user_id)
-    user_accounts = Account.objects.filter(user=user)
-
-    return render(request, 'finances/user_overview.html', {'user': user,
-                                                           'accounts': user_accounts})
-
-
-def add_user(request):
-    if request.method == 'POST':
-        user_form = UserForm(request.POST)
-        if user_form.is_valid():
-            user = User.objects.create(name=user_form.cleaned_data['name'],
-                                       date_of_birth=user_form.cleaned_data['date_of_birth'],
-                                       retirement_age=user_form.cleaned_data['retirement_age'],
-                                       percent_withdrawal_at_retirement=user_form.cleaned_data[
-                                           'percent_withdrawal_at_retirement'])
-            user.save()
-            return HttpResponseRedirect(f'/finances/user_overview={user.id}')
-    else:
-        userform = UserForm()
-        return render(request, 'finances/add_user.html', {'form': userform})
-
-
 def account_overview(request, account_id: int):
     account = Account.objects.get(id=account_id)
     balance = account.return_balance()
 
-    return render(request, 'finances/account_overview.html', {'account': account, 'balance': balance})
-
-
-def add_account_to_user(request, user_id: int):
-    user = User.objects.get(id=user_id)
-
-    if request.method == 'POST':
-        add_account_form = AddAccountForm(request.POST)
-        if add_account_form.is_valid():
-            account = Account.objects.create(user=user,
-                                             name=add_account_form.cleaned_data['name'],
-                                             url=add_account_form.cleaned_data['url'],
-                                             monthly_interest_pct=add_account_form.cleaned_data['monthly_interest_pct'])
-            account.save()
-            return HttpResponseRedirect(f'/finances/account_overview={account.id}')
-    else:
-        add_account_form = AddAccountForm()
-        return render(request, f'finances/user={user.id}/add_account_to_user', {'form': add_account_form})
+    return render(request, 'finances/account_detail.html', {'account': account, 'balance': balance})
 
 
 def add_trading_account_to_user(request, user_id: int):

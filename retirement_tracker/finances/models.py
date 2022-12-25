@@ -254,6 +254,9 @@ class User(models.Model):
         latest_rt_dt = self.retirement_age + relativedelta(months=840)
         return latest_rt_dt
 
+    def get_absolute_url(self):
+        return reverse('finances:user_overview', args=[self.id])
+
     def __str__(self):
         return self.name
 

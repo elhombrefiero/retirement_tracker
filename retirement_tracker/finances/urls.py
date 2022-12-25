@@ -14,16 +14,19 @@ urlpatterns = [
     # Ex. /finances/
     path('', views.index, name='index'),
     # Ex. /finances/user_overview=id
-    path('user_overview=<int:user_id>/', views.user_main, name='user_overview'),
+    path('user_overview/<int:pk>/', views.UserView.as_view(), name='user_overview'),
     # Ex. /finances/account_overview=id
-    path('account_overview/<int:account_id>/', views.account_overview, name='account_overview'),
-    path('account_detail/<int:account_id>', views.AccountView, name='account_detail'),
+    path('account_overview/<int:pk>/', views.AccountView.as_view(), name='account_overview'),
     # Ex. /finances/add_user
-    path('add_user/', views.add_user, name='add_user'),
+    path('add_user/', views.UserCreateView.as_view(), name='add_user'),
     # Ex. /finances/add_account
     path('add_account/', views.AccountCreateView.as_view(), name='account-add'),
+    # Ex. /finances/update_user/1
+    path('update_user/<int:pk>', views.UserUpdateView.as_view(), name='user-update'),
     # Ex. /finances/update_account/1
     path('update_account/<int:pk>', views.AccountUpdateView.as_view(), name='account-update'),
+    # Ex. /finances/delete_user/1
+    path('delete_user/<int:pk>', views.UserDeleteView.as_view(), name='user-delete'),
     # Ex. finances/delete_account/1
     path('delete_account/<int:pk>', views.AccountDeleteView.as_view(), name='account-delete'),
     # Ex. /finances/user=<user_id>/add_trading_account

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Deleting Account {{account.name}}</title>
+    <title>User Add or Update</title>
 </head>
 <body>
 <!--Navbar-->
@@ -17,10 +17,10 @@
   </div>
 </nav>
 <!--End Navbar-->
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
     {{ form.non_field_errors }}
     {% csrf_token %}
-    <p>Are you sure you want to delete "{{ object }}"?</p>
+    {{form.as_p}}
     <input type="submit" value="Submit">
 </form>
 </body>

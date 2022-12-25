@@ -2,9 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Account Create or Update</title>
 </head>
 <body>
+<!--Navbar-->
+<nav class="level">
+  <div class="level-left">
+    <p class="level-item">
+      <a class="button is-success" href="/finances">HOME</a>
+    </p>
+    <p class="level-item">
+      <a class="button is-success" onclick="history.back()">GO BACK</a>
+    </p>
+  </div>
+</nav>
+<!--End Navbar-->
 <form method="POST" enctype="multipart/form-data">
     {{ form.non_field_errors }}
     {% csrf_token %}
