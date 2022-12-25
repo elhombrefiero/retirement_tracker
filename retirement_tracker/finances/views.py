@@ -1,12 +1,41 @@
 from django.shortcuts import render, HttpResponseRedirect
 from django.core.exceptions import BadRequest
 from django.forms import formset_factory
+from django.views.generic import DetailView
+from django.views.generic.edit import CreateView, UpdateView, DeleteView
+from django.shortcuts import get_object_or_404
+from django.urls import reverse_lazy
 
-from finances.models import User, Account, Expense, TradingAccount, RetirementAccount
+from finances.models import User, Account, Income, Expense, TradingAccount, RetirementAccount
 from finances.forms import UserForm, ExpenseByLocForm, AddAccountForm, AddTradingAccountForm, AddRetirementAccountForm
 
 
 # Create your views here.
+
+class AccountCreateView(CreateView):
+    model = Account
+    fields = '__all__'
+
+
+class AccountDeleteView(DeleteView):
+    model = Account
+    success_url = "/finances"
+
+
+class AccountUpdateView(UpdateView):
+    model = Account
+    fields = '__all__'
+
+
+class AccountView(DetailView):
+    model = Account
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Get the latest incomes associated with this account
+        context['incomes'] = Income.objects.filter(account=kwargs['account']).order_by('-date')[:-10]
+        context['expenses'] = Expense.objects.filter(account=kwargs['account']).order_by('-date')[:-10]
+        return context
 
 
 def index(request):

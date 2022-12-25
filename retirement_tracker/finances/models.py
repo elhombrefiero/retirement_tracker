@@ -2,6 +2,7 @@ from django.db import models
 from django.db.models import Sum, Max
 from django.utils.timezone import now
 from django.utils.text import slugify
+from django.shortcuts import reverse
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -415,6 +416,9 @@ class Account(models.Model):
         """ Calculates the time to reach a certain amount based on the trendline from the previous few months"""
         # TODO: Complete this one
         return {'time': 0.0}
+
+    def get_absolute_url(self):
+        return reverse('finances:account_overview', args=[self.id])
 
     def __str__(self):
         return self.name
