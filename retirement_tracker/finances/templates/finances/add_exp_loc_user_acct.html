@@ -1,24 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-    <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
-  <title>Add Expense to {{user.name}}'s Account {{account.name}}</title>
-</head>
-<body>
-<!--Navbar-->
-<nav class="level">
-  <div class="level-left">
-    <p class="level-item">
-      <a class="button is-success" href="/finances">HOME</a>
-    </p>
-    <p class="level-item">
-      <a class="button is-success" onclick="history.back()">GO BACK</a>
-    </p>
-  </div>
-</nav>
-<!--End Navbar-->
+{% extends 'finances/master_template.html' %}
+
+{% block mymessage %}
 <form method="post">
   {% csrf_token %}
   {{ formset.management_form }}
@@ -31,7 +13,8 @@
 </form>
 <input class="button" type="submit" onclick="add_row()" value="Add Row">
 <input class="button" type="submit" onclick="delete_row()" value="Delete Row">
-</body>
+{% endblock %}
+
 <script>
 function add_row() {
   let num_extra_row = {{extra}} + 1

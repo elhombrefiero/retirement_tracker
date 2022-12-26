@@ -1,27 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>User Add or Update</title>
-</head>
-<body>
-<!--Navbar-->
-<nav class="level">
-  <div class="level-left">
-    <p class="level-item">
-      <a class="button is-success" href="/finances">HOME</a>
-    </p>
-    <p class="level-item">
-      <a class="button is-success" onclick="history.back()">GO BACK</a>
-    </p>
-  </div>
-</nav>
-<!--End Navbar-->
+{% extends 'finances/master_template.html' %}
+
+{% block mymessage %}
 <form method="POST" enctype="multipart/form-data">
     {{ form.non_field_errors }}
     {% csrf_token %}
     {{form.as_p}}
     <input type="submit" value="Submit">
 </form>
-</body>
-</html>
+{% endblock %}

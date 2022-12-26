@@ -71,13 +71,6 @@ def index(request):
     return render(request, 'finances/index.html', {'users': users})
 
 
-def account_overview(request, account_id: int):
-    account = Account.objects.get(id=account_id)
-    balance = account.return_balance()
-
-    return render(request, 'finances/account_detail.html', {'account': account, 'balance': balance})
-
-
 def add_trading_account_to_user(request, user_id: int):
     user = User.objects.get(id=user_id)
 
