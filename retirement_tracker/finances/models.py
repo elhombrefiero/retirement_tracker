@@ -255,7 +255,7 @@ class User(models.Model):
         return latest_rt_dt
 
     def get_absolute_url(self):
-        return reverse('finances:user_overview', args=[self.id])
+        return reverse('finances:user_overview', args=[self.pk])
 
     def __str__(self):
         return self.name
@@ -421,7 +421,7 @@ class Account(models.Model):
         return {'time': 0.0}
 
     def get_absolute_url(self):
-        return reverse('finances:account_overview', args=[self.id])
+        return reverse('finances:account_overview', args=[self.pk])
 
     def __str__(self):
         return self.name
@@ -549,6 +549,8 @@ class TradingAccount(Account):
 
         return json_return
 
+    def get_absolute_url(self):
+        return reverse('finances:taccount_overview', args=[self.pk])
 
 class RetirementAccount(Account):
     """ 401k, IRA, HSA
@@ -658,6 +660,9 @@ class RetirementAccount(Account):
     def get_time_to_reach_amount(self, amount: float):
         pass
 
+    def get_absolute_url(self):
+        return reverse('finances:raccount_overview', args=[self.pk])
+
 
 class Expense(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -697,6 +702,9 @@ class Expense(models.Model):
         withdrawalobj.save()
         super(Expense, self).save(*args, **kwargs)
 
+    def get_absolute_url(self):
+        return reverse('finances:expense_overview', args=[self.pk])
+
     class Meta:
         unique_together = ['account', 'date', 'description', 'amount']
 
@@ -730,6 +738,9 @@ class Income(models.Model):
         depositobj.save()
         super(Income, self).save(*args, **kwargs)
 
+    def get_absolute_url(self):
+        return reverse('finances:income_overview', args=[self.pk])
+
     class Meta:
         unique_together = ['account', 'date', 'description', 'amount']
 
@@ -748,12 +759,15 @@ class MonthlyBudget(models.Model):
     discretionary = models.FloatField()
 
     def save(self, *args, **kwargs):
-        self.month = self.date.strftime('%B')
-        self.year = int(self.date.strftime('%Y'))
+        self.month = self.Date.strftime('%B')
+        self.year = int(self.Date.strftime('%Y'))
         super(MonthlyBudget, self).save(*args, **kwargs)
 
     def __str__(self):
         return "{}'s budget for {}, {}".format(self.user, self.month, self.year)
+
+    def get_absolute_url(self):
+        return reverse('finances:mbudget_overview', args=[self.pk])
 
     class Meta:
         unique_together = ['month', 'year']

@@ -6,8 +6,8 @@ from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 
-from finances.models import User, Account, Income, Expense, TradingAccount, RetirementAccount
-from finances.forms import UserForm, ExpenseByLocForm, AddAccountForm, AddTradingAccountForm, AddRetirementAccountForm
+from finances.models import User, Account, Income, Expense, TradingAccount, RetirementAccount, MonthlyBudget
+from finances.forms import ExpenseByLocForm
 
 
 # Create your views here.
@@ -64,47 +64,126 @@ class AccountView(DetailView):
         return context
 
 
+class ExpenseView(DetailView):
+    model = Expense
+
+
+class ExpenseCreateView(CreateView):
+    model = Expense
+    fields = '__all__'
+
+
+class ExpenseDeleteView(DeleteView):
+    model = Expense
+    success_url = '/finances'
+
+
+class ExpenseUpdateView(UpdateView):
+    model = Expense
+    fields = '__all__'
+
+
+class IncomeView(DetailView):
+    model = Income
+
+
+class IncomeCreateView(CreateView):
+    model = Income
+    fields = '__all__'
+
+
+class IncomeDeleteView(DeleteView):
+    model = Income
+    success_url = '/finances'
+
+
+class IncomeUpdateView(UpdateView):
+    model = Income
+    fields = '__all__'
+
+
+class MonthlyBudgetView(DetailView):
+    model = MonthlyBudget
+
+
+class MonthlyBudgetCreateView(CreateView):
+    model = MonthlyBudget
+    fields = '__all__'
+
+
+class MonthlyBudgetDeleteView(DeleteView):
+    model = MonthlyBudget
+    success_url = '/finances'
+
+
+class MonthlyBudgetUpdateView(UpdateView):
+    model = MonthlyBudget
+    fields = '__all__'
+
+
+class TradingAccountView(DetailView):
+    model = TradingAccount
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Get the latest incomes associated with this account
+        context['incomes'] = Income.objects.filter(account=self.object).order_by('-date')[:10]
+        context['expenses'] = Expense.objects.filter(account=self.object).order_by('-date')[:10]
+        context['balance'] = self.object.return_balance()
+        return context
+
+
+class TradingAccountCreateView(CreateView):
+    model = TradingAccount
+    fields = '__all__'
+
+
+class TradingAccountDeleteView(DeleteView):
+    model = TradingAccount
+    success_url = '/finances'
+    template_name = 'account_confirm_delete.html'
+
+
+class TradingAccountUpdateView(UpdateView):
+    model = TradingAccount
+    fields = '__all__'
+
+
+class RetirementAccountView(DetailView):
+    model = RetirementAccount
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Get the latest incomes associated with this account
+        context['incomes'] = Income.objects.filter(account=self.object).order_by('-date')[:10]
+        context['expenses'] = Expense.objects.filter(account=self.object).order_by('-date')[:10]
+        context['balance'] = self.object.return_balance()
+        return context
+
+
+class RetirementAccountCreateView(CreateView):
+    model = RetirementAccount
+    fields = '__all__'
+
+
+class RetirementAccountDeleteView(DeleteView):
+    model = RetirementAccount
+    success_url = '/finances'
+    template_name = 'account_confirm_delete.html'
+
+
+class RetirementAccountUpdateView(UpdateView):
+    model = RetirementAccount
+    fields = '__all__'
+
+
 def index(request):
     """ Index of finance tracker. Contains a list of users. """
     users = User.objects.all()
 
     return render(request, 'finances/index.html', {'users': users})
-
-
-def add_trading_account_to_user(request, user_id: int):
-    user = User.objects.get(id=user_id)
-
-    if request.method == 'POST':
-        add_account_form = AddTradingAccountForm(request.POST)
-        if add_account_form.is_valid():
-            account = TradingAccount.objects.create(user=user,
-                                                    name=add_account_form.cleaned_data['name'],
-                                                    url=add_account_form.cleaned_data['url'],
-                                                    monthly_interest_pct=add_account_form.cleaned_data[
-                                                        'monthly_interest_pct'])
-            account.save()
-            return HttpResponseRedirect(f'/finances/account_overview={account.id}')
-    else:
-        add_account_form = AddTradingAccountForm()
-        return render(request, f'finances/user={user.id}/add_trading_account', {'form': add_account_form})
-
-
-def add_retirement_account_to_user(request, user_id: int):
-    user = User.objects.get(id=user_id)
-
-    if request.method == 'POST':
-        add_account_form = AddRetirementAccountForm(request.POST)
-        if add_account_form.is_valid():
-            account = RetirementAccount.objects.create(user=user,
-                                                       name=add_account_form.cleaned_data['name'],
-                                                       url=add_account_form.cleaned_data['url'],
-                                                       monthly_interest_pct=add_account_form.cleaned_data[
-                                                           'monthly_interest_pct'])
-            account.save()
-            return HttpResponseRedirect(f'/finances/account_overview={account.id}')
-    else:
-        add_account_form = AddRetirementAccountForm()
-        return render(request, f'finances/user={user.id}/add_retirement_account', {'form': add_account_form})
 
 
 def add_expense_by_location_user_account(request, user_id: int, account_id: int, extrarows: int = 0):
