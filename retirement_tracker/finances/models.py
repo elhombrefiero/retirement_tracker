@@ -243,7 +243,7 @@ class User(models.Model):
 
         Assumes the age 59.5 (i.e., 714 months) based on 2022 rules."""
 
-        earliest_rt = self.retirement_age + relativedelta(months=+714)
+        earliest_rt = self.date_of_birth + relativedelta(months=+714)
         return earliest_rt
 
     def get_latest_retirement_date(self):

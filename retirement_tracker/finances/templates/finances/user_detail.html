@@ -1,8 +1,26 @@
 {% extends 'finances/master_template.html' %}
 
+{% block header_extra %}
+    <Title>{{object.name}} Overview</Title>
+{% endblock %}
+
 {% block mymessage %}
-<h1>Accounts:</h1>
-{% for account in accounts %}
-<h2 class="account"><a href="/finances/account_overview/{{account.id}}">{{account.name}}</a></h2>
-{% endfor %}
+<h1><a href="/finances/update_user/{{object.pk}}">{{object.name}}</a></h1>
+<h1>{{object.date_of_birth}}</h1>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Account</th>
+            <th>Balance</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for account in accounts %}
+        <tr>
+            <td><a href="/finances/update_account/{{account.pk}}">{{account.name}}</a></td>
+            <td>{{account.return_balance}}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endblock %}
