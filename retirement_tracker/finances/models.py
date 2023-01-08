@@ -54,6 +54,7 @@ class User(models.Model):
     percent_withdrawal_at_retirement = models.DecimalField(verbose_name='Percent withdrawal at retirement',
                                                            decimal_places=2, default=4.0, max_digits=5)
 
+    #TODO: Add function to return the net worth based on input month and year. Create function that returns the current net worth. Add another function to return the net worth at retirement
     def return_retirement_datetime(self):
         """ Returns the timestamp at retirement age. """
         num_months = int(float(self.retirement_age) * 12.0)
@@ -251,7 +252,7 @@ class User(models.Model):
 
         70 years based on ssn.gov"""
 
-        latest_rt_dt = self.retirement_age + relativedelta(months=840)
+        latest_rt_dt = self.date_of_birth + relativedelta(months=840)
         return latest_rt_dt
 
     def get_absolute_url(self):

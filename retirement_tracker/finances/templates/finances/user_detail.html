@@ -5,8 +5,92 @@
 {% endblock %}
 
 {% block mymessage %}
-<h1><a href="/finances/update_user/{{object.pk}}">{{object.name}}</a></h1>
-<h1>{{object.date_of_birth}}</h1>
+<nav class="level is-mobile">
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading">User</p>
+      <p class="title"><a href="/finances/update_user/{{object.pk}}">{{object.name}}</a></p>
+    </div>
+  </div>
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading">Estimated Retirement Date</p>
+      <p class="title">{{object.return_retirement_datetime}}</p>
+    </div>
+  </div>
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading">Current Net Worth</p>
+      <p class="title"></p>
+    </div>
+  </div>
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading">Projected Net Worth at Retirement</p>
+      <p class="title"></p>
+    </div>
+  </div>
+</nav>
+<!--Buttons to add and update the user stuff-->
+<div class="dropdown is-hoverable">
+  <div class="dropdown-trigger">
+    <button class="button" aria-haspopup="true" aria-controls="dropdown-menu2">
+      <span>Add</span>
+      <span class="icon is-small">
+        <i class="fas fa-angle-down" aria-hidden="true"></i>
+      </span>
+    </button>
+  </div>
+  <div class="dropdown-menu" id="dropdown-menu2" role="menu">
+    <div class="dropdown-content">
+      <div class="dropdown-item">
+      <a href="#" class="dropdown-item">
+        Income
+      </a>
+      </div>
+      <div class="dropdown-item">
+      <a href="#" class="dropdown-item">
+        Expenses
+      </a>
+      </div>
+      <div class="dropdown-item">
+      <a href="#" class="dropdown-item">
+        Monthly Budget
+      </a>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="dropdown is-hoverable">
+  <div class="dropdown-trigger">
+    <button class="button" aria-haspopup="true" aria-controls="dropdown-menu3">
+      <span>Update</span>
+      <span class="icon is-small">
+        <i class="fas fa-angle-down" aria-hidden="true"></i>
+      </span>
+    </button>
+  </div>
+  <div class="dropdown-menu" id="dropdown-menu3" role="menu">
+    <div class="dropdown-content">
+      <div class="dropdown-item">
+      <a href="#" class="dropdown-item">
+        Income
+      </a>
+      </div>
+      <div class="dropdown-item">
+      <a href="#" class="dropdown-item">
+        Expenses
+      </a>
+      </div>
+      <div class="dropdown-item">
+      <a href="#" class="dropdown-item">
+        Monthly Budget
+      </a>
+      </div>
+    </div>
+  </div>
+</div>
+<!--Table of accounts and balances-->
 <table class="table">
     <thead>
         <tr>

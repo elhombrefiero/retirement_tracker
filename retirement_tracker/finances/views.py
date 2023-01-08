@@ -17,6 +17,8 @@ class UserView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['earliest_ret_date'] = self.object.get_earliest_retirement_date()
+        context['retirement_date'] = self.object.return_retirement_datetime()
         context['accounts'] = Account.objects.filter(user=self.object)
         return context
 
