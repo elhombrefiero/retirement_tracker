@@ -12,9 +12,13 @@ app_name = 'finances'
 
 urlpatterns = [
     # Ex. /finances/
-    path('', views.index, name='index'),
+    path('', views.IndexView.as_view(), name='index'),
     # Ex. /finances/user_overview/pk
     path('user_overview/<int:pk>/', views.UserView.as_view(), name='user_overview'),
+    # Ex. /finances/user/1/add_expense
+    path('user/<int:pk>/add_expense', views.ExpenseForUserView.as_view(), name='user_add_expense'),
+    # Ex. /finances/user/1/add_monthly_budget
+    path('user/<int:pk>/add_monthly_budget', views.MonthlyBudgetForUserView.as_view(), name='user_add_monthly_budget'),
     # Ex. /finances/account_overview/pk
     path('account_overview/<int:pk>/', views.AccountView.as_view(), name='account_overview'),
     # Ex. /finances/retirementaccount_overview/pk

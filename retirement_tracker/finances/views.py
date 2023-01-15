@@ -1,16 +1,28 @@
-from django.shortcuts import render, HttpResponseRedirect
+from dateutil.relativedelta import relativedelta
+from django.shortcuts import render, HttpResponseRedirect, HttpResponse
 from django.core.exceptions import BadRequest
 from django.forms import formset_factory
-from django.views.generic import DetailView
+from django.views.generic import DetailView, TemplateView, FormView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
+from django.utils import timezone
 
 from finances.models import User, Account, Income, Expense, TradingAccount, RetirementAccount, MonthlyBudget
-from finances.forms import ExpenseByLocForm
+from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetForUserForm
 
 
 # Create your views here.
+
+class IndexView(TemplateView):
+
+    template_name = 'finances/index.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['users'] = User.objects.all()
+        return context
+
 
 class UserView(DetailView):
     model = User
@@ -73,6 +85,50 @@ class ExpenseView(DetailView):
 class ExpenseCreateView(CreateView):
     model = Expense
     fields = '__all__'
+
+
+class ExpenseForUserView(FormView):
+
+    form_class = ExpenseForUserForm
+    template_name = 'finances/expense_form_for_user.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        self.user = User.objects.get(pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        six_months_prior = timezone.now() + relativedelta(months=-6)
+        expenses_six_mo_prior = Expense.objects.filter(user=self.user, date__gte=six_months_prior)
+        distinct_cat = list(expenses_six_mo_prior.values_list('category', flat=True).distinct())
+        distinct_desc = list(expenses_six_mo_prior.values_list('description', flat=True).distinct())
+        distinct_where = list(expenses_six_mo_prior.values_list('where_bought', flat=True).distinct())
+        distinct_group = list(expenses_six_mo_prior.values_list('group', flat=True).distinct())
+        context['user'] = self.user
+        context['distinct_cat'] = distinct_cat
+        context['distinct_desc'] = distinct_desc
+        context['distinct_where'] = distinct_where
+        context['distinct_group'] = distinct_group
+
+        return context
+
+
+class MonthlyBudgetForUserView(FormView):
+
+    form_class = MonthlyBudgetForUserForm
+    template_name = 'finances/monthlybudget_form_for_user.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        self.user = User.objects.get(pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.user
+
+        return context
 
 
 class ExpenseDeleteView(DeleteView):
@@ -179,13 +235,6 @@ class RetirementAccountDeleteView(DeleteView):
 class RetirementAccountUpdateView(UpdateView):
     model = RetirementAccount
     fields = '__all__'
-
-
-def index(request):
-    """ Index of finance tracker. Contains a list of users. """
-    users = User.objects.all()
-
-    return render(request, 'finances/index.html', {'users': users})
 
 
 def add_expense_by_location_user_account(request, user_id: int, account_id: int, extrarows: int = 0):

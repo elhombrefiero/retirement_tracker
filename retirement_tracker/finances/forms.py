@@ -1,6 +1,6 @@
 from django import forms
 
-from finances.models import User, Expense, Account, TradingAccount, RetirementAccount
+from finances.models import User, Expense, Account, TradingAccount, RetirementAccount, MonthlyBudget
 
 
 class UserForm(forms.ModelForm):
@@ -9,6 +9,22 @@ class UserForm(forms.ModelForm):
     class Meta:
         model = User
         fields = '__all__'
+
+
+class ExpenseForUserForm(forms.ModelForm):
+    """ Add expense for a given user"""
+
+    class Meta:
+        model = Expense
+        exclude = ['user']
+
+
+class MonthlyBudgetForUserForm(forms.ModelForm):
+    """ Add a monthly budget for a given user"""
+
+    class Meta:
+        model = MonthlyBudget
+        exclude = ['user']
 
 
 class ExpenseByLocForm(forms.ModelForm):
