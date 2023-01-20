@@ -4,7 +4,7 @@
 <h1>Welcome to the Retirement Tracker !</h1>
 <h1>Users</h1>
 {% for user in users %}
-<h2 class="user"><a href="/finances/user_overview/{{user.id}}">{{user.name}}</a></h2>
+<h2 class="user"><a href="/finances/user/{{user.id}}">{{user.name}}</a></h2>
 {% endfor %}
 <button class="button"><a href="/finances/add_user">Add User</a></button>
 {% endblock %}

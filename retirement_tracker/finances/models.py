@@ -7,9 +7,6 @@ from django.shortcuts import reverse
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
-# TODO: Add a stock model, (stock name, purchase date, number of stocks)
-# TODO: Add stock model to trading account.
-#  Update trading account to use the stock information to determine the net worth over time.
 BUDGET_GROUP_CHOICES = (
     ('Mandatory', 'Mandatory'),
     ('Mortgage', 'Mortgage'),
@@ -17,6 +14,8 @@ BUDGET_GROUP_CHOICES = (
     ('Discretionary', 'Discretionary'),
     ('Statutory', 'Statutory'),
 )
+
+# TODO: Create a DebtAccount
 
 
 class User(models.Model):
@@ -54,12 +53,60 @@ class User(models.Model):
     percent_withdrawal_at_retirement = models.DecimalField(verbose_name='Percent withdrawal at retirement',
                                                            decimal_places=2, default=4.0, max_digits=5)
 
-    #TODO: Add function to return the net worth based on input month and year. Create function that returns the current net worth. Add another function to return the net worth at retirement
+    def return_net_worth(self) -> (float, float, float, float):
+        """ Returns the user net worth and totals for all accounts:
+            -checking,
+            -retirement, and
+            -trading accounts
+
+            All are calculated for the current time
+        """
+
+        today = now()
+        month = today.strftime('%B')
+        year = today.strftime('%Y')
+
+        tot_checking, tot_retirement, tot_trading, net_worth = self.return_net_worth_month_year(month, year)
+
+        return tot_checking, tot_retirement, tot_trading, net_worth
+
+    def return_net_worth_month_year(self, month: str, year: int) -> (float, float, float, float):
+        """ Returns the net worth of the user at a given point in time."""
+        tot_checking = 0.0
+        tot_retirement = 0.0
+        tot_trading = 0.0
+
+        user_checking_accts = self.return_checking_accts()
+        user_ret_accts = [acct.name for acct in RetirementAccount.objects.filter(user=self)]
+        user_trade_accts = [acct.name for acct in TradingAccount.objects.filter(user=self)]
+
+        for account in user_checking_accts:
+            tot_checking += account.return_balance_up_to_month_year(month, year)
+
+        for account in user_ret_accts:
+            tot_retirement += account.return_balance_up_to_month_year(month, year)
+
+        for account in user_trade_accts:
+            tot_trading += account.return_balance_up_to_month_year(month, year)
+
+        net_worth = tot_checking + tot_retirement + tot_trading
+
+        return tot_checking, tot_retirement, tot_trading, net_worth
+
     def return_retirement_datetime(self):
         """ Returns the timestamp at retirement age. """
         num_months = int(float(self.retirement_age) * 12.0)
         ret_datetime = self.date_of_birth + relativedelta(months=num_months)
         return ret_datetime
+
+    def return_checking_acct_total(self):
+        tot_checking_amt = 0.0
+        checking_accounts = self.return_checking_accts()
+
+        for account in checking_accounts:
+            tot_checking_amt += account.return_balance()
+
+        return tot_checking_amt
 
     def return_retirement_acct_total(self):
         tot_ret_amt = 0.0
@@ -158,8 +205,8 @@ class User(models.Model):
         user_accounts = self.return_checking_accts()
 
         # Get the total income from base accounts for the current month/year
-        total_income = 0
-        statutory = 0
+        total_income = 0.0
+        statutory = 0.0
         for account in user_accounts:
             total_income += account.return_income_month_year(month, year)
             statutory += account.return_statutory_month_year(month, year)
@@ -171,18 +218,7 @@ class User(models.Model):
         budget_dgr = takehome * self.DEFAULT_DGR_BUDGET_PCT / 100.0
         budget_disc = takehome * self.DEFAULT_DISC_BUDGET_PCT / 100.0
 
-        try:
-            mbudget = MonthlyBudget.objects.get(user=self, month=month, year=year)
-        except MonthlyBudget.DoesNotExist:
-            mbudget = MonthlyBudget.objects.create(user=self, date=thisdate)
-
-        mbudget.mandatory = budget_mand
-        mbudget.mortgage = budget_mort
-        mbudget.statutory = statutory
-        mbudget.debts_goals_retirement = budget_dgr
-        mbudget.discretionary = budget_disc
-
-        mbudget.save()
+        return budget_mand, budget_mort, statutory, budget_dgr, budget_disc
 
     def get_checking_total_month_year(self, month, year):
         """ Calculates the total balance for the given month and year"""
@@ -306,7 +342,7 @@ class Account(models.Model):
         all_income = all_income.aggregate(total=Sum('amount'))['total']
         all_income = all_income if all_income is not None else 0.0
 
-        all_expense = Withdrawal.objects.filter(acount=self, date__ge=start_datetime, date__lt=end_datetime)
+        all_expense = Withdrawal.objects.filter(account=self, date__ge=start_datetime, date__lt=end_datetime)
         all_expense = all_expense.aggregate(total=Sum('amount'))['total']
         all_expense = all_expense if all_expense is not None else 0.0
 
@@ -329,28 +365,28 @@ class Account(models.Model):
         month_income = month_income.aggregate(total=Sum('amount'))['total']
         month_income = month_income if month_income is not None else 0.0
 
-        return month_income
+        return float(month_income)
 
     def return_expense_month_year(self, month: str, year: int):
         start_datetime = datetime.strptime(f'{month}-1-{year}', '%B-%d-%Y')
         end_datetime = start_datetime + relativedelta(months=+1, seconds=-1)
 
-        month_expense = Withdrawal.objects.filter(account=self, date__gte=start_datetime, date__lte=end_datetime)
+        month_expense = Expense.objects.filter(account=self, date__gte=start_datetime, date__lte=end_datetime)
         month_expense = month_expense.aggregate(total=Sum('amount'))['total']
         month_expense = month_expense if month_expense is not None else 0.0
 
-        return month_expense
+        return float(month_expense)
 
     def return_statutory_month_year(self, month: str, year: int):
         start_datetime = datetime.strptime(f'{month}-1-{year}', '%B-%d-%Y')
         end_datetime = start_datetime + relativedelta(months=+1, seconds=-1)
 
-        month_expense = Withdrawal.objects.filter(account=self, date__gte=start_datetime, date__lte=end_datetime)
+        month_expense = Expense.objects.filter(account=self, date__gte=start_datetime, date__lte=end_datetime)
         month_expense.filter(budget_group='Statutory')
         month_expense = month_expense.aggregate(total=Sum('amount'))['total']
         month_expense = month_expense if month_expense is not None else 0.0
 
-        return month_expense
+        return float(month_expense)
 
     def return_balance_up_to_month_year(self, month: str, year: int):
         """ Returns the balance up to the start of the month and year.
@@ -364,7 +400,7 @@ class Account(models.Model):
         all_income = all_income.aggregate(total=Sum('amount'))['total']
         all_income = all_income if all_income is not None else 0.0
 
-        all_expense = Withdrawal.objects.filter(acount=self, date__lt=up_to_datetime)
+        all_expense = Withdrawal.objects.filter(account=self, date__lt=up_to_datetime)
         all_expense = all_expense.aggregate(total=Sum('amount'))['total']
         all_expense = all_expense if all_expense is not None else 0.0
 
@@ -552,6 +588,7 @@ class TradingAccount(Account):
 
     def get_absolute_url(self):
         return reverse('finances:taccount_overview', args=[self.pk])
+
 
 class RetirementAccount(Account):
     """ 401k, IRA, HSA

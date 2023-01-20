@@ -32,6 +32,28 @@ class UserView(DetailView):
         context['earliest_ret_date'] = self.object.get_earliest_retirement_date()
         context['retirement_date'] = self.object.return_retirement_datetime()
         context['accounts'] = Account.objects.filter(user=self.object)
+        tot_checking, tot_retirement, tot_trading, net_worth = \
+            self.object.return_net_worth()
+        context['net_worth'] = net_worth
+        return context
+
+
+class UserMonthYearView(DetailView):
+    model = User
+
+    def dispatch(self, request, *args, **kwargs):
+        self.month = kwargs['month']
+        self.year = kwargs['year']
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['accounts'] = Account.objects.filter(user=self.object)
+        tot_checking, tot_retirement, tot_trading, net_worth = \
+            self.object.return_net_worth_month_year(self.month, self.year)
+        context['net_worth'] = net_worth
+        context['month'] = self.month
+        context['year'] = self.year
         return context
 
 
@@ -114,19 +136,30 @@ class ExpenseForUserView(FormView):
         return context
 
 
-class MonthlyBudgetForUserView(FormView):
+class MonthlyBudgetForUserViewMonthYear(FormView):
 
     form_class = MonthlyBudgetForUserForm
     template_name = 'finances/monthlybudget_form_for_user.html'
 
     def dispatch(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
+        self.month = kwargs.get('month')
+        self.year = kwargs.get('year')
         self.user = User.objects.get(pk=pk)
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['user'] = self.user
+        context['month'] = self.month
+        context['year'] = self.year
+        budget_mand, budget_mort, statutory, budget_dgr, budget_disc = \
+            self.user.estimate_budget_for_month_year(self.month, self.year)
+        context['est_mand'] = budget_mand
+        context['est_mort'] = budget_mort
+        context['statutory'] = statutory
+        context['est_dgr'] = budget_dgr
+        context['est_disc'] = budget_disc
 
         return context
 

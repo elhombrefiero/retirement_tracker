@@ -5,6 +5,12 @@
 {% endblock %}
 
 {% block mymessage %}
+<p>Statutory: {{statutory}}</p>
+<p>Estimated values for {{month}}, {{year}}</p>
+<p>Mandatory: {{est_mand}}</p>
+<p>Mortgage: {{est_mort}}</p>
+<p>Debts, Goals, Retirement: {{est_dgr}}</p>
+<p>Discretionary: {{est_disc}}</p>
 <form method="POST" enctype="multipart/form-data">
     {{ form.non_field_errors }}
     {% csrf_token %}

@@ -21,13 +21,13 @@
   <div class="level-item has-text-centered">
     <div>
       <p class="heading">Current Net Worth</p>
-      <p class="title"></p>
+      <p class="title">{{net_worth}}</p>
     </div>
   </div>
   <div class="level-item has-text-centered">
     <div>
       <p class="heading">Projected Net Worth at Retirement</p>
-      <p class="title"></p>
+      <p class="title">{{projected_net_worth}}</p>
     </div>
   </div>
 </nav>
@@ -44,7 +44,7 @@
   <div class="dropdown-menu" id="dropdown-menu2" role="menu">
     <div class="dropdown-content">
       <div class="dropdown-item">
-      <a href="#" class="dropdown-item">
+      <a href="/finances/user/{{object.pk}}/add_income" class="dropdown-item">
         Income
       </a>
       </div>
@@ -54,7 +54,11 @@
       </a>
       </div>
       <div class="dropdown-item">
+      {% if month and year %}
+      <a href="/finances/user/{{object.pk}}/{{month}}/{{year}}/add_monthly_budget" class="dropdown-item">
+      {% else %}
       <a href="/finances/user/{{object.pk}}/add_monthly_budget" class="dropdown-item">
+      {% endif %}
         Monthly Budget
       </a>
       </div>
