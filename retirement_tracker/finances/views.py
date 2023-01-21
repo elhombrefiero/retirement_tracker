@@ -54,6 +54,9 @@ class UserMonthYearView(DetailView):
         context['net_worth'] = net_worth
         context['month'] = self.month
         context['year'] = self.year
+        ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_net_worth = \
+            self.object.return_net_worth_month_year(self.month, self.year)
+        context['projected_net_worth'] = ret_net_worth
         mbudget = MonthlyBudget.objects.get(user=self.object, month=self.month, year=self.year)
         context['monthly_budget'] = mbudget
         takehome_pay = self.object.return_takehome_pay_month_year(self.month, self.year)
