@@ -39,6 +39,7 @@ class User(models.Model):
     estimate_retirement_finances
     estimate_budget_for_month_year
     get_total_for_month_year
+    get_cumulative_incomes_expenses
     """
 
     # Budget percentages for blank budgets
@@ -53,13 +54,18 @@ class User(models.Model):
     percent_withdrawal_at_retirement = models.DecimalField(verbose_name='Percent withdrawal at retirement',
                                                            decimal_places=2, default=4.0, max_digits=5)
 
+    # TODO: Create cumulative summations of the expenses and budgets like so:
+    #  transaction.objects.annotate(
+    #     cumsum=Window(Sum('amount'), order_by=F('transactiondate').asc())
+    # ).order_by('transactiondate', 'cumsum')
+
     def return_net_worth(self) -> (float, float, float, float):
         """ Returns the user net worth and totals for all accounts:
             -checking,
             -retirement, and
             -trading accounts
 
-            All are calculated for the current time
+            All are calculated up to today's date
         """
 
         today = now()
@@ -197,6 +203,41 @@ class User(models.Model):
         user_accounts = user_accounts.exclude(name__in=user_trade_accts)
 
         return user_accounts
+
+    def return_monthly_expenses_by_budgetgroup(self, month, year):
+
+        beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
+        end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
+        checking_accts = self.return_checking_accts()
+        expenses = Expense.objects.filter(account=checking_accts, date__ge=beg_of_month, date__lt=end_of_month)
+        mand_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_CHOICES[0][0])
+        mort_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_CHOICES[1][0])
+        dgr_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_CHOICES[2][0])
+        disc_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_CHOICES[3][0])
+        stat_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_CHOICES[4][0])
+
+        return mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp
+
+    def return_tot_expenses_by_budget_month_year(self, month, year) -> (float, float, float, float, float):
+        """ Returns the checking expenses segregated by budget group.
+
+        """
+
+        mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp = self.return_monthly_expenses_by_budgetgroup(month, year)
+
+        mand_exp = mand_exp.aggregate(total=Sum('amount'))['total']
+        mort_exp = mort_exp.aggregate(total=Sum('amount'))['total']
+        dgr_exp = dgr_exp.aggregate(total=Sum('amount'))['total']
+        disc_exp = disc_exp.aggregate(total=Sum('amount'))['total']
+        stat_exp = stat_exp.aggregate(total=Sum('amount'))['total']
+
+        mand_exp = mand_exp if mand_exp is not None else 0.0
+        mort_exp = mort_exp if mort_exp is not None else 0.0
+        dgr_exp = dgr_exp if dgr_exp is not None else 0.0
+        disc_exp = disc_exp if disc_exp is not None else 0.0
+        stat_exp = stat_exp if stat_exp is not None else 0.0
+
+        return mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp
 
     def estimate_budget_for_month_year(self, month: str, year: int):
         """ Estimates and sets monthly budget values based on takehome pay and budget expenses."""

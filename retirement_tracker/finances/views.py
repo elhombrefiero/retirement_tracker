@@ -9,7 +9,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 
 from finances.models import User, Account, Income, Expense, TradingAccount, RetirementAccount, MonthlyBudget
-from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetForUserForm
+from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm
 
 
 # Create your views here.
@@ -54,6 +54,17 @@ class UserMonthYearView(DetailView):
         context['net_worth'] = net_worth
         context['month'] = self.month
         context['year'] = self.year
+        mbudget = MonthlyBudget.objects.get(user=self.object, month=self.month, year=self.year)
+        context['monthly_budget'] = mbudget
+        takehome_pay = self.object.return_takehome_pay_month_year(self.month, self.year)
+        context['takehome_pay'] = takehome_pay
+        mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp = \
+            self.object.return_tot_expenses_by_budget_month_year(self.month, self.year)
+        context['tot_mandatory_expenses'] = mand_exp
+        context['tot_mortgage_expenses'] = mort_exp
+        context['tot_debts_goals_retirement_expenses'] = dgr_exp
+        context['tot_discretionary_expenses'] = disc_exp
+        context['tot_statutory_expenses'] = stat_exp
         return context
 
 
@@ -134,6 +145,27 @@ class ExpenseForUserView(FormView):
         context['distinct_group'] = distinct_group
 
         return context
+
+
+class UserWorkRelatedIncomeView(FormView):
+
+    form_class = UserWorkIncomeExpenseForm
+    template_name = 'finances/user_work_income_form.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        self.user = User.objects.get(pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.user
+        return context
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.user
+        return kwargs
 
 
 class MonthlyBudgetForUserViewMonthYear(FormView):
