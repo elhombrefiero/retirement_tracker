@@ -3,6 +3,14 @@ from django.utils.timezone import now
 
 from finances.models import User, Expense, Account, TradingAccount, RetirementAccount, MonthlyBudget
 
+FORM_BUDGET_GROUP_CHOICES = (
+    (None, None),
+    ('Mandatory', 'Mandatory'),
+    ('Mortgage', 'Mortgage'),
+    ('Debts, Goals, Retirement', 'Debts, Goals, Retirement'),
+    ('Discretionary', 'Discretionary'),
+    ('Statutory', 'Statutory'),
+)
 
 class UserForm(forms.ModelForm):
     """ Add a new user to the database"""
@@ -48,6 +56,54 @@ class ExpenseForUserForm(forms.ModelForm):
     class Meta:
         model = Expense
         exclude = ['user']
+
+
+class UserExpenseLookupForm(forms.Form):
+    """ Used to lookup expenses for a given user."""
+    MONTH_CHOICES = ((None, None), ('January', 'January'), ('February', 'February'), ('March', 'March'),
+                     ('April', 'April'), ('May', 'May'), ('June', 'June'),
+                     ('July', 'July'), ('August', 'August'), ('September', 'September'),
+                     ('October', 'October'), ('November', 'November'), ('December', 'December'))
+    budget_choices = (None, None)
+    month = forms.CharField(label='Month',
+                            widget=forms.Select(choices=MONTH_CHOICES))
+    year = forms.ChoiceField()
+    budget_group = forms.CharField(label='Budget Group',
+                                   widget=forms.Select(choices=FORM_BUDGET_GROUP_CHOICES))
+    category = forms.CharField(label='Category')
+    description = forms.CharField(label='Description')
+    where_bought = forms.CharField(label='Location')
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user')
+        super().__init__(*args, **kwargs)
+        # Fill in choices for year
+        earliest, latest = user.get_earliest_latest_dates()
+        earliest = earliest.year
+        latest = latest.year
+        year_choices = [(None, None)]
+        for year in range(earliest, latest + 1):
+            year_choices.append((year, year))
+        self.fields['year'] = forms.ChoiceField(choices=year_choices)
+        user_expenses = Expense.objects.filter(user=user)
+        # Fill in choices for category
+        category_choices = [(None, None)]
+        user_categories = list(user_expenses.values_list('category', flat=True).distinct())
+        for cat in user_categories:
+            category_choices.append((cat, cat))
+        self.fields['category'] = forms.ChoiceField(choices=category_choices)
+        # Fill in choices for description
+        description_choices = [(None, None)]
+        user_description = list(user_expenses.values_list('description', flat=True).distinct())
+        for desc in user_description:
+            description_choices.append((desc, desc))
+        self.fields['description'] = forms.ChoiceField(choices=description_choices)
+        # Fill in choices for location
+        location_choices = [(None, None)]
+        user_where_bought = list(user_expenses.values_list('where_bought', flat=True).distinct())
+        for loc in user_where_bought:
+            location_choices.append((loc, loc))
+        self.fields['where_bought'] = forms.ChoiceField(choices=location_choices)
 
 
 class MonthlyBudgetForUserForm(forms.ModelForm):

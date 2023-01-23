@@ -60,6 +60,9 @@ class User(models.Model):
     #     cumsum=Window(Sum('amount'), order_by=F('transactiondate').asc())
     # ).order_by('transactiondate', 'cumsum')
 
+    # TODO: Determine way to generate input files for sankey diagram and add button to open sankey page with the
+    #  inputs. Or throw monthly budget portions and expenses.
+
     def return_net_worth(self) -> (float, float, float, float):
         """ Returns the user net worth and totals for all accounts:
             -checking,
@@ -295,7 +298,6 @@ class User(models.Model):
             statutory += account.return_statutory_month_year(month, year)
 
         takehome = total_income - statutory
-        thisdate = datetime.strptime(f'{month},{year}', '%B,%Y')
         budget_mort = takehome * self.DEFAULT_MORTGAGE_BUDGET_PCT / 100.0
         budget_mand = takehome * self.DEFAULT_MANDATORY_BUDGET_PCT / 100.0
         budget_dgr = takehome * self.DEFAULT_DGR_BUDGET_PCT / 100.0
@@ -376,6 +378,16 @@ class User(models.Model):
 
     def get_absolute_url(self):
         return reverse('finances:user_overview', args=[self.pk])
+
+    def get_earliest_latest_dates(self):
+        user_expenses = Expense.objects.filter(user=self)
+        user_incomes = Income.objects.filter(user=self)
+        user_earliest = min(user_expenses.earliest('date').date,
+                            user_incomes.earliest('date').date)
+        user_latest = max(user_expenses.latest('date').date,
+                          user_incomes.latest('date').date)
+
+        return user_earliest, user_latest
 
     def __str__(self):
         return self.name
@@ -472,7 +484,7 @@ class Account(models.Model):
         return float(month_expense)
 
     def return_balance_up_to_month_year(self, month: str, year: int):
-        """ Returns the balance up to the start of the month and year.
+        """ Returns the balance up to the end of the month and year.
 
         For example, a lookup of July, 2020 will return the balance up to 11:59pm on June, 30, 2020 """
 
@@ -658,7 +670,7 @@ class TradingAccount(Account):
         roi = self.get_roi(num_of_months)
         date = datetime.strptime(f'{month}-01-{year}', '%B-%d-%Y')
         tot_months = num_of_years * 12 + num_of_months
-        end_date = date + relativedelta(num_of_months=tot_months)
+        end_date = date + relativedelta(months=tot_months)
         json_return = {'beginning date': date, 'beginning balance': balance, 'end date': end_date}
 
         while date <= end_date:

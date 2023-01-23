@@ -22,6 +22,8 @@ urlpatterns = [
     # Ex. /finances/user/1/January/2022/add_monthly_budget
     path('user/<int:pk>/<str:month>/<int:year>/add_monthly_budget', views.MonthlyBudgetForUserViewMonthYear.as_view(),
          name='user_add_monthly_budget_month_year'),
+    # Ex. /finances/user/1/lookup_expenses
+    path('user/<int:pk>/lookup_expenses', views.ExpenseLookupForUserView.as_view(), name='user_expense_lookup'),
     # Ex. /finances/user/1/add_work_income
     path('user/<int:pk>/add_work_income', views.UserWorkRelatedIncomeView.as_view(), name='user_work_income'),
     # Ex. /finances/account_overview/pk

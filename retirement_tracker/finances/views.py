@@ -8,8 +8,10 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.utils import timezone
 
+from datetime import datetime
+
 from finances.models import User, Account, Income, Expense, TradingAccount, RetirementAccount, MonthlyBudget
-from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm
+from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, UserExpenseLookupForm
 
 
 # Create your views here.
@@ -57,7 +59,8 @@ class UserMonthYearView(DetailView):
         ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_net_worth = \
             self.object.return_net_worth_month_year(self.month, self.year)
         context['projected_net_worth'] = ret_net_worth
-        mbudget = MonthlyBudget.objects.get(user=self.object, month=self.month, year=self.year)
+        date = datetime.strptime(f'{self.year}-{self.month}-01', '%Y-%B-%d')
+        mbudget = MonthlyBudget.objects.get_or_create(user=self.object, date=date, month=self.month, year=self.year)
         context['monthly_budget'] = mbudget
         takehome_pay = self.object.return_takehome_pay_month_year(self.month, self.year)
         context['takehome_pay'] = takehome_pay
@@ -150,6 +153,22 @@ class ExpenseForUserView(FormView):
         return context
 
 
+class ExpenseLookupForUserView(FormView):
+    form_class = UserExpenseLookupForm
+    template_name = 'finances/expense_lookup_form_for_user.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        self.user = User.objects.get(pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.user
+        return kwargs
+
+
+
 class UserWorkRelatedIncomeView(FormView):
 
     form_class = UserWorkIncomeExpenseForm
@@ -197,6 +216,9 @@ class MonthlyBudgetForUserViewMonthYear(FormView):
         context['est_disc'] = budget_disc
 
         return context
+
+
+
 
 
 class ExpenseDeleteView(DeleteView):
