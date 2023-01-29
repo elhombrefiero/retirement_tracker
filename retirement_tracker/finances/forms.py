@@ -1,7 +1,7 @@
 from django import forms
 from django.utils.timezone import now
 
-from finances.models import User, Expense, Account, TradingAccount, RetirementAccount, MonthlyBudget
+from finances.models import User, Expense, Account, TradingAccount, RetirementAccount, MonthlyBudget, Income
 
 FORM_BUDGET_GROUP_CHOICES = (
     (None, None),
@@ -11,6 +11,7 @@ FORM_BUDGET_GROUP_CHOICES = (
     ('Discretionary', 'Discretionary'),
     ('Statutory', 'Statutory'),
 )
+
 
 class UserForm(forms.ModelForm):
     """ Add a new user to the database"""
@@ -55,6 +56,14 @@ class ExpenseForUserForm(forms.ModelForm):
 
     class Meta:
         model = Expense
+        exclude = ['user']
+
+
+class IncomeForUserForm(forms.ModelForm):
+    """ Add income for a given user"""
+
+    class Meta:
+        model = Income
         exclude = ['user']
 
 

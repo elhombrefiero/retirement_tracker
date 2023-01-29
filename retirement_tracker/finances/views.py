@@ -11,7 +11,7 @@ from django.utils import timezone
 from datetime import datetime
 
 from finances.models import User, Account, Income, Expense, TradingAccount, RetirementAccount, MonthlyBudget
-from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, UserExpenseLookupForm
+from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, UserExpenseLookupForm, IncomeForUserForm
 
 
 # Create your views here.
@@ -40,6 +40,26 @@ class UserView(DetailView):
         return context
 
 
+class UserYearView(DetailView):
+    model = User
+    # TODO: Figure out any useful metrics for year view
+
+    def dispatch(self, request, *args, **kwargs):
+        self.year = kwargs['year']
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['accounts'] = Account.objects.filter(user=self.object)
+        tot_checking, tot_retirement, tot_trading, net_worth = \
+            self.object.return_net_worth_year(self.year)
+        context['net_worth'] = net_worth
+        context['year'] = self.year
+        ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_net_worth = \
+            self.object.return_net_worth_at_retirement()
+        context['projected_net_worth'] = ret_net_worth
+        return context
+
+
 class UserMonthYearView(DetailView):
     model = User
 
@@ -57,7 +77,7 @@ class UserMonthYearView(DetailView):
         context['month'] = self.month
         context['year'] = self.year
         ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_net_worth = \
-            self.object.return_net_worth_month_year(self.month, self.year)
+            self.object.return_net_worth_at_retirement()
         context['projected_net_worth'] = ret_net_worth
         date = datetime.strptime(f'{self.year}-{self.month}-01', '%Y-%B-%d')
         mbudget = MonthlyBudget.objects.get_or_create(user=self.object, date=date, month=self.month, year=self.year)
@@ -168,7 +188,6 @@ class ExpenseLookupForUserView(FormView):
         return kwargs
 
 
-
 class UserWorkRelatedIncomeView(FormView):
 
     form_class = UserWorkIncomeExpenseForm
@@ -218,9 +237,6 @@ class MonthlyBudgetForUserViewMonthYear(FormView):
         return context
 
 
-
-
-
 class ExpenseDeleteView(DeleteView):
     model = Expense
     success_url = '/finances'
@@ -238,6 +254,30 @@ class IncomeView(DetailView):
 class IncomeCreateView(CreateView):
     model = Income
     fields = '__all__'
+
+
+class IncomeForUserView(FormView):
+    """ Input an income for a user. """
+    form_class = Income
+    template_name = 'finances/income_form_for_user.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        self.user = User.objects.get(pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        six_months_prior = timezone.now() + relativedelta(months=-6)
+        incomes_six_months_prior = Income.objects.filter(user=self.user, date__gte=six_months_prior)
+        distinct_cat = list(incomes_six_months_prior.values_list('category', flat=True).distinct())
+        distinct_desc = list(incomes_six_months_prior.values_list('description', flat=True).distinct())
+        distinct_group = list(incomes_six_months_prior.values_list('group', flat=True).distinct())
+        context['user'] = self.user
+        context['distinct_cat'] = distinct_cat
+        context['distinct_desc'] = distinct_desc
+        context['distinct_group'] = distinct_group
+        return context
 
 
 class IncomeDeleteView(DeleteView):
