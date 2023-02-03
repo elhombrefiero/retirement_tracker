@@ -31,6 +31,9 @@ class UserView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_net_worth = \
+            self.object.return_net_worth_at_retirement()
+        context['projected_net_worth'] = ret_net_worth
         context['earliest_ret_date'] = self.object.get_earliest_retirement_date()
         context['retirement_date'] = self.object.return_retirement_datetime()
         context['accounts'] = Account.objects.filter(user=self.object)
@@ -80,7 +83,11 @@ class UserMonthYearView(DetailView):
             self.object.return_net_worth_at_retirement()
         context['projected_net_worth'] = ret_net_worth
         date = datetime.strptime(f'{self.year}-{self.month}-01', '%Y-%B-%d')
-        mbudget = MonthlyBudget.objects.get_or_create(user=self.object, date=date, month=self.month, year=self.year)
+        try:
+            mbudget = MonthlyBudget.objects.get(user=self.object, month=self.month, year=self.year)
+        except MonthlyBudget.DoesNotExist:
+            mbudget = MonthlyBudget.objects.create(user=self.object, date=date)
+            mbudget.save()
         context['monthly_budget'] = mbudget
         takehome_pay = self.object.return_takehome_pay_month_year(self.month, self.year)
         context['takehome_pay'] = takehome_pay
@@ -131,8 +138,8 @@ class AccountView(DetailView):
         context = super().get_context_data(**kwargs)
 
         # Get the latest incomes associated with this account
-        context['incomes'] = Income.objects.filter(account=self.object).order_by('-date')[:10]
-        context['expenses'] = Expense.objects.filter(account=self.object).order_by('-date')[:10]
+        context['incomes'] = Income.objects.filter(account=self.object).order_by('-date')
+        context['expenses'] = Expense.objects.filter(account=self.object).order_by('-date')
         context['balance'] = self.object.return_balance()
         return context
 
@@ -258,7 +265,7 @@ class IncomeCreateView(CreateView):
 
 class IncomeForUserView(FormView):
     """ Input an income for a user. """
-    form_class = Income
+    form_class = IncomeForUserForm
     template_name = 'finances/income_form_for_user.html'
 
     def dispatch(self, request, *args, **kwargs):
@@ -277,6 +284,7 @@ class IncomeForUserView(FormView):
         context['distinct_cat'] = distinct_cat
         context['distinct_desc'] = distinct_desc
         context['distinct_group'] = distinct_group
+
         return context
 
 

@@ -881,19 +881,19 @@ class Income(models.Model):
 class MonthlyBudget(models.Model):
     """ The monthly budgets set for a given user."""
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    date = models.DateField(name='Date', default=now)
+    date = models.DateField(default=now)
     month = models.CharField(max_length=18, null=True, blank=True)
     year = models.IntegerField(null=True, blank=True)
 
-    mandatory = models.FloatField()
-    statutory = models.FloatField()
-    mortgage = models.FloatField()
-    debts_goals_retirement = models.FloatField()
-    discretionary = models.FloatField()
+    mandatory = models.FloatField(default=0.0)
+    statutory = models.FloatField(default=0.0)
+    mortgage = models.FloatField(default=0.0)
+    debts_goals_retirement = models.FloatField(default=0.0)
+    discretionary = models.FloatField(default=0.0)
 
     def save(self, *args, **kwargs):
-        self.month = self.Date.strftime('%B')
-        self.year = int(self.Date.strftime('%Y'))
+        self.month = self.date.strftime('%B')
+        self.year = int(self.date.strftime('%Y'))
         super(MonthlyBudget, self).save(*args, **kwargs)
 
     def __str__(self):

@@ -1,6 +1,65 @@
 {% extends 'finances/master_template.html' %}
 
 {% block mymessage %}
-<h1>{{account.name}}</h1>
-<h2>{{balance}}</h2>
+<nav class="level is-mobile">
+    <div class="level-item has-text-centered">
+        <div>
+            <p class="heading">Account</p>
+            <p class="title"><a href="/finances/update_account/{{object.pk}}">{{object.name}}</a></p>
+        </div>
+    </div>
+    <div class="level-item has-text-centered">
+        <div>
+            <p class="heading">Balance</p>
+            <p class="title">{{balance}}</p>
+        </div>
+    </div>
+</nav>
+<!--Table of incomes and expenses-->
+<div class="columns">
+    <div class="column">
+        <p class="title">Incomes</p>
+    </div>
+    <div class="column">
+        <p class="title">Expenses</p>
+    </div>
+</div>
+<div class="columns">
+    <div class="column">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Description</th>
+                <th>Amount</th>
+            </tr>
+            </thead>
+            <tbody>
+                {% for income in incomes %}
+                <tr>
+                    <td><a href="/finances/income_overview/{{income.pk}}">{{income.description}}</a></td>
+                    <td>{{income.amount}}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="column">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Description</th>
+                <th>Amount</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for expense in expenses %}
+            <tr>
+                <td><a href="/finances/expense_overview/{{expense.pk}}">{{expense.description}}</a></td>
+                <td>{{expense.amount}}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

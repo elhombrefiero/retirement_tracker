@@ -95,6 +95,11 @@
         Monthly Budget
       </a>
       </div>
+      <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/add_work_income" class="dropdown-item">
+          Work Income
+        </a>
+      </div>
     </div>
   </div>
 </div>
@@ -138,7 +143,7 @@
     <tbody>
         {% for account in accounts %}
         <tr>
-            <td><a href="/finances/update_account/{{account.pk}}">{{account.name}}</a></td>
+            <td><a href="/finances/account_overview/{{account.pk}}">{{account.name}}</a></td>
             <td>{{account.return_balance}}</td>
         </tr>
         {% endfor %}
