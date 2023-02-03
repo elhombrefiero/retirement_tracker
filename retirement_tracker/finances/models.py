@@ -389,6 +389,26 @@ class User(models.Model):
 
         return user_earliest, user_latest
 
+    def get_month_year_date_range(self):
+        """ Used to get month/year pairings for the income/expense date range.
+
+            Used to lookup user information for a specific year
+        """
+        earliest, latest = self.get_earliest_latest_dates()
+        latest = latest + relativedelta(months=+1)  # Add month to encapsulate
+
+        date_json = {}
+        search_date = earliest
+
+        while search_date <= latest:
+            if search_date.year not in date_json:
+                date_json[search_date.year] = list()
+            date_json[search_date.year].append(search_date.strftime('%B'))
+
+            search_date = search_date + relativedelta(months=+1)
+
+        return date_json
+
     def __str__(self):
         return self.name
 

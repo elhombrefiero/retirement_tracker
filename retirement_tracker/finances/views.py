@@ -15,6 +15,7 @@ from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetFo
 
 
 # Create your views here.
+# TODO: Add views where the user can find month/year summaries and monthly budgets for user
 
 class IndexView(TemplateView):
 
