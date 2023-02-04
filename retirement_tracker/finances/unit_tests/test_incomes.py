@@ -13,7 +13,7 @@ from dateutil.relativedelta import relativedelta
 TEST_USER = 'TestUser'
 
 
-class IncomeTestCase(TestCase):
+class UserTestCase(TestCase):
     """ Test for various things in user,income.
     User is named TestUser, aged 65 (about to retire)
         Has two checking accounts, one savings account, one brokerage account, one stock account, one IRA, and one 401k
@@ -177,4 +177,37 @@ class IncomeTestCase(TestCase):
 
     def test_get_latest_date(self):
         """ Check the latest date of each account."""
+        self.skipTest('Implement later')
+
+    def test_return_net_worth(self):
+        self.skipTest('Implement later')
+
+    def test_return_net_worth_month_year(self):
+        self.skipTest('Implement later')
+
+    def test_return_net_worth_at_retirement(self):
+        self.skipTest('Implement later')
+
+    def test_return_checking_acct_total(self):
+        self.skipTest('Implement later')
+
+    def test_return_retirement_acct_total(self):
+        self.skipTest('Implement later')
+
+    def test_return_trading_acct_total(self):
+        self.skipTest('Implement later')
+
+    def test_estimate_retirement_finances(self):
+        self.skipTest('Implement later')
+
+    def test_return_budget_group_balances_up_to_month_year(self):
+        self.skipTest('Implement later')
+
+    def test_return_aggregated_monthly_expenses_by_budgetgroup(self):
+        self.skipTest('Implement later')
+
+    def test_return_tot_expenses_by_budget_month_year(self):
+        self.skipTest('Implement later')
+
+    def test_estimate_budget_for_month_year(self):
         self.skipTest('Implement later')
