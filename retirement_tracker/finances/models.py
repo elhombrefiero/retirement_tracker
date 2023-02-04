@@ -91,13 +91,13 @@ class User(models.Model):
         user_trade_accts = [acct.name for acct in TradingAccount.objects.filter(user=self)]
 
         for account in user_checking_accts:
-            tot_checking += account.return_balance_up_to_month_year(month, year)
+            tot_checking += account.return_balance_including_month_year(month, year)
 
         for account in user_ret_accts:
-            tot_retirement += account.return_balance_up_to_month_year(month, year)
+            tot_retirement += account.return_balance_including_month_year(month, year)
 
         for account in user_trade_accts:
-            tot_trading += account.return_balance_up_to_month_year(month, year)
+            tot_trading += account.return_balance_including_month_year(month, year)
 
         net_worth = tot_checking + tot_retirement + tot_trading
 
@@ -520,6 +520,15 @@ class Account(models.Model):
         all_expense = all_expense if all_expense is not None else 0.0
 
         return float(all_income) - float(all_expense)
+
+    def return_balance_including_month_year(self, month: str, year: int):
+        """ Returns the balance up to the end of the requested month/year"""
+        datetime_inclusive = datetime.strptime(f'{year}-{month}-01', '%Y-%B-%d')
+        datetime_inclusive = datetime_inclusive + relativedelta(months=+1)
+
+        balance = self.return_balance_up_to_month_year(datetime_inclusive.strftime('%B'), datetime_inclusive.year)
+
+        return balance
 
     def estimate_balance_month_year(self, month: str, year: int, num_of_years=0, num_of_months=6):
         """ Performs a linear interpolation of balance vs time given the average of the last entries in the account
