@@ -4,6 +4,7 @@ from django.utils.timezone import now
 from django.utils.text import slugify
 from django.shortcuts import reverse
 
+from datetime import date
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
@@ -14,9 +15,6 @@ BUDGET_GROUP_CHOICES = (
     ('Discretionary', 'Discretionary'),
     ('Statutory', 'Statutory'),
 )
-
-
-# TODO: Create a DebtAccount
 
 
 class User(models.Model):
@@ -210,12 +208,7 @@ class User(models.Model):
     def return_checking_accts(self):
         """ Returns only the checking account objects"""
 
-        user_ret_accts = [acct.name for acct in RetirementAccount.objects.filter(user=self)]
-        user_trade_accts = [acct.name for acct in TradingAccount.objects.filter(user=self)]
-        user_accounts = self.account_set.all()
-
-        user_accounts = user_accounts.exclude(name__in=user_ret_accts)
-        user_accounts = user_accounts.exclude(name__in=user_trade_accts)
+        user_accounts = CheckingAccount.objects.filter(user=self)
 
         return user_accounts
 
@@ -418,7 +411,6 @@ class Account(models.Model):
 
     Name
     URL
-    Monthly interest in percent (Use 0.0 for checking accounts)
 
     Database relations:
         User
@@ -436,8 +428,6 @@ class Account(models.Model):
     name = models.CharField(max_length=160)
     url = models.URLField(name="Account URL", blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    monthly_interest_pct = models.DecimalField(verbose_name='Monthly interest in percent',
-                                               max_digits=4, decimal_places=2, default=0.0)
 
     def return_balance(self):
         """ Calculates the balance for all time."""
@@ -535,30 +525,43 @@ class Account(models.Model):
 
         By default uses data from six months before the requested month/year for the extrapolation.
 
-         f(x) = y1 + ((x – x1) / (x2 – x1)) * (y2 – y1)
+         For linear interpolation/extrapolation
+
+        Calculate the slope m using:
+            m = (y2-y1)/(t2-t1)
+
+            where:
+                t1: Time where interpolation/extrapolation occurs
+                t2: Time at requested time
+                y1: Balance at time t1
+                y2: Balance at time t2
+
+            Times will be converted to ordinal
+
+            Calculate amount using:
+                y = y1 + m * (t - t1)
 
         """
-        # TODO: Determine whether to interpolate or extrapolate based on the given month/year
         req_date = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
-        req_date_seconds_epoch = req_date.timestamp()  # x
+        req_date_ord = req_date.toordinal()  # t
 
         latest_date = self.return_latest_date()
-        latest_date_seconds_epoch = latest_date.timestamp()  # x2
+        latest_date_ord = latest_date.toordinal()  # t2
         latest_date_month = latest_date.strftime('%B')
         latest_date_year = latest_date.strftime('%Y')
-        balance_at_latest_date = self.return_balance_up_to_month_year(latest_date_month, latest_date_year)  # y2
+        balance_at_t2 = self.return_balance_up_to_month_year(latest_date_month, latest_date_year)  # y2
 
         time_prior = latest_date + relativedelta(years=-1 * num_of_years) + relativedelta(months=-1 * num_of_months)
-        time_prior_seconds_epoch = time_prior.timestamp()  # x1
+        time_prior_ord = time_prior.timestamp()  # t1
         time_prior_month = time_prior.strftime('%B')
         time_prior_year = time_prior.strftime('%Y')
-        balance_at_time_prior = self.return_balance_up_to_month_year(time_prior_month, time_prior_year)  # y1
+        balance_at_t1 = self.return_balance_up_to_month_year(time_prior_month, time_prior_year)  # y1
 
-        estimated_balance = balance_at_time_prior + (req_date_seconds_epoch - time_prior_seconds_epoch) * (
-                balance_at_latest_date - balance_at_time_prior) / (
-                                    latest_date_seconds_epoch - time_prior_seconds_epoch)
+        m = (balance_at_t2 - balance_at_t1) / (latest_date_ord - time_prior_ord)
 
-        return estimated_balance
+        y = balance_at_t1 + m * (req_date_ord - time_prior_ord)
+
+        return y
 
     def return_latest_date(self):
         """ Looks at all entries and determines the latest database date for the account."""
@@ -577,15 +580,62 @@ class Account(models.Model):
         return earliest_date
 
     def return_time_to_reach_amount(self, amount: float, num_of_months=6):
-        """ Calculates the time to reach a certain amount based on the trendline from the previous few months"""
-        # TODO: Complete this one
-        return {'time': 0.0}
+        """ Calculates the time to reach a certain amount based on the trendline from the previous few months
+
+        For linear interpolation/extrapolation
+
+        Calculate the slope m using:
+            m = (y2-y1)/(x2-x1)
+
+            where:
+                x1: the total amount at a point in time requested, y1 (default 6 months)
+                x2: the total amount at the current point in time, y2
+
+        The times will be converted to ordinal
+
+        Calculate the date using:
+            y = y1 + m * (x - x1)
+
+        """
+        y2 = self.return_latest_date()
+        y1 = y2 + relativedelta(months=num_of_months)
+
+        x2 = self.return_balance_up_to_month_year(y2.strftime('%B'), y2.year)
+        x1 = self.return_balance_up_to_month_year(y1.strftime('%B'), y1.year)
+
+        y2_ord = y2.toordinal()
+        y1_ord = y1.toordinal()
+
+        m = (y2_ord - y1_ord) / (x2 - x1)
+
+        time_to_reach_ord = y1_ord + m * (amount - x1)
+
+        time_to_reach = date.fromordinal(time_to_reach_ord)
+
+        return time_to_reach
 
     def get_absolute_url(self):
         return reverse('finances:account_overview', args=[self.pk])
 
     def __str__(self):
         return self.name
+
+
+class CheckingAccount(Account):
+    """ Checking account for User"""
+
+    monthly_interest_pct = models.DecimalField(verbose_name='Monthly interest in percent',
+                                               max_digits=4, decimal_places=2, default=0.0)
+
+
+class DebtAccount(Account):
+    """ Debt Account for User
+
+        Similar to a trading account.
+    """
+
+    def return_date_debt_paid(self):
+        return self.return_time_to_reach_amount(0.0)
 
 
 class Withdrawal(models.Model):
