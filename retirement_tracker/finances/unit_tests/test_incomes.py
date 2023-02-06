@@ -4,13 +4,31 @@
 from django.test import TestCase
 
 # Other Imports
-from finances.models import User, Account, Income, Expense, RetirementAccount, TradingAccount, Deposit, Withdrawal
+from finances.models import User, Income, Expense, RetirementAccount, TradingAccount, Deposit, Withdrawal, CheckingAccount
 from django.utils.timezone import now
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 
 TEST_USER = 'TestUser'
+
+
+class UserWithDebtAccount(TestCase):
+    """ User is 35 years old and has one Debt Account and make recurring payments on it.
+
+        Debt = 30,000
+        Yearly Interest Rate = 4.5%
+
+        Start date of the loan is today
+
+        Based on Excel's amortization schedule, a user can pay 36 monthly payments of 892.41
+
+        Error check that user cannot deposit when the balance is zero.
+        Verify that the
+    """
+
+    def test_cumulative_income_expense(self):
+        self.skipTest('Implement later')
 
 
 class UserTestCase(TestCase):
@@ -44,11 +62,11 @@ class UserTestCase(TestCase):
         user1_date_of_birth = (first_day_of_month + relativedelta(years=-65)).strftime('%Y-%m-%d')
         date_15years_ago = first_day_of_month + relativedelta(years=-15)
         user = User.objects.create(name=TEST_USER, date_of_birth=user1_date_of_birth, retirement_age=65.0)
-        caccount = Account.objects.create(user=user, name='Test_Checking1')
-        caccount2 = Account.objects.create(user=user, name='Test_Checking2')
-        saccount = Account.objects.create(user=user, name='Test_Savings')
+        caccount = CheckingAccount.objects.create(user=user, name='Test_Checking1')
+        caccount2 = CheckingAccount.objects.create(user=user, name='Test_Checking2')
+        saccount = CheckingAccount.objects.create(user=user, name='Test_Savings',monthly_interest_pct=5.0)
         tacct = TradingAccount.objects.create(user=user, name='Test_Brokerage')
-        ret_401k = RetirementAccount.objects.create(user=user, name='Test_401k')
+        ret_401k = RetirementAccount.objects.create(user=user, name='Test_401k', target_amount=1000000.0)
         Income.objects.create(user=user, account=caccount, date=first_day_of_month, category='TestCategory', description='TestDescription', amount=50.0)
         Income.objects.create(user=user, account=caccount, date=last_day_of_month, category='TestCategory', description='TestDescription', amount=75.0)
         Income.objects.create(user=user, account=caccount2, date=first_day_of_month, category='TestCategory', description='TestDescription', amount=10.0)
@@ -66,7 +84,7 @@ class UserTestCase(TestCase):
     def test_deposit_created_with_income(self):
         today_date = now()
         first_day_of_month = datetime.strptime(today_date.strftime('%Y-%m-01'), '%Y-%m-%d')
-        caccount = Account.objects.get(name='Test_Checking1')
+        caccount = CheckingAccount.objects.get(name='Test_Checking1')
         try:
             dep_obj = Deposit.objects.get(account=caccount,
                                           date=first_day_of_month,
@@ -78,7 +96,7 @@ class UserTestCase(TestCase):
     def test_withdrawal_created_with_expense(self):
         today_date = now()
         first_day_of_month = datetime.strptime(today_date.strftime('%Y-%m-01'), '%Y-%m-%d')
-        caccount = Account.objects.get(name='Test_Checking1')
+        caccount = CheckingAccount.objects.get(name='Test_Checking1')
         try:
             with_obj = Withdrawal.objects.get(account=caccount,
                                               date=first_day_of_month,
@@ -99,7 +117,7 @@ class UserTestCase(TestCase):
          Balance in the first and second months should be 25.0
 
              """
-        caccount = Account.objects.get(name='Test_Checking1')
+        caccount = CheckingAccount.objects.get(name='Test_Checking1')
         cacct_balance = caccount.return_balance()
 
         self.assertEqual(cacct_balance, 25.0)
