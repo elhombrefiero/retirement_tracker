@@ -61,6 +61,11 @@ class Command(BaseCommand):
         with open(budget_old) as fileobj:
             budgets = json.load(fileobj)
         for monthly_budget in monthly_budgets:
+            # TODO: Try to find a more elegant solution here
+            for budget in budgets:
+                budget_dict = budget
+                if monthly_budget['id'] not in budget:
+                    continue
             try:
                 mbudget_new = MonthlyBudget.objects.get(month=monthly_budget['month'], year=monthly_budget['year'])
                 if not update_existing:
@@ -70,8 +75,7 @@ class Command(BaseCommand):
                     if yn.lower().startwith('n'):
                         continue
             except MonthlyBudget.DoesNotExist:
-                mb_date = datetime.datetime.strptime(f'{monthly_budget["month"]}-01-{monthly_budget["year"]}', '%B-%d-%Y')
-                mbudget_new = MonthlyBudget.objects.create(date=mb_date)
+                mbudget_new = MonthlyBudget.objects.create(date=monthly_budget["date"])
 
             print(monthly_budget['id'])
 
