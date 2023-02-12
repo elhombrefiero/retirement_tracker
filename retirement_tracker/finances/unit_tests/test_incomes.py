@@ -4,9 +4,10 @@
 from django.test import TestCase
 
 # Other Imports
-from finances.models import User, Income, Expense, RetirementAccount, TradingAccount, Deposit, Withdrawal, CheckingAccount
+from finances.models import User, Income, Expense, RetirementAccount, TradingAccount, Deposit, Withdrawal, CheckingAccount, DebtAccount
 from django.utils.timezone import now
 from datetime import datetime
+from datetime import date
 from dateutil.relativedelta import relativedelta
 
 
@@ -21,14 +22,32 @@ class UserWithDebtAccount(TestCase):
 
         Start date of the loan is today
 
-        Based on Excel's amortization schedule, a user can pay 36 monthly payments of 892.41
+        Based on Excel's amortization schedule, a user can pay off the loan in 36 monthly payments of 892.41
 
         Error check that user cannot deposit when the balance is zero.
-        Verify that the
+        Verify that the balance will be zero at 36 months
     """
 
-    def test_cumulative_income_expense(self):
-        self.skipTest('Implement later')
+    def test_time_to_reach(self):
+        payment_amt = 892.41
+        current_date = now()
+        dob = current_date + relativedelta(years=-35)
+        user_debt = User.objects.create(name=TEST_USER, date_of_birth=dob)
+        user_debt.save()
+        debt_acct = DebtAccount(name='TESTDEBT', user=user_debt, yearly_interest_pct=4.5)
+        debt_acct.save()
+        new_withdrawal = Withdrawal.objects.create(account=debt_acct, description=current_date.strftime('%B, %Y'),
+                                                   date=current_date, amount=30000)
+        payment_date = current_date + relativedelta(months=+1)
+        for i in range(36):
+            new_dep = Deposit.objects.create(account=debt_acct, date=payment_date,
+                                             description=payment_date.strftime('%B, %Y'), amount=payment_amt)
+
+        paid_off = debt_acct.return_date_debt_paid()
+        comparison_date = current_date + relativedelta(months=+36)
+        comparison_date_ord = comparison_date.toordinal()
+        comparison_date = date.fromordinal(int(comparison_date_ord))
+        self.assertEqual(paid_off, comparison_date)
 
 
 class UserTestCase(TestCase):

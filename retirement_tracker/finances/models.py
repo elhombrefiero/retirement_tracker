@@ -610,7 +610,7 @@ class Account(models.Model):
 
         time_to_reach_ord = y1_ord + m * (amount - x1)
 
-        time_to_reach = date.fromordinal(time_to_reach_ord)
+        time_to_reach = date.fromordinal(int(time_to_reach_ord))
 
         return time_to_reach
 
@@ -633,6 +633,8 @@ class DebtAccount(Account):
 
         Similar to a trading account.
     """
+    yearly_interest_pct = models.DecimalField(verbose_name='Yearly interest in percent',
+                                              max_digits=4, decimal_places=2, default=0.0)
 
     def return_date_debt_paid(self):
         return self.return_time_to_reach_amount(0.0)
