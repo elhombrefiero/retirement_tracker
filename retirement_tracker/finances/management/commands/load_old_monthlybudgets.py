@@ -41,6 +41,8 @@ class Command(BaseCommand):
             print(f'Old budget file {budget_old} does not exist.')
             return
 
+        number_updated = 0
+
         # Check if the user exists or create a new one.
         try:
             user = User.objects.get(name=input_user)
@@ -61,21 +63,33 @@ class Command(BaseCommand):
         with open(budget_old) as fileobj:
             budgets = json.load(fileobj)
         for monthly_budget in monthly_budgets:
-            # TODO: Try to find a more elegant solution here
+            mbdate = datetime.datetime.strptime(monthly_budget['date'], '%Y-%m-%d')
             for budget in budgets:
-                budget_dict = budget
-                if monthly_budget['id'] not in budget:
-                    continue
+                if monthly_budget['id'] == budget['id']:
+                    budget_dict = budget
+            if budget_dict['id'] != monthly_budget['id']:
+                print(f"Could not find specific budget for {monthly_budget['month']}, {monthly_budget['year']}")
+                continue
             try:
-                mbudget_new = MonthlyBudget.objects.get(month=monthly_budget['month'], year=monthly_budget['year'])
-                if not update_existing:
-                    yn = input(f'{mbudget_new.name} already exists and update_existing is false. Overwrite? ([y]es or [n]o or [q]uit )')
-                    if yn.lower().startswith('q'):
-                        return
-                    if yn.lower().startwith('n'):
-                        continue
-            except MonthlyBudget.DoesNotExist:
-                mbudget_new = MonthlyBudget.objects.create(date=monthly_budget["date"])
+                mbudget_new = MonthlyBudget.objects.get(user=user, month=monthly_budget['month'], year=monthly_budget['year'])
+                if mbudget_new:
+                    if not update_existing:
+                        yn = input(f'Monthly budget for {monthly_budget["month"]}, {monthly_budget["year"]} already exists and update_existing is false. Overwrite? ([y]es or [n]o or [q]uit )')
+                        if yn.lower().startswith('q'):
+                            return
+                        if yn.lower().startwith('n'):
+                            continue
+            except:
+                mbudget_new = MonthlyBudget.objects.create(user=user, date=mbdate)
+            finally:
+                mbudget_new.user = user
+                mbudget_new.date = mbdate
+                mbudget_new.mandatory = budget_dict['mandatory']
+                mbudget_new.statutory = budget_dict['statutory']
+                mbudget_new.mortgage = budget_dict['mortgage']
+                mbudget_new.debts_goals_retirement = budget_dict['debts_goals_retirement']
+                mbudget_new.discretionary = budget_dict['discretionary']
+                mbudget_new.save()
+                number_updated += 1
 
-            print(monthly_budget['id'])
-
+        self.stdout.write(self.style.SUCCESS(f'Successfully added {number_updated} monthly budgets to {input_user}'))
