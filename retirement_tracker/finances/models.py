@@ -985,3 +985,13 @@ class MonthlyBudget(models.Model):
 
     class Meta:
         unique_together = ['month', 'year']
+
+
+class Interest(models.Model):
+    """ Interest tracking for individual accounts.
+
+    """
+    account = models.ForeignKey(Account, on_delete=models.CASCADE)
+    date = models.DateField(default=now)
+    amount = models.DecimalField(max_digits=8, decimal_places=2)
+

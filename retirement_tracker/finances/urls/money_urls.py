@@ -18,6 +18,8 @@ urlpatterns = [
     path('user/<int:pk>/add_expense', views.ExpenseForUserView.as_view(), name='user_add_expense'),
     # Ex. /finances/user/1/add_income
     path('user/<int:pk>/add_income', views.IncomeForUserView.as_view(), name='user_add_income'),
+    # Ex. /finances/user/1/add_monthly_budget
+    path('user/<int:pk>/add_monthly_budget', views.MonthlyBudgetForUserView.as_view(), name='user_add_monthly_budget'),
     # Ex. /finances/usr/1/January/2022
     path('user/<int:pk>/<str:month>/<int:year>/', views.UserMonthYearView.as_view(), name='user_month_year'),
     # Ex. /finances/user/1/January/2022/add_monthly_budget
