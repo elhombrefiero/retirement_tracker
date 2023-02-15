@@ -116,7 +116,14 @@ class UserExpenseLookupForm(forms.Form):
 
 
 class MonthlyBudgetForUserForm(forms.ModelForm):
-    """ Add a monthly budget for a given user"""
+    """ Add a monthly budget for a given user."""
+    class Meta:
+        model = MonthlyBudget
+        exclude = ['user', 'month', 'year']
+
+
+class MonthlyBudgetForUserMonthYearForm(forms.ModelForm):
+    """ Add a monthly budget for a given user, month and year"""
 
     class Meta:
         model = MonthlyBudget

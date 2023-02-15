@@ -11,7 +11,7 @@ from django.utils import timezone
 from datetime import datetime
 
 from finances.models import User, Account, Income, Expense, TradingAccount, RetirementAccount, MonthlyBudget
-from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, UserExpenseLookupForm, IncomeForUserForm
+from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, UserExpenseLookupForm, IncomeForUserForm, MonthlyBudgetForUserMonthYearForm
 
 
 # Create your views here.
@@ -181,6 +181,9 @@ class ExpenseForUserView(FormView):
         return context
 
 
+
+
+
 class ExpenseLookupForUserView(FormView):
     form_class = UserExpenseLookupForm
     template_name = 'finances/expense_lookup_form_for_user.html'
@@ -217,9 +220,25 @@ class UserWorkRelatedIncomeView(FormView):
         return kwargs
 
 
-class MonthlyBudgetForUserViewMonthYear(FormView):
+class MonthlyBudgetForUserView(FormView):
 
     form_class = MonthlyBudgetForUserForm
+    template_name = 'finances/monthlybudget_form_for_user.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        self.user = User.objects.get(pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.user
+        return context
+
+
+class MonthlyBudgetForUserViewMonthYear(FormView):
+
+    form_class = MonthlyBudgetForUserMonthYearForm
     template_name = 'finances/monthlybudget_form_for_user.html'
 
     def dispatch(self, request, *args, **kwargs):
