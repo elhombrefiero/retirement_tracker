@@ -4,6 +4,7 @@
 from pathlib import Path
 import os
 import json
+import datetime
 
 # Other Imports
 from django.core.management.base import BaseCommand
@@ -12,6 +13,7 @@ from finances.models import User, Expense, Income, CheckingAccount, RetirementAc
 
 # Defined Functions:
 #   import_old_accounts - Imports the old income, expenses, and account info from the money project
+
 
 class Command(BaseCommand):
     help = 'Loads the data from the money format to the new format.'
@@ -57,11 +59,12 @@ class Command(BaseCommand):
         with open(acct_file) as fileobj:
             acct_json = json.load(fileobj)
 
+        acct_id = None
         for acct in acct_json:
             acct_id = acct['id']
             if acct['name'] == old_acct_name:
                 break
-        if acct['name'] != old_acct_name:
+        if acct['name'] != old_acct_name or acct_id is None:
             print(f'Could not find matching old account name {old_acct_name}')
             return
 
@@ -94,8 +97,45 @@ class Command(BaseCommand):
             return
 
         with open(income_file) as fileobj:
-            income_json = json.load(fileobj)
+            incomes = json.load(fileobj)
         with open(expense_file) as fileobj:
-            expense_json = json.load(fileobj)
+            expenses = json.load(fileobj)
+
+        for income in incomes:
+            if not income['account_id'] == acct_id:
+                continue
+            inc_date = datetime.datetime.strptime(income['income_date'], '%Y-%m-%d')
+            obj, created = Income.objects.update_or_create(
+                user=user,
+                account=acct,
+                date=inc_date,
+                description=income['description'],
+                defaults={'amount': income['amount'],
+                          'category': income['category'],
+                          'group': income['group']
+                          }
+            )
+            obj.save()
+            num_of_incomes += 1
+
+        for expense in expenses:
+            if not expense['account_id'] == acct_id:
+                continue
+            exp_date = datetime.datetime.strptime(expense['expense_date'], '%Y-%m-%d')
+            obj, created = Expense.objects.update_or_create(
+                user=user,
+                account=acct,
+                date=exp_date,
+                description=expense['description'],
+                defaults={'amount': expense['amount'],
+                          'budget_group': expense['budget_group'],
+                          'category': expense['category'],
+                          'where_bought': expense['where_bought'],
+                          'group': expense['group']}
+            )
+            obj.save()
+            num_of_expenses += 1
+
+        self.stdout.write(self.style.SUCCESS(f'Successfully added {num_of_incomes} incomes and {num_of_expenses} expenses for {user}'))
 
 
