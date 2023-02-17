@@ -483,7 +483,7 @@ class Account(models.Model):
         return_latest_date: returns the latest database date for the account
     """
     name = models.CharField(max_length=160)
-    url = models.URLField(name="Account URL", blank=True)
+    url = models.URLField(verbose_name="Account URL", blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def return_balance(self):

@@ -10,7 +10,8 @@ from django.utils import timezone
 
 from datetime import datetime
 
-from finances.models import User, Account, Income, Expense, TradingAccount, RetirementAccount, MonthlyBudget
+from finances.models import User, Account, CheckingAccount, DebtAccount, Income, Expense, TradingAccount, \
+    RetirementAccount, MonthlyBudget
 from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, \
     UserExpenseLookupForm, IncomeForUserForm, MonthlyBudgetForUserMonthYearForm, AddDebtAccountForm, \
     AddCheckingAccountForm, AddRetirementAccountForm, AddTradingAccountForm
@@ -20,7 +21,6 @@ from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetFo
 # TODO: Add views where the user can find month/year summaries and monthly budgets for user
 
 class IndexView(TemplateView):
-
     template_name = 'finances/index.html'
 
     def get_context_data(self, **kwargs):
@@ -48,6 +48,7 @@ class UserView(DetailView):
 
 class UserYearView(DetailView):
     model = User
+
     # TODO: Figure out any useful metrics for year view
 
     def dispatch(self, request, *args, **kwargs):
@@ -226,6 +227,16 @@ class CheckingAccountForUserView(FormView):
         context['user'] = self.user
         return context
 
+    def form_valid(self, form):
+        post = self.request.POST
+        newchecking = CheckingAccount.objects.create(user=self.user,
+                                                     name=post['name'],
+                                                     url=post['Account URL'],
+                                                     monthly_interest_pct=float(post['monthly_interest_pct']))
+        newchecking.save()
+        self.success_url = f'/finances/user/{self.user.pk}'
+        return super().form_valid(form)
+
 
 class DebtAccountForUserView(FormView):
     form_class = AddDebtAccountForm
@@ -241,6 +252,16 @@ class DebtAccountForUserView(FormView):
         context = super().get_context_data(**kwargs)
         context['user'] = self.user
         return context
+
+    def form_valid(self, form):
+        post = self.request.POST
+        newdebtacct = DebtAccount.objects.create(user=self.user,
+                                                 name=post['name'],
+                                                 url=post['url'],
+                                                 yearly_interest_pct=float(post['yearly_interest_pct']))
+        newdebtacct.save()
+        self.success_url = f'/finances/user/{self.user.pk}'
+        return super().form_valid(form)
 
 
 class RetirementAccountForUserView(FormView):
@@ -258,6 +279,17 @@ class RetirementAccountForUserView(FormView):
         context['user'] = self.user
         return context
 
+    def form_valid(self, form):
+        post = self.request.POST
+        newretacct = RetirementAccount.objects.create(user=self.user,
+                                                      name=post['name'],
+                                                      url=post['url'],
+                                                      yearly_withdrawal_rate=float(post['yearly_withdrawal_rate']),
+                                                      target_amount=post['target_amount'])
+        newretacct.save()
+        self.success_url = f'/finances/user/{self.user.pk}'
+        return super().form_valid(form)
+
 
 class TradingAccountForUserView(FormView):
     form_class = AddTradingAccountForm
@@ -274,6 +306,16 @@ class TradingAccountForUserView(FormView):
         context['user'] = self.user
         return context
 
+    def form_valid(self, form):
+        post = self.request.POST
+        newtradeacct = TradingAccount.objects.create(user=self.user,
+                                                     name=post['name'],
+                                                     url=post['url'],
+                                                     )
+        newtradeacct.save()
+        self.success_url = f'/finances/user/{self.user.pk}'
+        return super().form_valid(form)
+
 
 class ExpenseView(DetailView):
     model = Expense
@@ -285,7 +327,6 @@ class ExpenseCreateView(CreateView):
 
 
 class ExpenseForUserView(FormView):
-
     form_class = ExpenseForUserForm
     template_name = 'finances/expense_form_for_user.html'
 
@@ -327,7 +368,6 @@ class ExpenseLookupForUserView(FormView):
 
 
 class UserWorkRelatedIncomeView(FormView):
-
     form_class = UserWorkIncomeExpenseForm
     template_name = 'finances/user_work_income_form.html'
 
@@ -348,7 +388,6 @@ class UserWorkRelatedIncomeView(FormView):
 
 
 class MonthlyBudgetForUserView(FormView):
-
     form_class = MonthlyBudgetForUserForm
     template_name = 'finances/monthlybudget_form_for_user.html'
 
@@ -364,7 +403,6 @@ class MonthlyBudgetForUserView(FormView):
 
 
 class MonthlyBudgetForUserViewMonthYear(FormView):
-
     form_class = MonthlyBudgetForUserMonthYearForm
     template_name = 'finances/monthlybudget_form_for_user.html'
     success_url = f'/finances/'
