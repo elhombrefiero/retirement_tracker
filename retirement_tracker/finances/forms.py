@@ -127,7 +127,7 @@ class MonthlyBudgetForUserMonthYearForm(forms.ModelForm):
 
     class Meta:
         model = MonthlyBudget
-        exclude = ['user', 'Date', 'month', 'year']
+        exclude = ['user', 'date', 'month', 'year']
 
 
 class ExpenseByLocForm(forms.ModelForm):

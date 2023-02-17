@@ -1,0 +1,26 @@
+{% extends 'finances/master_template.html' %}
+
+{% block header_extra %}
+    <Title>Reports for {{object.name}}</Title>
+{% endblock %}
+
+{% block mymessage %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>Year</th>
+            <th>Month</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for year, month_list in reports_year_month.items %}
+        <tr>
+            <td><a href="/finances/user/{{object.pk}}/{{year}}">{{year}}</a></td>
+            {% for month in month_list %}
+            <td><a href="/finances/user/{{object.pk}}/{{month}}/{{year}}">{{month}}</a></td>
+            {% endfor %}
+        {% endfor %}
+        </tr>
+    </tbody>
+</table>
+{% endblock %}

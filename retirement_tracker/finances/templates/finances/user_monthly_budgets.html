@@ -1,0 +1,26 @@
+{% extends 'finances/master_template.html' %}
+
+{% block header_extra %}
+    <Title>Monthly Budgets for {{object.name}}</Title>
+{% endblock %}
+
+{% block mymessage %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>Year</th>
+            <th>Month</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for year, month_list in reports_year_month.items %}
+        <tr>
+            <td>{{year}}</td>
+            {% for month in month_list %}
+            <td><a href="/finances/user/{{object.pk}}/{{month}}/{{year}}/view_monthly_budget">{{month}}</a></td>
+            {% endfor %}
+        {% endfor %}
+        </tr>
+    </tbody>
+</table>
+{% endblock %}

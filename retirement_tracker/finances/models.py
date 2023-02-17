@@ -101,6 +101,11 @@ class User(models.Model):
 
         return tot_checking, tot_retirement, tot_trading, net_worth
 
+    def return_net_worth_year(self, year:int):
+
+        tot_checking, tot_retirement, tot_trading, net_worth = self.return_net_worth_month_year('December', year)
+        return tot_checking, tot_retirement, tot_trading, net_worth
+
     def return_net_worth_at_retirement(self):
         ret_date = self.return_retirement_datetime()
         ret_date = ret_date + relativedelta(months=+1)
@@ -381,6 +386,55 @@ class User(models.Model):
                           user_incomes.latest('date').date)
 
         return user_earliest, user_latest
+
+    def return_year_month_for_reports(self):
+        """ Returns a dictionary of months and years for the user reports
+
+            year_date = {
+                2022 = [November, December]
+                2023 = [January, February, March]
+                }
+        """
+        earliest, latest = self.get_earliest_latest_dates()
+        mydate = earliest
+        return_dates = {}
+        while mydate < latest:
+            year = mydate.year
+            month = datetime.strptime(str(mydate.month), '%m').strftime('%B')
+            if year not in return_dates.keys():
+                return_dates[year] = []
+            return_dates[year].append(month)
+            mydate = mydate + relativedelta(months=+1)
+
+        return return_dates
+
+    def return_year_month_for_monthly_budgets(self):
+        """ Returns a dictionary of months and years for the user's monthly budgets.
+        The return data is formatted as such:
+
+        year_month = {
+            year: [
+                month: {name: January, exists: True}
+                ]
+            }
+        """
+        user_monthly_budgets = MonthlyBudget.objects.filter(user=self)
+        earliest = user_monthly_budgets.earliest('date').date
+        latest = user_monthly_budgets.latest('date').date
+        year_month = {}
+        mydate = earliest
+        while mydate < latest:
+            year = mydate.year
+            month = datetime.strptime(str(mydate.month), '%m').strftime('%B')
+            exists = True
+            if year not in year_month:
+                year_month[year] = []
+            try:
+                mb = MonthlyBudget.objects.get(user=self, month=month, year=year)
+            except MonthlyBudget.DoesNotExist:
+                exists = False
+            year_month[year].append({'name': month, exists: exists})
+        return year_month
 
     def get_month_year_date_range(self):
         """ Used to get month/year pairings for the income/expense date range.

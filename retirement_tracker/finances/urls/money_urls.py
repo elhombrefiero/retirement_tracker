@@ -20,11 +20,18 @@ urlpatterns = [
     path('user/<int:pk>/add_income', views.IncomeForUserView.as_view(), name='user_add_income'),
     # Ex. /finances/user/1/add_monthly_budget
     path('user/<int:pk>/add_monthly_budget', views.MonthlyBudgetForUserView.as_view(), name='user_add_monthly_budget'),
+    # Ex. /finances/user/1/reports
+    path('user/<int:pk>/reports', views.UserReportsAvailable.as_view(), name='user_available_reports'),
+    # Ex. /finances/user/1/monthly_budgets
+    path('user/<int:pk>/monthly_budgets', views.UserMonthlyBudgetsAvailable.as_view(), name='user_available_monthly_budgets'),
+    # Ex. /finances/user/1/2022
+    path('user/<int:pk>/<int:year>', views.UserYearView.as_view(), name='user_year'),
     # Ex. /finances/usr/1/January/2022
     path('user/<int:pk>/<str:month>/<int:year>/', views.UserMonthYearView.as_view(), name='user_month_year'),
     # Ex. /finances/user/1/January/2022/add_monthly_budget
-    path('user/<int:pk>/<str:month>/<int:year>/add_monthly_budget', views.MonthlyBudgetForUserViewMonthYear.as_view(),
+    path('user/<int:pk>/<str:month>/<int:year>/add_monthly_budget', views.MonthlyBudgetForUserView.as_view(),
          name='user_add_monthly_budget_month_year'),
+    path('user/<int:pk>/<str:month>/<int:year>/view_monthly_budget', views.MonthlyBudgetForUserViewMonthYear.as_view(), name='user_monthly_budget'),
     # Ex. /finances/user/1/lookup_expenses
     path('user/<int:pk>/lookup_expenses', views.ExpenseLookupForUserView.as_view(), name='user_expense_lookup'),
     # Ex. /finances/user/1/add_work_income

@@ -50,6 +50,7 @@ class UserYearView(DetailView):
 
     def dispatch(self, request, *args, **kwargs):
         self.year = kwargs['year']
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -99,6 +100,27 @@ class UserMonthYearView(DetailView):
         context['tot_debts_goals_retirement_expenses'] = dgr_exp
         context['tot_discretionary_expenses'] = disc_exp
         context['tot_statutory_expenses'] = stat_exp
+        return context
+
+
+class UserReportsAvailable(DetailView):
+    model = User
+    template_name = 'finances/user_reports.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        year_month_dict = self.object.return_year_month_for_reports()
+        context['reports_year_month'] = year_month_dict
+        return context
+
+
+class UserMonthlyBudgetsAvailable(DetailView):
+    model = User
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        year_month_dict = self.object.return_year_month_for_monthly_budgets()
+        context['monthly_budgets_year_month'] = year_month_dict
         return context
 
 
