@@ -2,7 +2,7 @@ from dateutil.relativedelta import relativedelta
 from django.shortcuts import render, HttpResponseRedirect, HttpResponse
 from django.core.exceptions import BadRequest
 from django.forms import formset_factory
-from django.views.generic import DetailView, TemplateView, FormView
+from django.views.generic import DetailView, TemplateView, FormView, ListView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
@@ -11,7 +11,9 @@ from django.utils import timezone
 from datetime import datetime
 
 from finances.models import User, Account, Income, Expense, TradingAccount, RetirementAccount, MonthlyBudget
-from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, UserExpenseLookupForm, IncomeForUserForm, MonthlyBudgetForUserMonthYearForm
+from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, \
+    UserExpenseLookupForm, IncomeForUserForm, MonthlyBudgetForUserMonthYearForm, AddDebtAccountForm, \
+    AddCheckingAccountForm, AddRetirementAccountForm, AddTradingAccountForm
 
 
 # Create your views here.
@@ -103,6 +105,47 @@ class UserMonthYearView(DetailView):
         return context
 
 
+class UserAccountsAvailable(ListView):
+    model = Account
+    template_name = 'finances/user_accounts.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.userpk = kwargs['pk']
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        userobj = User.objects.get(pk=self.userpk)
+        return Account.objects.filter(user=userobj)
+
+
+class UserExpensesAvailable(ListView):
+    model = Expense
+    template_name = 'finances/expenses_list.html'
+    paginate_by = 25
+
+    def dispatch(self, request, *args, **kwargs):
+        self.userpk = kwargs['pk']
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        userobj = User.objects.get(pk=self.userpk)
+        return Expense.objects.filter(user=userobj).order_by('-date')
+
+
+class UserIncomesAvailable(ListView):
+    model = Income
+    template_name = 'finances/incomes_list.html'
+    paginate_by = 25
+
+    def dispatch(self, request, *args, **kwargs):
+        self.userpk = kwargs['pk']
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        userobj = User.objects.get(pk=self.userpk)
+        return Income.objects.filter(user=userobj).order_by('-date')
+
+
 class UserReportsAvailable(DetailView):
     model = User
     template_name = 'finances/user_reports.html'
@@ -116,6 +159,7 @@ class UserReportsAvailable(DetailView):
 
 class UserMonthlyBudgetsAvailable(DetailView):
     model = User
+    template_name = 'finances/user_monthly_budgets.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -167,6 +211,70 @@ class AccountView(DetailView):
         return context
 
 
+class CheckingAccountForUserView(FormView):
+    form_class = AddCheckingAccountForm
+    template_name = 'finances/account_form_for_user.html'
+    success_url = '/finances'
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        self.user = User.objects.get(pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.user
+        return context
+
+
+class DebtAccountForUserView(FormView):
+    form_class = AddDebtAccountForm
+    template_name = 'finances/account_form_for_user.html'
+    success_url = '/finances'
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        self.user = User.objects.get(pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.user
+        return context
+
+
+class RetirementAccountForUserView(FormView):
+    form_class = AddRetirementAccountForm
+    template_name = 'finances/account_form_for_user.html'
+    success_url = '/finances'
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        self.user = User.objects.get(pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.user
+        return context
+
+
+class TradingAccountForUserView(FormView):
+    form_class = AddTradingAccountForm
+    template_name = 'finances/account_form_for_user.html'
+    success_url = '/finances'
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        self.user = User.objects.get(pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.user
+        return context
+
+
 class ExpenseView(DetailView):
     model = Expense
 
@@ -201,9 +309,6 @@ class ExpenseForUserView(FormView):
         context['distinct_group'] = distinct_group
 
         return context
-
-
-
 
 
 class ExpenseLookupForUserView(FormView):
@@ -262,6 +367,7 @@ class MonthlyBudgetForUserViewMonthYear(FormView):
 
     form_class = MonthlyBudgetForUserMonthYearForm
     template_name = 'finances/monthlybudget_form_for_user.html'
+    success_url = f'/finances/'
 
     def dispatch(self, request, *args, **kwargs):
         pk = kwargs.get('pk')

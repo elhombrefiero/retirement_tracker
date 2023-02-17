@@ -80,13 +80,33 @@
     <div class="dropdown-menu" role="menu">
       <div class="dropdown-content">
         <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/add_checking_account" class="dropdown-item">
+          Checking Account
+        </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/add_debt_account" class="dropdown-item">
+          Debt Account
+        </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/add_retirement_account" class="dropdown-item">
+          Retirement Account
+        </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/add_retirement_account" class="dropdown-item">
+          Trading Account
+        </a>
+        </div>
+        <div class="dropdown-item">
         <a href="/finances/user/{{object.pk}}/add_income" class="dropdown-item">
           Income
         </a>
         </div>
         <div class="dropdown-item">
         <a href="/finances/user/{{object.pk}}/add_expense" class="dropdown-item">
-          Expenses
+          Expense
         </a>
         </div>
         <div class="dropdown-item">
@@ -106,11 +126,10 @@
       </div>
     </div>
   </div>
-
   <div class="dropdown is-hoverable">
     <div class="dropdown-trigger">
       <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
-        <span>Update</span>
+        <span>View Existing Items</span>
         <span class="icon is-small">
           <i class="fas fa-angle-down" aria-hidden="true"></i>
         </span>
@@ -119,158 +138,31 @@
     <div class="dropdown-menu" role="menu">
       <div class="dropdown-content">
         <div class="dropdown-item">
-        <a href="#" class="dropdown-item">
-          Incomes
-        </a>
-        </div>
-        <div class="dropdown-item">
-        <a href="#" class="dropdown-item">
-          Expenses
-        </a>
-        </div>
-        <div class="dropdown-item">
-        <a href="#" class="dropdown-item">
-          Monthly Budgets
-        </a>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="dropdown is-hoverable">
-    <div class="dropdown-trigger">
-      <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
-        <span>Monthly Items</span>
-        <span class="icon is-small">
-          <i class="fas fa-angle-down" aria-hidden="true"></i>
-        </span>
-      </button>
-    </div>
-    <div class="dropdown-menu" role="menu">
-      <div class="dropdown-content">
-        <div class="dropdown-item">
-        <a href="#" class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/reports" class="dropdown-item">
           Reports
         </a>
         </div>
         <div class="dropdown-item">
-        <a href="#" class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/monthly_budgets" class="dropdown-item">
           Monthly Budgets
         </a>
         </div>
-      </div>
-    </div>
-</nav>
-
-<!--
-
-
-      <div class="navbar-item has-dropdown is-hoverable">
-        <a class="navbar-link">
-          More
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/accounts" class="dropdown-item">
+          Accounts
         </a>
-
-        <div class="navbar-dropdown">
-          <div class="nested navbar-item dropdown">
-            <div class="dropdown-trigger">
-              <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
-                <span>Dropdown button</span>
-                <span class="icon is-small">
-                  <i class="fas fa-angle-down" aria-hidden="true"></i>
-                </span>
-              </button>
-            </div>
-            <div class="dropdown-menu" id="dropdown-menu" role="menu">
-              <div class="dropdown-content">
-                <a href="#" class="dropdown-item">
-        Dropdown item
-      </a>
-                <a class="dropdown-item">
-        Other dropdown item
-      </a>
-                <a href="#" class="dropdown-item is-active">
-        Active dropdown item
-      </a>
-                <a href="#" class="dropdown-item">
-        Other dropdown item
-      </a>
-                <hr class="dropdown-divider">
-        <div class="nested dropdown dropdown-item">
-            <div class="dropdown-trigger">
-              <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
-      <span>Dropdown button</span>
-      <span class="icon is-small">
-        <i class="fas fa-angle-down" aria-hidden="true"></i>
-      </span>
-    </button>
-            </div>
-            <div class="dropdown-menu" id="dropdown-menu" role="menu">
-              <div class="dropdown-content">
-                <a href="#" class="dropdown-item">
-        Dropdown item
-      </a>
-                <a class="dropdown-item">
-        Other dropdown item
-      </a>
-                <a href="#" class="dropdown-item is-active">
-        Active dropdown item
-      </a>
-                <a href="#" class="dropdown-item">
-        Other dropdown item
-      </a>
-                <hr class="dropdown-divider">
-                <a href="#" class="dropdown-item">
-        With a divider
-      </a>
-              </div>
-            </div>
-          </div>
-              </div>
-            </div>
-          </div>
-          <a class="navbar-item">
-            Jobs
-          </a>
-          <a class="navbar-item">
-            Contact
-          </a>
-          <hr class="navbar-divider">
-          <a class="navbar-item">
-            Report an issue
-          </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/incomes" class="dropdown-item">
+          Incomes
+        </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/expenses" class="dropdown-item">
+          Expenses
+        </a>
         </div>
       </div>
     </div>
-
-    <div class="navbar-end">
-      <div class="navbar-item">
-        <div class="buttons">
-          <a class="button is-primary">
-            <strong>Sign up</strong>
-          </a>
-          <a class="button is-light">
-            Log in
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
 </nav>
--->
-<!--Table of accounts and balances-->
-<table class="table">
-    <thead>
-        <tr>
-            <th>Account</th>
-            <th>Balance</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for account in accounts %}
-        <tr>
-            <td><a href="/finances/account_overview/{{account.pk}}">{{account.name}}</a></td>
-            <td>{{account.return_balance}}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
 {% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'finances/master_template.html' %}
+
+{% block header_extra %}
+    <Title>Accounts</Title>
+{% endblock %}
+
+{% block mymessage %}
+<!--Table of accounts and balances-->
+<table class="table">
+    <thead>
+        <tr>
+            <th>Account</th>
+            <th>Balance</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for account in account_list %}
+        <tr>
+            <td><a href="/finances/account_overview/{{account.pk}}">{{account.name}}</a></td>
+            <td>{{account.return_balance}}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

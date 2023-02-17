@@ -1,7 +1,7 @@
 from django import forms
 from django.utils.timezone import now
 
-from finances.models import User, Expense, Account, TradingAccount, RetirementAccount, MonthlyBudget, Income
+from finances.models import User, Expense, DebtAccount, TradingAccount, RetirementAccount, MonthlyBudget, Income, CheckingAccount
 
 FORM_BUDGET_GROUP_CHOICES = (
     (None, None),
@@ -138,10 +138,17 @@ class ExpenseByLocForm(forms.ModelForm):
         exclude = ['user', 'account']
 
 
-class AddAccountForm(forms.ModelForm):
+class AddCheckingAccountForm(forms.ModelForm):
 
     class Meta:
-        model = Account
+        model = CheckingAccount
+        exclude = ['user']
+
+
+class AddDebtAccountForm(forms.ModelForm):
+
+    class Meta:
+        model = DebtAccount
         exclude = ['user']
 
 

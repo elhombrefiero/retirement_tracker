@@ -76,7 +76,7 @@ class User(models.Model):
 
         tot_checking, tot_retirement, tot_trading, net_worth = self.return_net_worth_month_year(month, year)
 
-        return tot_checking, tot_retirement, tot_trading, net_worth
+        return round(tot_checking, 2), round(tot_retirement, 2), round(tot_trading, 2), round(net_worth, 2)
 
     def return_net_worth_month_year(self, month: str, year: int) -> (float, float, float, float):
         """ Returns the net worth of the user at a given point in time."""
@@ -85,8 +85,8 @@ class User(models.Model):
         tot_trading = 0.0
 
         user_checking_accts = self.return_checking_accts()
-        user_ret_accts = [acct.name for acct in RetirementAccount.objects.filter(user=self)]
-        user_trade_accts = [acct.name for acct in TradingAccount.objects.filter(user=self)]
+        user_ret_accts = [acct for acct in RetirementAccount.objects.filter(user=self)]
+        user_trade_accts = [acct for acct in TradingAccount.objects.filter(user=self)]
 
         for account in user_checking_accts:
             tot_checking += account.return_balance_including_month_year(month, year)
@@ -99,7 +99,7 @@ class User(models.Model):
 
         net_worth = tot_checking + tot_retirement + tot_trading
 
-        return tot_checking, tot_retirement, tot_trading, net_worth
+        return round(tot_checking, 2), round(tot_retirement, 2), round(tot_trading, 2), round(net_worth, 2)
 
     def return_net_worth_year(self, year:int):
 
@@ -280,7 +280,7 @@ class User(models.Model):
         statutory_total = statutory_expenses.aggregate(total=Sum('amount'))['total']
         statutory_total = statutory_total if statutory_total is not None else 0.0
 
-        return mandatory_total, mortgage_total, dgr_total, discretionary_total, statutory_total
+        return round(mandatory_total, 2), round(mortgage_total, 2), round(dgr_total, 2), round(discretionary_total, 2), round(statutory_total, 2)
 
     def estimate_budget_for_month_year(self, month: str, year: int):
         """ Estimates and sets monthly budget values based on takehome pay and budget expenses."""
@@ -338,7 +338,7 @@ class User(models.Model):
             income += acct.return_income_month_year(month, year)
             stat_expenses += acct.return_statutory_month_year(month, year)
 
-        return income - stat_expenses
+        return round(income - stat_expenses, 2)
 
     def set_budget_month_year(self, month, year, statutory, budget_mand, budget_mort, budget_dgr, budget_disc):
         """ Set monthly budget based on user inputs."""
@@ -426,14 +426,17 @@ class User(models.Model):
         while mydate < latest:
             year = mydate.year
             month = datetime.strptime(str(mydate.month), '%m').strftime('%B')
-            exists = True
             if year not in year_month:
                 year_month[year] = []
             try:
                 mb = MonthlyBudget.objects.get(user=self, month=month, year=year)
             except MonthlyBudget.DoesNotExist:
                 exists = False
-            year_month[year].append({'name': month, exists: exists})
+                pk = None
+            else:
+                pk = mb.pk
+            year_month[year].append({'name': month, 'pk': pk})
+            mydate = mydate + relativedelta(months=+1)
         return year_month
 
     def get_month_year_date_range(self):
@@ -491,7 +494,7 @@ class Account(models.Model):
         all_expense = Withdrawal.objects.filter(account=self).aggregate(total=Sum('amount'))['total']
         all_expense = all_expense if all_expense is not None else 0.0
 
-        return float(all_income) - float(all_expense)
+        return round(float(all_income) - float(all_expense), 2)
 
     def return_balance_year(self, year: int):
         start_datetime = datetime(year, 1, 1)
@@ -541,7 +544,7 @@ class Account(models.Model):
         end_datetime = start_datetime + relativedelta(months=+1, seconds=-1)
 
         month_expense = Expense.objects.filter(account=self, date__gte=start_datetime, date__lte=end_datetime)
-        month_expense.filter(budget_group='Statutory')
+        month_expense = month_expense.filter(budget_group='Statutory')
         month_expense = month_expense.aggregate(total=Sum('amount'))['total']
         month_expense = month_expense if month_expense is not None else 0.0
 
@@ -1035,7 +1038,7 @@ class MonthlyBudget(models.Model):
         return "{}'s budget for {}, {}".format(self.user, self.month, self.year)
 
     def get_absolute_url(self):
-        return reverse('finances:mbudget_overview', args=[self.pk])
+        return reverse('mbudget-update', args=[self.pk])
 
     class Meta:
         unique_together = ['month', 'year']

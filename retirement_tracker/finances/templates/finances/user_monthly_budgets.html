@@ -13,11 +13,15 @@
         </tr>
     </thead>
     <tbody>
-        {% for year, month_list in reports_year_month.items %}
+        {% for year, month_list in monthly_budgets_year_month.items %}
         <tr>
             <td>{{year}}</td>
             {% for month in month_list %}
-            <td><a href="/finances/user/{{object.pk}}/{{month}}/{{year}}/view_monthly_budget">{{month}}</a></td>
+              {% if month.pk %}
+              <td><a href="/finances/update_monthly_budget/{{month.pk}}">{{month.name}}</a></td>
+              {% else %}
+              <td><a href="/finances/user/{{object.pk}}/add_monthly_budget">{{month.name}}</a></td>
+              {% endif %}
             {% endfor %}
         {% endfor %}
         </tr>

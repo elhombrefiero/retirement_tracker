@@ -1,0 +1,56 @@
+{% extends 'finances/master_template.html' %}
+
+{% block header_extra %}
+    <Title>Incomes</Title>
+{% endblock %}
+
+{% block mymessage %}
+<!--Table of incomes-->
+<table class="table">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for income in page_obj %}
+        <tr>
+            <td>{{income.date}}</td>
+            <td><a href="/finances/income_overview/{{income.pk}}">{{income.description}}</a></td>
+            <td>{{income.amount}}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<nav class="pagination is-centered" role="navigation" aria-label="pagination">
+  {% if page_obj.has_previous %}
+  <a href="?page={{ page_obj.previous_page_number }}" class="pagination-previous">Previous</a>
+  {% else %}
+  <a class="pagination-previous is-disabled" title="This is the first page">Previous</a>
+  {% endif %}
+
+  {% if page_obj.has_next %}
+  <a href="?page={{ page_obj.next_page_number }}" class="pagination-next">Next page</a>
+  {% else %}
+  <a class="pagination-next is-disabled" title="This is the last page">Previous</a>
+  {% endif %}
+
+  <ul class="pagination-list">
+    <li><a href="?page=1" class="pagination-link" aria-label="Goto page 1">1</a></li>
+    <li><span class="pagination-ellipsis">&hellip;</span></li>
+    {% if page_obj.has_previous %}
+    <li><a href="?page={{page_obj.previous_page_number}}" class="pagination-link" aria-label="Goto page {{page_obj.previous_page_number}}">{{page_obj.previous_page_number}}</a></li>
+    {% endif %}
+    <li><a href="?page={{page_obj.number}}" class="pagination-link is-current" aria-label="Page {{page_obj.number}}" aria-current="page">{{page_obj.number}}</a></li>
+    {% if page_obj.has_next %}
+    <li><a href="?page={{page_obj.next_page_number}}" class="pagination-link" aria-label="Goto page {{page_obj.next_page_number}}">{{page_obj.next_page_number}}</a></li>
+    {% endif %}
+    <li><span class="pagination-ellipsis">&hellip;</span></li>
+    <li><a href="?page={{ page_obj.paginator.num_pages }}" class="pagination-link" aria-label="Goto page {{ page_obj.paginator.num_pages }}">{{ page_obj.paginator.num_pages }}</a></li>
+  </ul>
+
+</nav>
+{% endblock %}
