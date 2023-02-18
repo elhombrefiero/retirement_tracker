@@ -390,6 +390,7 @@ class UserWorkRelatedIncomeView(FormView):
 class MonthlyBudgetForUserView(FormView):
     form_class = MonthlyBudgetForUserForm
     template_name = 'finances/monthlybudget_form_for_user.html'
+    success_url = '/finances'
 
     def dispatch(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
@@ -400,6 +401,21 @@ class MonthlyBudgetForUserView(FormView):
         context = super().get_context_data(**kwargs)
         context['user'] = self.user
         return context
+
+    def form_valid(self, form):
+        post = self.request.POST
+        dtdate = datetime.strptime(post['date'], '%Y-%d-%m')
+        newmb = MonthlyBudget.objects.create(user=self.user,
+                                             date=dtdate,
+                                             mandatory=post['mandatory'],
+                                             mortgage=post['mortgage'],
+                                             debts_goals_retirement=post['debts_goals_retirement'],
+                                             discretionary=post['discretionary'],
+                                             statutory=post['statutory']
+                                             )
+        newmb.save()
+        # self.success_url = 'user_monthly_budget'
+        return super().form_valid(form)
 
 
 class MonthlyBudgetForUserViewMonthYear(FormView):

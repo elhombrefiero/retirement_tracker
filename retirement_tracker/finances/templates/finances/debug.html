@@ -1,0 +1,52 @@
+{% extends 'finances/master_template.html' %}
+
+{% block header_extra %}
+    <Title>Debugging Plots</Title>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block mymessage %}
+<div>
+  <canvas id="piechart"></canvas>
+</div>
+<button class="button" id="id_username">Click me</button>
+{% endblock %}
+
+{% block jsstuff %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+const ctx = document.getElementById('piechart');
+var config = {'type': 'pie', 'datasets': {'data': [1, 1, 1, 1, 1]}};
+var chartmb = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+      datasets: [{
+        label: '# of Votes',
+        data: [12, 19, 3, 5, 2, 3],
+        borderWidth: 1
+      }]
+    },
+  });
+
+    $(document).ready(function () {
+        // catch the form's submit event
+        $('#id_username').click(function () {
+            // create an AJAX JSON request
+            url = "{% url 'plot_monthlybudget_for_user' 2 'January' 2023 %}";
+            $.getJSON("{% url 'plot_monthlybudget_for_user' 2 'January' 2023 %}", function(result) {
+                chartmb.update(result.config);
+                chartmb.draw();
+                console.log(result.config);
+                console.log(result.data);
+                //new Chart(piechrtbudget, 'data': result.data, 'config': result.config);
+                console.log(chartmb);
+                //$.each(result, function(i, field) {
+                    //$("div").append(field + " ");
+                    //});
+                });
+            });
+        });
+</script>
+{% endblock %}

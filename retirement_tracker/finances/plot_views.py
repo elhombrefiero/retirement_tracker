@@ -2,7 +2,7 @@
 
 from django.http import JsonResponse
 from django.shortcuts import redirect
-from django.views.generic import DetailView
+from django.views.generic import DetailView, TemplateView
 
 from finances.models import User, MonthlyBudget
 from finances.utils import chartjs_utils as cjs
@@ -42,9 +42,9 @@ class MonthlyBudgetPlotView(DetailView):
 
     def get(self, request, *args, **kwargs):
         try:
-            mb = MonthlyBudget.objects.get(month=self.month, year=self.year, user=self.user)
+            mb = MonthlyBudget.objects.get(user=self.user, month=self.month, year=self.year)
         except MonthlyBudget.DoesNotExist:
-            return redirect('finances:user_add_monthly_budget_month_year', self.user.pk, self.month, self.year)
+            return redirect('user_add_monthly_budget_month_year', self.user.pk, self.month, self.year)
         config = get_pie_chart_config('Budgeted')
         data = {
             'labels': ['Mandatory', 'Statutory', 'Mortgage', 'Debts, Goals, Retirement', 'Discretionary'],
@@ -90,8 +90,12 @@ class ActualExpensesByBudgetGroup(DetailView):
                 }
             ]
         }
-        return_dict = {}
-        return_dict['config'] = config
+        return_dict = dict()
         return_dict['data'] = data
+        return_dict['config'] = config
 
         return JsonResponse(return_dict)
+
+
+class DebugView(TemplateView):
+    template_name = 'finances/debug.html'

@@ -16,4 +16,6 @@ urlpatterns = [
     # Ex. /finances/plot/user/1/expenses/January/2022/by_budgetgroup
     path('plot/user/<int:pk>/expenses/<str:month>/<int:year>/by_budgetgroup', pv.ActualExpensesByBudgetGroup.as_view(),
          name='plot_expenses_by_budget_group'),
+    # Ex. /finances/plot/debug
+    path('plot/debug', pv.DebugView.as_view(), name='plot_debug')
 ]

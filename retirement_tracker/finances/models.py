@@ -1041,7 +1041,7 @@ class MonthlyBudget(models.Model):
         return reverse('mbudget-update', args=[self.pk])
 
     class Meta:
-        unique_together = ['month', 'year']
+        unique_together = ['user', 'month', 'year']
 
 
 class Interest(models.Model):
