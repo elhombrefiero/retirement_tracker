@@ -21,10 +21,9 @@ var config = {'type': 'pie', 'datasets': {'data': [1, 1, 1, 1, 1]}};
 var chartmb = new Chart(ctx, {
     type: 'pie',
     data: {
-      labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+      labels: [],
       datasets: [{
-        label: '# of Votes',
-        data: [12, 19, 3, 5, 2, 3],
+        data: [],
         borderWidth: 1
       }]
     },
@@ -36,15 +35,9 @@ var chartmb = new Chart(ctx, {
             // create an AJAX JSON request
             url = "{% url 'plot_monthlybudget_for_user' 2 'January' 2023 %}";
             $.getJSON("{% url 'plot_monthlybudget_for_user' 2 'January' 2023 %}", function(result) {
-                chartmb.update(result.config);
-                chartmb.draw();
-                console.log(result.config);
-                console.log(result.data);
-                //new Chart(piechrtbudget, 'data': result.data, 'config': result.config);
-                console.log(chartmb);
-                //$.each(result, function(i, field) {
-                    //$("div").append(field + " ");
-                    //});
+                chartmb.data = result.data;
+                chartmb.options = result.config;
+                chartmb.update();
                 });
             });
         });
