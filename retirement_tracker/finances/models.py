@@ -459,16 +459,36 @@ class User(models.Model):
 
         return date_json
 
-    def return_cumulative_expenses(self, start_date, end_date):
-        """ Returns the cumulative expenses of all of the checking accounts within a date range."""
+    def return_cumulative_expenses(self, start_date, end_date, budget_group=None):
+        """ Returns the cumulative expenses of all of the checking accounts within a date range.
+
+        The start date is inclusive whereas the end_date is not.
+        """
 
         user_checking = CheckingAccount.objects.filter(user=self)
         expenses = Expense.objects.filter(user=self, account__in=user_checking,
                                           date__gte=start_date, date__lt=end_date)
+        if budget_group:
+            expenses = expenses.filter(budget_group=budget_group)
+
         cumulative_balance = expenses.annotate(cumsum=Window(Sum('amount'),
                                                order_by=F('date').asc())).order_by('date', 'cumsum')
         return cumulative_balance
 
+    def return_cumulative_incomes(self, start_date, end_date):
+        """ Returns the cumulative expenses of all the checking accounts within a date range.
+
+        The start date is inclusive whereas the end_date is not.
+        """
+
+        user_checking = CheckingAccount.objects.filter(user=self)
+        incomes = Income.objects.filter(user=self, account__in=user_checking,
+                                        date__gte=start_date, date__lt=end_date)
+
+        cumulative_balance = incomes.annotate(cumsum=Window(Sum('amount'),
+                                               order_by=F('date').asc())).order_by('date', 'cumsum')
+
+        return cumulative_balance
 
     def __str__(self):
         return self.name

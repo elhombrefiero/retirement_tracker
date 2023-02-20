@@ -7,9 +7,12 @@ from django.views.generic import DetailView, TemplateView
 from finances.models import User, MonthlyBudget
 from finances.utils import chartjs_utils as cjs
 
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+
 
 def get_pie_chart_config(name):
-    "Returns the configuration for a pie chart minus the data using chart.js"
+    """Returns the configuration for a pie chart minus the data using chart.js"""
     config = {}
     config.update({
         'type': 'pie',
@@ -28,6 +31,90 @@ def get_pie_chart_config(name):
     }
     )
     return config
+
+
+def get_line_chart_config(name):
+    """ Returns the configutation for a line chart"""
+    config = {'type': 'line',
+              'options': {
+                  'responsive': True,
+                  'plugins': {
+                      'title': {
+                          'display': True,
+                          'text': f'{name}'
+                      },
+                  },
+                  'interaction': {
+                      'intersect': False,
+                  },
+                  'scales': {
+                      'x': {
+                          'type': 'time',
+                          'time': {
+                              'unit': 'day',
+                          },
+                          'display': True,
+                          'title': {
+                              'display': True,
+                              'text': 'Date'
+                          }
+                      },
+                      'y': {
+                          'display': True,
+                          'title': {
+                              'display': True,
+                              'text': 'Value'
+                          },
+                          # 'suggestedMin': -10,
+                          # 'suggestedMax': 200
+                      }
+                  }
+              },
+              }
+
+    return config
+
+
+class ExpenseCumulativeMonthYearPlotView(DetailView):
+    model = User
+
+    def dispatch(self, request, *args, **kwargs):
+        self.month = kwargs['month']
+        self.year = kwargs['year']
+        userpk = kwargs['pk']
+        self.user = User.objects.get(pk=userpk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        start_date = datetime.strptime(f'{self.month}-01-{self.year}', '%B-%d-%Y')
+        end_date = start_date + relativedelta(months=+1)
+        config = get_line_chart_config(f'Cumulative Expenses for {self.month}, {self.year}')
+        cumulative_expenses = self.user.return_cumulative_expenses(start_date, end_date)
+
+        return_dict = dict()
+        return_dict['config'] = config
+
+        xy_data = []
+        labels = []
+        for expense in cumulative_expenses:
+            labels.append(datetime(expense.date.year, expense.date.month, expense.date.day))
+            xy_data.append(
+                {'x': datetime(expense.date.year, expense.date.month, expense.date.day), 'y': expense.cumsum})
+
+        data = {
+            'labels': labels,
+            'datasets': [{
+                'label': 'Cumulative Expenses',
+                'backgroundColor': cjs.get_color('black', 0.5),
+                'borderColor': cjs.get_color('black'),
+                'fill': False,
+                'data': xy_data
+            }]
+        }
+
+        return_dict['data'] = data
+
+        return JsonResponse(return_dict)
 
 
 class MonthlyBudgetPlotView(DetailView):
@@ -52,7 +139,8 @@ class MonthlyBudgetPlotView(DetailView):
                 {
                     'label': 'Budgeted',
                     'data': [mb.mandatory, mb.statutory, mb.mortgage, mb.debts_goals_retirement, mb.discretionary],
-                    'backgroundColor': [cjs.get_color('red'), cjs.get_color('orange'), cjs.get_color('yellow'), cjs.get_color('green'), cjs.get_color('blue')],
+                    'backgroundColor': [cjs.get_color('red'), cjs.get_color('orange'), cjs.get_color('yellow'),
+                                        cjs.get_color('green'), cjs.get_color('blue')],
                 }
             ]
         }
@@ -74,7 +162,6 @@ class ActualExpensesByBudgetGroup(DetailView):
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-
         mand_act, mort_act, dgr_act, disc_act, stat_act = self.user.return_tot_expenses_by_budget_month_year(self.month,
                                                                                                              self.year)
         config = get_pie_chart_config('Actual')
@@ -103,6 +190,6 @@ class DebugView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['userpk'] = 2
-        context['month'] = 'January'
+        context['month'] = 'February'
         context['year'] = 2023
         return context

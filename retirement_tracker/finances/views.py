@@ -330,6 +330,7 @@ class ExpenseCreateView(CreateView):
 class ExpenseForUserView(FormView):
     form_class = ExpenseForUserForm
     template_name = 'finances/expense_form_for_user.html'
+    success_url = '/finances'
 
     def dispatch(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
@@ -349,8 +350,25 @@ class ExpenseForUserView(FormView):
         context['distinct_desc'] = distinct_desc
         context['distinct_where'] = distinct_where
         context['distinct_group'] = distinct_group
-
         return context
+
+    def form_valid(self, form):
+        post = self.request.POST
+        account = Account.objects.get(pk=post['account'])
+        newexpense = Expense.objects.create(user=self.user,
+                                            account=account,
+                                            date=post['date'],
+                                            budget_group=post['budget_group'],
+                                            category=post['category'],
+                                            where_bought=post['where_bought'],
+                                            description=post['description'],
+                                            amount=post['amount'],
+                                            slug_field=post['slug_field'],
+                                            group=['group'],
+                                            )
+        newexpense.save()
+        self.success_url = f'/finances/user/{self.user.pk}'
+        return super().form_valid(form)
 
 
 class ExpenseLookupForUserView(FormView):
@@ -470,6 +488,7 @@ class IncomeForUserView(FormView):
     """ Input an income for a user. """
     form_class = IncomeForUserForm
     template_name = 'finances/income_form_for_user.html'
+    success_url = '/finances'
 
     def dispatch(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
