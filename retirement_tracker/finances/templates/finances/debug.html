@@ -17,29 +17,19 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script>
 const ctx = document.getElementById('piechart');
-var config = {'type': 'pie', 'datasets': {'data': [1, 1, 1, 1, 1]}};
 var chartmb = new Chart(ctx, {
     type: 'pie',
-    data: {
-      labels: [],
-      datasets: [{
-        data: [],
-        borderWidth: 1
-      }]
-    },
   });
 
-    $(document).ready(function () {
-        // catch the form's submit event
-        $('#id_username').click(function () {
-            // create an AJAX JSON request
-            url = "{% url 'plot_monthlybudget_for_user' 2 'January' 2023 %}";
-            $.getJSON("{% url 'plot_monthlybudget_for_user' 2 'January' 2023 %}", function(result) {
-                chartmb.data = result.data;
-                chartmb.options = result.config;
-                chartmb.update();
-                });
-            });
+$(document).ready(function () {
+    // create an AJAX JSON request
+    url = "{% url 'plot_monthlybudget_for_user' userpk month year %}";
+    console.log(url);
+    $.getJSON(url, function(result) {
+        chartmb.data = result.data;
+        chartmb.options = result.config.options;
+        chartmb.update();
         });
+    });
 </script>
 {% endblock %}

@@ -17,7 +17,7 @@ def get_pie_chart_config(name):
             'responsive': True,
             'plugins': {
                 'legend': {
-                    'position': 'top',
+                    'position': 'bottom',
                 },
                 'title': {
                     'display': True,
@@ -56,7 +56,7 @@ class MonthlyBudgetPlotView(DetailView):
                 }
             ]
         }
-        return_dict = {}
+        return_dict = dict()
         return_dict['config'] = config
         return_dict['data'] = data
 
@@ -99,3 +99,10 @@ class ActualExpensesByBudgetGroup(DetailView):
 
 class DebugView(TemplateView):
     template_name = 'finances/debug.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['userpk'] = 2
+        context['month'] = 'January'
+        context['year'] = 2023
+        return context
