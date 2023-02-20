@@ -1,5 +1,5 @@
 from django.db import models
-from django.db.models import Sum, Max
+from django.db.models import Sum, Max, F, Window
 from django.utils.timezone import now
 from django.utils.text import slugify
 from django.shortcuts import reverse
@@ -458,6 +458,17 @@ class User(models.Model):
             search_date = search_date + relativedelta(months=+1)
 
         return date_json
+
+    def return_cumulative_expenses(self, start_date, end_date):
+        """ Returns the cumulative expenses of all of the checking accounts within a date range."""
+
+        user_checking = CheckingAccount.objects.filter(user=self)
+        expenses = Expense.objects.filter(user=self, account__in=user_checking,
+                                          date__gte=start_date, date__lt=end_date)
+        cumulative_balance = expenses.annotate(cumsum=Window(Sum('amount'),
+                                               order_by=F('date').asc())).order_by('date', 'cumsum')
+        return cumulative_balance
+
 
     def __str__(self):
         return self.name
