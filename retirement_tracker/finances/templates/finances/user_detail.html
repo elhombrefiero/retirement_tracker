@@ -2,6 +2,12 @@
 
 {% block header_extra %}
     <Title>{{object.name}} Overview</Title>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+    <!-- Moment for the dates-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <!-- JQuery-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 {% endblock %}
 
 {% block mymessage %}
@@ -165,4 +171,73 @@
       </div>
     </div>
 </nav>
+{% if report_type == 'month' %}
+<p class="title"> {{object.name}}'s Report for {{month}}, {{year}}</p>
+{% endif %}
+{% if report_type == 'year' %}
+<p class="title"> {{object.name}}'s Report for {{month}}, {{year}}</p>
+{% endif %}
+
+<!--TODO: Columns of budget group, budgeted, spent, and leftovers.-->
+
+<!--TODO: Fix the spacing of these charts-->
+<nav class="level">
+    <div class="level-item has-text-centered">
+    <canvas id="piechart_budget"></canvas>
+  </div>
+  <div class="level-item">
+    <canvas id="piechart_actual"></canvas>
+  </div>
+</nav>
+
+<!--TODO: Bar charts of budget vs spent-->
+
+<!--TODO: Bar charts of expenses by category, by description, by group-->
+
+<!--TODO: Row of expenses for the month, income for the month-->
+
+<nav class="level is-mobile">
+  <div class="level-item">
+    <canvas id="linechart_cumulative"></canvas>
+  </div>
+</nav>
+{% endblock %}
+
+{% block jsstuff %}
+<script>
+const ctx = document.getElementById('linechart_cumulative');
+var exp_cum_chart = new Chart(ctx, {
+    type: 'line',
+  });
+const ctx2 = document.getElementById('piechart_budget');
+var budget_pie_chart = new Chart(ctx2, {
+  type: 'pie',
+  });
+const ctx3 = document.getElementById('piechart_actual');
+var actual_pie_chart = new Chart(ctx3, {
+  type: 'pie',
+  });
+
+$(document).ready(function () {
+    // create an AJAX JSON request for monthly budget and actual
+    url = "{% url 'plot_monthlybudget_for_user' object.pk month year %}";
+    $.getJSON(url, function(result) {
+      budget_pie_chart.data = result.data;
+      budget_pie_chart.options = result.config.options;
+      budget_pie_chart.update();
+      });
+    url = "{% url 'plot_expenses_by_budget_group' object.pk month year %}";
+    $.getJSON(url, function(result) {
+      actual_pie_chart.data = result.data;
+      actual_pie_chart.options = result.config.options;
+      actual_pie_chart.update();
+      });
+    url = "{% url 'plot_expenses_cumulative_month_year' object.pk month year %}";
+    $.getJSON(url, function(result) {
+        exp_cum_chart.data = result.data;
+        exp_cum_chart.options = result.config.options;
+        exp_cum_chart.update();
+        });
+    });
+</script>
 {% endblock %}

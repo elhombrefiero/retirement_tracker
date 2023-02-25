@@ -57,6 +57,7 @@ class UserYearView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['report_type'] = 'year'
         context['accounts'] = Account.objects.filter(user=self.object)
         tot_checking, tot_retirement, tot_trading, net_worth = \
             self.object.return_net_worth_year(self.year)
@@ -78,6 +79,7 @@ class UserMonthYearView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['report_type'] = 'month'
         context['accounts'] = Account.objects.filter(user=self.object)
         tot_checking, tot_retirement, tot_trading, net_worth = \
             self.object.return_net_worth_month_year(self.month, self.year)

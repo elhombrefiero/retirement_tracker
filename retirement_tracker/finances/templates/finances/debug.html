@@ -5,7 +5,7 @@
     <!-- Chart.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
-
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 {% endblock %}
 
 {% block mymessage %}
@@ -33,6 +33,7 @@ $(document).ready(function () {
         chartmb.data = result.data;
         chartmb.options = result.config.options;
         chartmb.update();
+        console.log(chartmb);
         });
     });
 </script>

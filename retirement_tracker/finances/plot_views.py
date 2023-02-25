@@ -3,6 +3,7 @@
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.views.generic import DetailView, TemplateView
+from django.db.models.functions import Trunc
 
 from finances.models import User, MonthlyBudget
 from finances.utils import chartjs_utils as cjs
@@ -18,14 +19,12 @@ def get_pie_chart_config(name):
         'type': 'pie',
         'options': {
             'responsive': True,
-            'plugins': {
-                'legend': {
-                    'position': 'bottom',
+            'legend': {
+                'position': 'bottom',
                 },
-                'title': {
-                    'display': True,
-                    'text': f'{name}'
-                }
+            'title': {
+                'display': True,
+                'text': f'{name}'
             }
         }
     }
@@ -35,7 +34,7 @@ def get_pie_chart_config(name):
 
 def get_line_chart_config(name):
     """ Returns the configutation for a line chart"""
-    config = {'type': 'line',
+    config = {'type': 'scatter',
               'options': {
                   'responsive': True,
                   'plugins': {
@@ -97,9 +96,9 @@ class ExpenseCumulativeMonthYearPlotView(DetailView):
         xy_data = []
         labels = []
         for expense in cumulative_expenses:
-            labels.append(datetime(expense.date.year, expense.date.month, expense.date.day))
+            labels.append(expense.date)
             xy_data.append(
-                {'x': datetime(expense.date.year, expense.date.month, expense.date.day), 'y': expense.cumsum})
+                {'x': expense.date, 'y': float(expense.cumsum)})
 
         data = {
             'labels': labels,
