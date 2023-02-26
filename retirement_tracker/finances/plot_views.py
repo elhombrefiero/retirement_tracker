@@ -33,7 +33,7 @@ def get_pie_chart_config(name):
 
 
 def get_line_chart_config(name):
-    """ Returns the configutation for a line chart"""
+    """ Returns the configuration for a line chart"""
     config = {'type': 'scatter',
               'options': {
                   'responsive': True,
@@ -72,6 +72,116 @@ def get_line_chart_config(name):
               }
 
     return config
+
+
+def get_bar_chart_config(name):
+    """ Returns the configuration for the bar chart."""
+
+    config = dict()
+
+    config['type'] = 'bar'
+
+    config['options'] = {
+        'title': {
+            'display': True,
+            'text': f'{name}'
+        },
+        'responsive': True,
+        'legend': {
+            'position': 'top'
+        },
+        'scales': {
+            'y': {
+                'beginAtZero': True
+            }
+        }
+    }
+
+    config['type'] = 'bar'
+
+    return config
+
+
+class ExpenseSpentAndBudgetPlotView(DetailView):
+    model = User
+
+    def dispatch(self, request, *args, **kwargs):
+        self.month = kwargs['month']
+        self.year = kwargs['year']
+        userpk = kwargs['pk']
+        self.user = User.objects.get(pk=userpk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        config = get_bar_chart_config('Budgeted vs. Spent')
+        data = dict()
+        labels = ['Mandatory', 'Mortgage', 'Statutory', 'Debts, Goals, Retirement', 'Discretionary']
+        data['labels'] = labels
+        try:
+            mb = MonthlyBudget.objects.get(user=self.user, month=self.month, year=self.year)
+        except MonthlyBudget.DoesNotExist:
+            return redirect('user_add_monthly_budget_month_year', self.user.pk, self.month, self.year)
+
+        mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp = self.user.return_aggregated_monthly_expenses_by_budgetgroup(self.month, self.year)
+
+        datasets = list()
+        budgeted_info = {
+            'label': 'Budgeted',
+            'data': [mb.mandatory, mb.mortgage, mb.statutory, mb.debts_goals_retirement, mb.discretionary],
+            'borderColor': cjs.get_color('red'),
+            'backgroundColor': cjs.get_color('red', 0.5)
+        }
+        datasets.append(budgeted_info)
+
+        actual_info = {
+                'label': 'Actual',
+                'data': [mand_exp, mort_exp, stat_exp, dgr_exp, disc_exp],
+                'borderColor': cjs.get_color('blue'),
+                'backgroundColor': cjs.get_color('blue', 0.5)
+            }
+        datasets.append(actual_info)
+
+        data['datasets'] = datasets
+        config['data'] = data
+
+        return JsonResponse(config)
+
+
+class ExpenseByCategoryPlotView(DetailView):
+    model = User
+
+    def dispatch(self, request, *args, **kwargs):
+        self.month = kwargs['month']
+        self.year = kwargs['year']
+        userpk = kwargs['pk']
+        self.user = User.objects.get(pk=userpk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        config = get_bar_chart_config('Expenses by Category')
+        data = dict()
+        top_5cat = self.user.return_top_category(self.month, self.year, 5)
+
+        labels = list()
+        data_sum = list()
+        for topcat in top_5cat:
+            labels.append(topcat['category'])
+            data_sum.append(topcat['sum'])
+
+        data['labels'] = labels
+        datasets = list()
+        cat_sum = {
+            'label': 'Sum',
+            'data': data_sum,
+            'borderColor': cjs.get_color('black'),
+            'backgroundColor': cjs.get_color('black', 0.5)
+        }
+        datasets.append(cat_sum)
+
+        data['datasets'] = datasets
+        config['data'] = data
+
+        return JsonResponse(config)
 
 
 class ExpenseCumulativeMonthYearPlotView(DetailView):

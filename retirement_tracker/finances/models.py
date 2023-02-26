@@ -53,11 +53,6 @@ class User(models.Model):
     percent_withdrawal_at_retirement = models.DecimalField(verbose_name='Percent withdrawal at retirement',
                                                            decimal_places=2, default=4.0, max_digits=5)
 
-    # TODO: Create cumulative summations of the expenses and budgets like so:
-    #  transaction.objects.annotate(
-    #     cumsum=Window(Sum('amount'), order_by=F('transactiondate').asc())
-    # ).order_by('transactiondate', 'cumsum')
-
     # TODO: Determine way to generate input files for sankey diagram and add button to open sankey page with the
     #  inputs. Or throw monthly budget portions and expenses.
 
@@ -217,12 +212,23 @@ class User(models.Model):
 
         return user_accounts
 
+    def return_top_category(self, month, year, num_of_entries=5):
+        """ Finds the maximum expenses by category. By default finds the top five for a given month/year"""
+        # TODO: Exclude mortgage and Statutory from lookup
+        checking_accounts = self.return_checking_accts()
+        beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
+        end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
+        expenses = Expense.objects.filter(user=self, account__in=checking_accounts,
+                                          date__gte=beg_of_month, date__lt=end_of_month)
+        category_expenses = expenses.values('category').distinct().annotate(sum=Sum('amount')).order_by('-sum')[:num_of_entries]
+        return category_expenses
+
     def return_aggregated_monthly_expenses_by_budgetgroup(self, month, year):
 
         beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
         checking_accts = self.return_checking_accts()
-        expenses = Expense.objects.filter(user=self, account=checking_accts,
+        expenses = Expense.objects.filter(user=self, account__in=checking_accts,
                                           date__gte=beg_of_month, date__lt=end_of_month)
         mand_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_CHOICES[0][0]).aggregate(total=Sum('amount'))[
             'total']

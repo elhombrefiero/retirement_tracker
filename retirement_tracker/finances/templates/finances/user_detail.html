@@ -37,41 +37,7 @@
     </div>
   </div>
 </nav>
-{% if tot_statutory_expenses %}
-<!-- Expenses -->
-<nav class="level is-mobile">
-    <div class="level-item has-text-centered">
-    <div>
-      <p class="heading">Statutory Expenses</p>
-      <p class="title">{{tot_statutory_expenses}}</p>
-    </div>
-  </div>
-  <div class="level-item has-text-centered">
-    <div>
-      <p class="heading">Mandatory Expenses</p>
-      <p class="title">{{tot_mandatory_expenses}}</p>
-    </div>
-  </div>
-  <div class="level-item has-text-centered">
-    <div>
-      <p class="heading">Mortgage Expenses</p>
-      <p class="title">{{tot_mortgage_expenses}}</p>
-    </div>
-  </div>
-  <div class="level-item has-text-centered">
-    <div>
-      <p class="heading">Debts, Goals, Retirement</p>
-      <p class="title">{{tot_debts_goals_retirement_expenses}}</p>
-    </div>
-  </div>
-  <div class="level-item has-text-centered">
-    <div>
-      <p class="heading">Discretionary Expenses</p>
-      <p class="title">{{tot_discretionary_expenses}}</p>
-    </div>
-  </div>
-</nav>
-{% endif %}
+
 <!--Buttons to add and update the user stuff-->
 <nav class="navbar" role="navigation" aria-label="main navigation">
   <div class="dropdown is-hoverable">
@@ -172,29 +138,86 @@
     </div>
 </nav>
 {% if report_type == 'month' %}
-<p class="title"> {{object.name}}'s Report for {{month}}, {{year}}</p>
+<nav class="level">
+  <div class="level-item has-text-centered">
+    <p class="title"> {{object.name}}'s Report for {{month}}, {{year}}</p>
+  </div>
+</nav>
 {% endif %}
 {% if report_type == 'year' %}
-<p class="title"> {{object.name}}'s Report for {{month}}, {{year}}</p>
+<nav class="level">
+  <div class="level-item has-text-centered">
+    <p class="title"> {{object.name}}'s Report for {{year}}</p>
+  </div>
+</nav>
 {% endif %}
 
-<!--TODO: Columns of budget group, budgeted, spent, and leftovers.-->
-
-<!--TODO: Fix the spacing of these charts-->
-<nav class="level">
+<!--TODO: Table of budget group, budgeted, spent, and leftovers.-->
+{% if tot_statutory_expenses %}
+<!-- Expenses -->
+<nav class="level is-mobile">
     <div class="level-item has-text-centered">
-    <canvas id="piechart_budget"></canvas>
+    <div>
+      <p class="heading">Statutory Expenses</p>
+      <p class="title">{{tot_statutory_expenses}}</p>
+    </div>
   </div>
-  <div class="level-item">
-    <canvas id="piechart_actual"></canvas>
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading">Mandatory Expenses</p>
+      <p class="title">{{tot_mandatory_expenses}}</p>
+    </div>
+  </div>
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading">Mortgage Expenses</p>
+      <p class="title">{{tot_mortgage_expenses}}</p>
+    </div>
+  </div>
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading">Debts, Goals, Retirement</p>
+      <p class="title">{{tot_debts_goals_retirement_expenses}}</p>
+    </div>
+  </div>
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading">Discretionary Expenses</p>
+      <p class="title">{{tot_discretionary_expenses}}</p>
+    </div>
+  </div>
+</nav>
+{% endif %}
+
+<nav class="level">
+  <div class="tile is-ancestor">
+    <div class="tile">
+      <canvas id="piechart_budget"></canvas>
+    </div>
+    <div class="tile">
+      <canvas id="piechart_actual"></canvas>
+    </div>
   </div>
 </nav>
 
-<!--TODO: Bar charts of budget vs spent-->
+<nav class="level">
+  <div class="level-item has-text-centered">
+    <canvas id="barchart_budget_spent"></canvas>
+  </div>
+</nav>
 
 <!--TODO: Bar charts of expenses by category, by description, by group-->
+<nav class="level is-mobile">
+  <div class="level-item has-text-centered">
+    <div>
+      <canvas id="barchart_by_category"></canvas>
+      <canvas id="barchart_by_description"></canvas>
+      <canvas id="barchart_by_location"></canvas>
+    </div>
+  </div>
+</nav>
 
-<!--TODO: Row of expenses for the month, income for the month-->
+<!--TODO: Charts of expenses for the month, income for the month-->
 
 <nav class="level is-mobile">
   <div class="level-item">
@@ -204,40 +227,60 @@
 {% endblock %}
 
 {% block jsstuff %}
-<script>
-const ctx = document.getElementById('linechart_cumulative');
-var exp_cum_chart = new Chart(ctx, {
-    type: 'line',
-  });
-const ctx2 = document.getElementById('piechart_budget');
-var budget_pie_chart = new Chart(ctx2, {
-  type: 'pie',
-  });
-const ctx3 = document.getElementById('piechart_actual');
-var actual_pie_chart = new Chart(ctx3, {
-  type: 'pie',
-  });
-
-$(document).ready(function () {
-    // create an AJAX JSON request for monthly budget and actual
-    url = "{% url 'plot_monthlybudget_for_user' object.pk month year %}";
-    $.getJSON(url, function(result) {
-      budget_pie_chart.data = result.data;
-      budget_pie_chart.options = result.config.options;
-      budget_pie_chart.update();
-      });
-    url = "{% url 'plot_expenses_by_budget_group' object.pk month year %}";
-    $.getJSON(url, function(result) {
-      actual_pie_chart.data = result.data;
-      actual_pie_chart.options = result.config.options;
-      actual_pie_chart.update();
-      });
-    url = "{% url 'plot_expenses_cumulative_month_year' object.pk month year %}";
-    $.getJSON(url, function(result) {
-        exp_cum_chart.data = result.data;
-        exp_cum_chart.options = result.config.options;
-        exp_cum_chart.update();
-        });
+  {% if month %}
+  <script>
+  const ctx = document.getElementById('linechart_cumulative');
+  var exp_cum_chart = new Chart(ctx, {
+      type: 'line',
     });
-</script>
+  const ctx2 = document.getElementById('piechart_budget');
+  var budget_pie_chart = new Chart(ctx2, {
+    type: 'pie',
+    });
+  const ctx3 = document.getElementById('piechart_actual');
+  var actual_pie_chart = new Chart(ctx3, {
+    type: 'pie',
+    });
+  const ctx4 = document.getElementById('barchart_budget_spent');
+  var budget_vs_spent_chart = new Chart(ctx4, {
+    type: 'bar',
+    });
+  const ctx5 = document.getElementById('barchart_by_category');
+  var top_category_chart = new Chart(ctx5, {
+    type: 'bar',
+    });
+
+  $(document).ready(function () {
+      // create an AJAX JSON request for monthly budget and actual
+      url = "{% url 'plot_monthlybudget_for_user' object.pk month year %}";
+      $.getJSON(url, function(result) {
+        budget_pie_chart.data = result.data;
+        budget_pie_chart.options = result.config.options;
+        budget_pie_chart.update();
+        });
+      url = "{% url 'plot_expenses_by_budget_group' object.pk month year %}";
+      $.getJSON(url, function(result) {
+        actual_pie_chart.data = result.data;
+        actual_pie_chart.options = result.config.options;
+        actual_pie_chart.update();
+        });
+      url = "{% url 'plot_bar_budget_vs_spent_month_year' object.pk month year %}";
+      $.getJSON(url, function(result) {
+        budget_vs_spent_chart.config = result;
+        budget_vs_spent_chart.update();
+        });
+      url = "{% url 'plot_top5_by_category' object.pk month year %}";
+      $.getJSON(url, function(result) {
+          top_category_chart.config = result;
+          top_category_chart.update();
+          });
+      url = "{% url 'plot_expenses_cumulative_month_year' object.pk month year %}";
+      $.getJSON(url, function(result) {
+          exp_cum_chart.data = result.data;
+          exp_cum_chart.options = result.config.options;
+          exp_cum_chart.update();
+          });
+      });
+  </script>
+  {% endif %}
 {% endblock %}
