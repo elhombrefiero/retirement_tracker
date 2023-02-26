@@ -256,35 +256,35 @@ class User(models.Model):
                                                     budget_group=BUDGET_GROUP_CHOICES[0][0],
                                                     date__gte=beg_of_month, date__lt=end_of_month)
         mandatory_total = mandatory_expenses.aggregate(total=Sum('amount'))['total']
-        mandatory_total = mandatory_total if mandatory_total is not None else 0.0
+        mandatory_total = float(mandatory_total) if mandatory_total is not None else 0.0
 
         mortgage_expenses = Expense.objects.filter(user=self,
                                                    account__in=checking_accts,
                                                    budget_group=BUDGET_GROUP_CHOICES[1][0],
                                                    date__gte=beg_of_month, date__lt=end_of_month)
         mortgage_total = mortgage_expenses.aggregate(total=Sum('amount'))['total']
-        mortgage_total = mortgage_total if mortgage_total is not None else 0.0
+        mortgage_total = float(mortgage_total) if mortgage_total is not None else 0.0
 
         dgr_expenses = Expense.objects.filter(user=self,
                                               account__in=checking_accts,
                                               budget_group=BUDGET_GROUP_CHOICES[2][0],
                                               date__gte=beg_of_month, date__lt=end_of_month)
         dgr_total = dgr_expenses.aggregate(total=Sum('amount'))['total']
-        dgr_total = dgr_total if dgr_total is not None else 0.0
+        dgr_total = float(dgr_total) if dgr_total is not None else 0.0
 
         discretionary_expenses = Expense.objects.filter(user=self,
                                                         account__in=checking_accts,
                                                         budget_group=BUDGET_GROUP_CHOICES[3][0],
                                                         date__gte=beg_of_month, date__lt=end_of_month)
         discretionary_total = discretionary_expenses.aggregate(total=Sum('amount'))['total']
-        discretionary_total = discretionary_total if discretionary_total is not None else 0.0
+        discretionary_total = float(discretionary_total) if discretionary_total is not None else 0.0
 
         statutory_expenses = Expense.objects.filter(user=self,
                                                     account__in=checking_accts,
                                                     budget_group=BUDGET_GROUP_CHOICES[4][0],
                                                     date__gte=beg_of_month, date__lt=end_of_month)
         statutory_total = statutory_expenses.aggregate(total=Sum('amount'))['total']
-        statutory_total = statutory_total if statutory_total is not None else 0.0
+        statutory_total = float(statutory_total) if statutory_total is not None else 0.0
 
         return round(mandatory_total, 2), round(mortgage_total, 2), round(dgr_total, 2), round(discretionary_total, 2), round(statutory_total, 2)
 

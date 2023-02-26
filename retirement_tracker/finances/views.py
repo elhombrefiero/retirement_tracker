@@ -104,6 +104,11 @@ class UserMonthYearView(DetailView):
         context['tot_debts_goals_retirement_expenses'] = dgr_exp
         context['tot_discretionary_expenses'] = disc_exp
         context['tot_statutory_expenses'] = stat_exp
+        context['leftover_statutory'] = mbudget.statutory - stat_exp
+        context['leftover_mandatory'] = mbudget.mandatory - mand_exp
+        context['leftover_mortgage'] = mbudget.mortgage - mort_exp
+        context['leftover_dgr'] = mbudget.debts_goals_retirement - dgr_exp
+        context['leftover_disc'] = mbudget.discretionary - disc_exp
         return context
 
 
