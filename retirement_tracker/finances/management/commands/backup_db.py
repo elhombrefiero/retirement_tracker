@@ -7,6 +7,7 @@ import shutil
 import datetime
 import subprocess as sp
 import shlex
+import json
 
 # Other Imports
 from django.core.management.base import BaseCommand, CommandError
@@ -39,9 +40,12 @@ class Command(BaseCommand):
             print(f"Could not create directory: {e}. \nExiting.")
             return
 
-        cmd = shlex.split('python manage.py dumpdata --natural-foreign --natural-primary -e contenttypes -e '
-                          f'auth.Permission --indent 2 > {dump_name}')
-        output = sp.check_output(cmd, shell=True)
+        cmd = shlex.split(f'python manage.py dumpdata --natural-foreign --natural-primary -e contenttypes -e auth.Permission --indent 2')
+        output = sp.check_output(cmd)
+        output_json = json.loads(output)
+
+        with open(dump_name, 'w', encoding='utf-8') as fileobj:
+            json.dump(output_json, fileobj, ensure_ascii=False, indent=4, sort_keys=True)
 
         dir_name = options['directory']
 
@@ -51,8 +55,6 @@ class Command(BaseCommand):
         else:
             dump_name_new = f'bu_{bu_time.month}_{bu_time.day}_{bu_time.year}.json'
 
-        print(f"dump_name: {dump_name}")
-        print(f"dump_name_new: {dump_name_new}")
         try:
             shutil.move(dump_name, os.path.join(dir_name, dump_name_new))
         except Exception as e:
