@@ -223,6 +223,28 @@ class User(models.Model):
         category_expenses = expenses.values('category').distinct().annotate(sum=Sum('amount')).order_by('-sum')[:num_of_entries]
         return category_expenses
 
+    def return_top_description(self, month, year, num_of_entries=5):
+        """ Finds the maximum expenses by category. By default finds the top five for a given month/year"""
+        # TODO: Exclude mortgage and Statutory from lookup
+        checking_accounts = self.return_checking_accts()
+        beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
+        end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
+        expenses = Expense.objects.filter(user=self, account__in=checking_accounts,
+                                          date__gte=beg_of_month, date__lt=end_of_month)
+        description_expenses = expenses.values('description').distinct().annotate(sum=Sum('amount')).order_by('-sum')[:num_of_entries]
+        return description_expenses
+
+    def return_top_location(self, month, year, num_of_entries=5):
+        """ Finds the maximum expenses by category. By default finds the top five for a given month/year"""
+        # TODO: Exclude mortgage and Statutory from lookup
+        checking_accounts = self.return_checking_accts()
+        beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
+        end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
+        expenses = Expense.objects.filter(user=self, account__in=checking_accounts,
+                                          date__gte=beg_of_month, date__lt=end_of_month)
+        location_expenses = expenses.values('where_bought').distinct().annotate(sum=Sum('amount')).order_by('-sum')[:num_of_entries]
+        return location_expenses
+
     def return_aggregated_monthly_expenses_by_budgetgroup(self, month, year):
 
         beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
@@ -404,7 +426,7 @@ class User(models.Model):
         earliest, latest = self.get_earliest_latest_dates()
         mydate = earliest
         return_dates = {}
-        while mydate < latest:
+        while mydate <= latest:
             year = mydate.year
             month = datetime.strptime(str(mydate.month), '%m').strftime('%B')
             if year not in return_dates.keys():

@@ -218,20 +218,17 @@
   </div>
 </nav>
 
-<!--TODO: Bar charts of expenses by category, by description, by group-->
-<nav class="level">
-  <div class="columns is-centered">
-    <div class="column">
-      <canvas id="barchart_by_category"></canvas>
-    </div>
-    <div class="column">
-      <canvas id="barchart_by_description"></canvas>
-    </div>
-    <div class="column">
-      <canvas id="barchart_by_location"></canvas>
-    </div>
+<div class="columns is-centered">
+  <div class="column">
+    <canvas id="barchart_by_category"></canvas>
   </div>
-</nav>
+  <div class="column">
+    <canvas id="barchart_by_description"></canvas>
+  </div>
+  <div class="column">
+    <canvas id="barchart_by_location"></canvas>
+  </div>
+</div>
 
 <nav class="level is-mobile">
   <div class="tile is-ancestor">
@@ -266,11 +263,17 @@
     type: 'bar',
     });
   var ctx5 = document.getElementById('barchart_by_category');
-<!--  ctx5.height(500);-->
   var top_category_chart = new Chart(ctx5, {
     type: 'bar',
     });
-
+  var ctx6 = document.getElementById('barchart_by_description');
+  var top_description_chart = new Chart(ctx6, {
+    type: 'bar',
+    });
+  var ctx7 = document.getElementById('barchart_by_location');
+  var top_location_chart = new Chart(ctx7, {
+    type: 'bar',
+    });
   const ctx8 = document.getElementById('linechart_cumulativeinc');
   var income_cum_chart = new Chart(ctx8, {
     type: 'line',
@@ -301,7 +304,18 @@
           top_category_chart.options = result.options;
           top_category_chart.data = result.data;
           top_category_chart.update();
-          console.log(top_category_chart);
+          });
+      url = "{% url 'plot_top5_by_description' object.pk month year %}";
+      $.getJSON(url, function(result) {
+          top_description_chart.options = result.options;
+          top_description_chart.data = result.data;
+          top_description_chart.update();
+          });
+      url = "{% url 'plot_top5_by_location' object.pk month year %}";
+      $.getJSON(url, function(result) {
+          top_location_chart.options = result.options;
+          top_location_chart.data = result.data;
+          top_location_chart.update();
           });
       url = "{% url 'plot_expenses_cumulative_month_year' object.pk month year %}";
       $.getJSON(url, function(result) {

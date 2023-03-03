@@ -28,6 +28,12 @@ urlpatterns = [
     # Ex. /finances/plot/user/1/bar_top5_category/January/2023
     path('plot/user/<int:pk>/bar_top5_category/<str:month>/<int:year>',
          pv.ExpenseByCategoryPlotView.as_view(), name='plot_top5_by_category'),
+    # Ex. /finances/plot/user/1/bar_top5_description/January/2023
+    path('plot/user/<int:pk>/bar_top5_description/<str:month>/<int:year>',
+         pv.ExpenseByDescriptionPlotView.as_view(), name='plot_top5_by_description'),
+    # Ex. /finances/plot/user/1/bar_top5_location/January/2023
+    path('plot/user/<int:pk>/bar_top5_location/<str:month>/<int:year>',
+         pv.ExpenseByLocationPlotView.as_view(), name='plot_top5_by_location'),
     # Ex. /finances/plot/debug
     path('plot/debug', pv.DebugView.as_view(), name='plot_debug')
 ]

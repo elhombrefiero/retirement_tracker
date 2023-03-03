@@ -191,6 +191,80 @@ class ExpenseByCategoryPlotView(DetailView):
         return JsonResponse(config)
 
 
+class ExpenseByDescriptionPlotView(DetailView):
+    model = User
+
+    def dispatch(self, request, *args, **kwargs):
+        self.month = kwargs['month']
+        self.year = kwargs['year']
+        userpk = kwargs['pk']
+        self.user = User.objects.get(pk=userpk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        config = get_bar_chart_config('Expenses by Description')
+        data = dict()
+        top_5desc = self.user.return_top_description(self.month, self.year, 5)
+
+        labels = list()
+        data_sum = list()
+        for topdesc in top_5desc:
+            labels.append(topdesc['description'])
+            data_sum.append(topdesc['sum'])
+
+        data['labels'] = labels
+        datasets = list()
+        desc_sum = {
+            'label': 'Total',
+            'data': data_sum,
+            'borderColor': cjs.get_color('black'),
+            'backgroundColor': cjs.get_color('black', 0.5)
+        }
+        datasets.append(desc_sum)
+
+        data['datasets'] = datasets
+        config['data'] = data
+
+        return JsonResponse(config)
+
+
+class ExpenseByLocationPlotView(DetailView):
+    model = User
+
+    def dispatch(self, request, *args, **kwargs):
+        self.month = kwargs['month']
+        self.year = kwargs['year']
+        userpk = kwargs['pk']
+        self.user = User.objects.get(pk=userpk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        config = get_bar_chart_config('Expenses by Location')
+        data = dict()
+        top_5loc = self.user.return_top_location(self.month, self.year, 5)
+
+        labels = list()
+        data_sum = list()
+        for toploc in top_5loc:
+            labels.append(toploc['where_bought'])
+            data_sum.append(toploc['sum'])
+
+        data['labels'] = labels
+        datasets = list()
+        loc_sum = {
+            'label': 'Total',
+            'data': data_sum,
+            'borderColor': cjs.get_color('black'),
+            'backgroundColor': cjs.get_color('black', 0.5)
+        }
+        datasets.append(loc_sum)
+
+        data['datasets'] = datasets
+        config['data'] = data
+
+        return JsonResponse(config)
+
+
 class IncomeCumulativeMonthYearPlotView(DetailView):
     model = User
 
