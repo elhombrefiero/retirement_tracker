@@ -46,6 +46,9 @@ def get_line_chart_config(name):
                   'interaction': {
                       'intersect': False,
                   },
+                  'layout': {
+                      'padding': 20
+                  },
                   'scales': {
                       'x': {
                           'type': 'time',
@@ -86,9 +89,13 @@ def get_bar_chart_config(name):
             'display': True,
             'text': f'{name}'
         },
+        'maintainAspectRatio': False,
+        # 'padding': {
+        #     'left': 20,
+        # },
         'responsive': True,
         'legend': {
-            'position': 'top'
+            'position': 'bottom'
         },
         'scales': {
             'y': {
@@ -171,7 +178,7 @@ class ExpenseByCategoryPlotView(DetailView):
         data['labels'] = labels
         datasets = list()
         cat_sum = {
-            'label': 'Sum',
+            'label': 'Total',
             'data': data_sum,
             'borderColor': cjs.get_color('black'),
             'backgroundColor': cjs.get_color('black', 0.5)

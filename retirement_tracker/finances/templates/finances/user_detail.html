@@ -219,15 +219,15 @@
 </nav>
 
 <!--TODO: Bar charts of expenses by category, by description, by group-->
-<nav class="level is-mobile">
-  <div class="tile is-ancestor">
-    <div class="tile">
+<nav class="level">
+  <div class="columns is-centered">
+    <div class="column">
       <canvas id="barchart_by_category"></canvas>
     </div>
-    <div class="tile">
+    <div class="column">
       <canvas id="barchart_by_description"></canvas>
     </div>
-    <div class="tile">
+    <div class="column">
       <canvas id="barchart_by_location"></canvas>
     </div>
   </div>
@@ -265,7 +265,8 @@
   var budget_vs_spent_chart = new Chart(ctx4, {
     type: 'bar',
     });
-  const ctx5 = document.getElementById('barchart_by_category');
+  var ctx5 = document.getElementById('barchart_by_category');
+<!--  ctx5.height(500);-->
   var top_category_chart = new Chart(ctx5, {
     type: 'bar',
     });
@@ -291,13 +292,16 @@
         });
       url = "{% url 'plot_bar_budget_vs_spent_month_year' object.pk month year %}";
       $.getJSON(url, function(result) {
-        budget_vs_spent_chart.config = result;
+        budget_vs_spent_chart.options = result.options;
+        budget_vs_spent_chart.data = result.data;
         budget_vs_spent_chart.update();
         });
       url = "{% url 'plot_top5_by_category' object.pk month year %}";
       $.getJSON(url, function(result) {
-          top_category_chart.config = result;
+          top_category_chart.options = result.options;
+          top_category_chart.data = result.data;
           top_category_chart.update();
+          console.log(top_category_chart);
           });
       url = "{% url 'plot_expenses_cumulative_month_year' object.pk month year %}";
       $.getJSON(url, function(result) {
