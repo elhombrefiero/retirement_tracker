@@ -470,6 +470,7 @@ class User(models.Model):
 
         The start date is inclusive whereas the end_date is not.
         """
+        # TODO: First get the distinct dates and use that to get the summation for every day.
 
         user_checking = CheckingAccount.objects.filter(user=self)
         expenses = Expense.objects.filter(user=self, account__in=user_checking,
