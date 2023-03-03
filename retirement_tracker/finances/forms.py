@@ -1,7 +1,7 @@
 from django import forms
 from django.utils.timezone import now
 
-from finances.models import User, Expense, DebtAccount, TradingAccount, RetirementAccount, MonthlyBudget, Income, CheckingAccount
+from finances.models import User, Expense, Account, DebtAccount, TradingAccount, RetirementAccount, MonthlyBudget, Income, CheckingAccount
 
 FORM_BUDGET_GROUP_CHOICES = (
     (None, None),
