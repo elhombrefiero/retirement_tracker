@@ -184,6 +184,47 @@ class ExpenseByCategoryPlotView(DetailView):
         return JsonResponse(config)
 
 
+class IncomeCumulativeMonthYearPlotView(DetailView):
+    model = User
+
+    def dispatch(self, request, *args, **kwargs):
+        self.month = kwargs['month']
+        self.year = kwargs['year']
+        userpk = kwargs['pk']
+        self.user = User.objects.get(pk=userpk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        start_date = datetime.strptime(f'{self.month}-01-{self.year}', '%B-%d-%Y')
+        end_date = start_date + relativedelta(months=+1)
+        config = get_line_chart_config(f'Cumulative Expenses for {self.month}, {self.year}')
+        cumulative_income = self.user.return_cumulative_incomes(start_date, end_date)
+        return_dict = dict()
+        return_dict['config'] = config
+
+        xy_data = []
+        labels = []
+        for income in cumulative_income:
+            labels.append(income.date)
+            xy_data.append(
+                {'x': income.date, 'y': float(income.cumsum)})
+
+        data = {
+            'labels': labels,
+            'datasets': [{
+                'label': 'Cumulative Incomes',
+                'backgroundColor': cjs.get_color('green', 0.5),
+                'borderColor': cjs.get_color('green'),
+                'fill': False,
+                'data': xy_data
+            }]
+        }
+
+        return_dict['data'] = data
+
+        return JsonResponse(return_dict)
+
+
 class ExpenseCumulativeMonthYearPlotView(DetailView):
     model = User
 
@@ -214,8 +255,8 @@ class ExpenseCumulativeMonthYearPlotView(DetailView):
             'labels': labels,
             'datasets': [{
                 'label': 'Cumulative Expenses',
-                'backgroundColor': cjs.get_color('black', 0.5),
-                'borderColor': cjs.get_color('black'),
+                'backgroundColor': cjs.get_color('red', 0.5),
+                'borderColor': cjs.get_color('red'),
                 'fill': False,
                 'data': xy_data
             }]

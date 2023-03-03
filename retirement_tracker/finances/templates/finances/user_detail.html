@@ -152,41 +152,59 @@
 </nav>
 {% endif %}
 
-<!--TODO: Table of budget group, budgeted, spent, and leftovers.-->
-{% if tot_statutory_expenses %}
-<!-- Expenses -->
-<nav class="level is-mobile">
-    <div class="level-item has-text-centered">
-    <div>
-      <p class="heading">Statutory Expenses</p>
-      <p class="title">{{tot_statutory_expenses}}</p>
+{% if report_type == 'month' %}
+<nav class="level">
+  <div class="tile is-ancestor">
+    <div class="tile">
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Budget Group</th>
+          <th>Budgeted</th>
+          <th>Spent</th>
+          <th>Left Over</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td>Statutory</td>
+          <td>{{monthly_budget.statutory}}</td>
+          <td>{{tot_statutory_expenses}}</td>
+          <td>{{leftover_statutory}}</td>
+        </tr>
+        <tr>
+          <td>Mandatory</td>
+          <td>{{monthly_budget.mandatory}}</td>
+          <td>{{tot_mandatory_expenses}}</td>
+          <td>{{leftover_mandatory}}</td>
+        </tr>
+        <tr>
+          <td>Mortgage</td>
+          <td>{{monthly_budget.mortgage}}</td>
+          <td>{{tot_mortgage_expenses}}</td>
+          <td>{{leftover_mortgage}}</td>
+        </tr>
+        <tr>
+          <td>Debts, Goals, Retirement</td>
+          <td>{{monthly_budget.debts_goals_retirement}}</td>
+          <td>{{tot_debts_goals_retirement_expenses}}</td>
+          <td>{{leftover_dgr}}</td>
+        </tr>
+        <tr>
+          <td>Discretionary</td>
+          <td>{{monthly_budget.discretionary}}</td>
+          <td>{{tot_discretionary_expenses}}</td>
+          <td>{{leftover_disc}}</td>
+        </tr>
+        </tbody>
+      </table>
     </div>
-  </div>
-  <div class="level-item has-text-centered">
-    <div>
-      <p class="heading">Mandatory Expenses</p>
-      <p class="title">{{tot_mandatory_expenses}}</p>
-    </div>
-  </div>
-  <div class="level-item has-text-centered">
-    <div>
-      <p class="heading">Mortgage Expenses</p>
-      <p class="title">{{tot_mortgage_expenses}}</p>
-    </div>
-  </div>
-  <div class="level-item has-text-centered">
-    <div>
-      <p class="heading">Debts, Goals, Retirement</p>
-      <p class="title">{{tot_debts_goals_retirement_expenses}}</p>
-    </div>
-  </div>
-  <div class="level-item has-text-centered">
-    <div>
-      <p class="heading">Discretionary Expenses</p>
-      <p class="title">{{tot_discretionary_expenses}}</p>
+    <div class="tile">
+      <canvas id="barchart_budget_spent"></canvas>
     </div>
   </div>
 </nav>
+
 {% endif %}
 
 <nav class="level">
@@ -200,36 +218,38 @@
   </div>
 </nav>
 
-<nav class="level">
-  <div class="level-item has-text-centered">
-    <canvas id="barchart_budget_spent"></canvas>
-  </div>
-</nav>
-
 <!--TODO: Bar charts of expenses by category, by description, by group-->
 <nav class="level is-mobile">
-  <div class="level-item has-text-centered">
-    <div>
+  <div class="tile is-ancestor">
+    <div class="tile">
       <canvas id="barchart_by_category"></canvas>
+    </div>
+    <div class="tile">
       <canvas id="barchart_by_description"></canvas>
+    </div>
+    <div class="tile">
       <canvas id="barchart_by_location"></canvas>
     </div>
   </div>
 </nav>
 
-<!--TODO: Charts of expenses for the month, income for the month-->
-
 <nav class="level is-mobile">
-  <div class="level-item">
-    <canvas id="linechart_cumulative"></canvas>
+  <div class="tile is-ancestor">
+    <div class="tile">
+      <canvas id="linechart_cumulativeexp"></canvas>
+    </div>
+    <div class="tile">
+      <canvas id="linechart_cumulativeinc"></canvas>
+    </div>
   </div>
 </nav>
+<!--TODO: Chart of cumulative net for month-->
 {% endblock %}
 
 {% block jsstuff %}
   {% if month %}
   <script>
-  const ctx = document.getElementById('linechart_cumulative');
+  const ctx = document.getElementById('linechart_cumulativeexp');
   var exp_cum_chart = new Chart(ctx, {
       type: 'line',
     });
@@ -248,6 +268,11 @@
   const ctx5 = document.getElementById('barchart_by_category');
   var top_category_chart = new Chart(ctx5, {
     type: 'bar',
+    });
+
+  const ctx8 = document.getElementById('linechart_cumulativeinc');
+  var income_cum_chart = new Chart(ctx8, {
+    type: 'line',
     });
 
   $(document).ready(function () {
@@ -279,6 +304,12 @@
           exp_cum_chart.data = result.data;
           exp_cum_chart.options = result.config.options;
           exp_cum_chart.update();
+          });
+      url =   "{% url 'plot_incomes_cumulative_month_year' object.pk month year %}";
+      $.getJSON(url, function(result) {
+          income_cum_chart.data = result.data;
+          income_cum_chart.options = result.config.options;
+          income_cum_chart.update();
           });
       });
   </script>

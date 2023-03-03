@@ -19,6 +19,9 @@ urlpatterns = [
     # Ex. /finances/plot/user/1/expenses/January/2022/cumulative_expenses
     path('plot/user/<int:pk>/expenses/<str:month>/<int:year>/cumulative_expenses',
          pv.ExpenseCumulativeMonthYearPlotView.as_view(), name='plot_expenses_cumulative_month_year'),
+    # Ex. /finances/plot/user/1/incomes/January/2022/cumulative_incomes
+    path('plot/user/<int:pk>/incomes/<str:month>/<int:year>/cumulative_incomes',
+         pv.IncomeCumulativeMonthYearPlotView.as_view(), name='plot_incomes_cumulative_month_year'),
     # Ex. /finances/plot/user/1/bar_budgeted_vs_spent/January/2023/
     path('plot/user/<int:pk>/bar_budgeted_vs_spent/<str:month>/<int:year>',
          pv.ExpenseSpentAndBudgetPlotView.as_view(), name='plot_bar_budget_vs_spent_month_year'),
