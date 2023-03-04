@@ -18,7 +18,7 @@ from retirement_tracker.settings import DATABASES
 
 
 class Command(BaseCommand):
-    help = 'Copies the database file to a specified directory'
+    help = 'Creates a backup of the database at the called point in time to a specified directory'
 
     def add_arguments(self, parser):
         parser.add_argument('directory', type=Path, help='Directory to store backup copy.')
@@ -34,12 +34,8 @@ class Command(BaseCommand):
             dump_name = options['dump_name']
         else:
             dump_name = 'dump.json'
-        try:
-            os.makedirs(options['directory'], exist_ok=True)
-        except Exception as e:
-            print(f"Could not create directory: {e}. \nExiting.")
-            return
 
+        bu_time = datetime.datetime.now()
         cmd = shlex.split(f'python manage.py dumpdata --natural-foreign --natural-primary -e contenttypes -e auth.Permission --indent 2')
         output = sp.check_output(cmd)
         output_json = json.loads(output)
@@ -47,16 +43,21 @@ class Command(BaseCommand):
         with open(dump_name, 'w', encoding='utf-8') as fileobj:
             json.dump(output_json, fileobj, ensure_ascii=False, indent=4, sort_keys=True)
 
-        dir_name = options['directory']
-
-        bu_time = datetime.datetime.now()
         if options['new_name'] is not None:
             dump_name_new = options['new_name']
         else:
             dump_name_new = f'bu_{bu_time.month}_{bu_time.day}_{bu_time.year}.json'
+        dir_name = options['directory']
+
+        backup_dir = os.path.join(dir_name, bu_time.strftime('%Y'), bu_time.strftime('%B'))
+        try:
+            os.makedirs(backup_dir, exist_ok=True)
+        except Exception as e:
+            print(f"Could not create directory: {e}. \nExiting.")
+            return
 
         try:
-            shutil.move(dump_name, os.path.join(dir_name, dump_name_new))
+            shutil.move(dump_name, os.path.join(backup_dir, dump_name_new))
         except Exception as e:
             print(f"Could not copy database: {e}")
             return
