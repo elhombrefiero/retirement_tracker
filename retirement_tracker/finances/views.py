@@ -416,9 +416,6 @@ class UserWorkRelatedIncomeView(FormView):
         account = CheckingAccount.objects.get(pk=post['checking_account'])
         account_401k = RetirementAccount.objects.get(pk=post['account_401k'])
         account_HSA = RetirementAccount.objects.get(pk=post['account_HSA'])
-        print(f"account: {account.name}, {account.pk}")
-        print(f"account_401k: {account_401k.name}, {account_401k.pk}")
-        print(f"account_HSA: {account_HSA.name}, {account_HSA.pk}")
         day = post['date_day']
         month = post['date_month']
         year = post['date_year']
@@ -550,6 +547,7 @@ class UserWorkRelatedIncomeView(FormView):
 
 
 class MonthlyBudgetForUserView(FormView):
+    # TODO: Verify the behavior of this one.
     form_class = MonthlyBudgetForUserForm
     template_name = 'finances/monthlybudget_form_for_user.html'
     success_url = '/finances'
@@ -576,7 +574,7 @@ class MonthlyBudgetForUserView(FormView):
                                              statutory=post['statutory']
                                              )
         newmb.save()
-        # self.success_url = 'user_monthly_budget'
+        self.success_url = f'/finances/user/{self.user.pk}'
         return super().form_valid(form)
 
 
