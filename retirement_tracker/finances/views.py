@@ -411,6 +411,26 @@ class UserWorkRelatedIncomeView(FormView):
         kwargs['user'] = self.user
         return kwargs
 
+    def form_valid(self, form):
+        post = self.request.POST
+        account = CheckingAccount.objects.get(pk=post['checking_account'])
+        account_401k = RetirementAccount.objects.get(pk=post['account_401k'])
+        account_HSA = RetirementAccount.objects.get(pk=post['account_HSA'])
+        date = post['date']
+        date = datetime.strptime(date, '%Y-%m-%d')
+        gross_income = post['gross_income']
+        fed_income_tax = post['fed_income_tax']
+        social_security_tax = post['social_security_tax']
+        medicare = post['medicare']
+        state_income_tax = post['state_income_tax']
+        dental = post['dental']
+        medical = post['medical']
+        vision = post['vision']
+        retirement_401k = post['retirement_401k']
+        retirement_hsa = post['retirement_HSA']
+
+        new_inc = Income.objects.create()
+
 
 class MonthlyBudgetForUserView(FormView):
     form_class = MonthlyBudgetForUserForm

@@ -24,7 +24,7 @@ class UserForm(forms.ModelForm):
 class UserWorkIncomeExpenseForm(forms.Form):
     """ Adds work-related income and expenses for the user."""
 
-    account = forms.ChoiceField(label='Main Account')
+    checking_account = forms.ChoiceField(label='Main Account (Checking)')
     account_401k = forms.ChoiceField(label='Account for 401k')
     account_HSA = forms.ChoiceField(label='Account for HSA')
     date = forms.DateField(label='Date of paycheck', initial=now, widget=forms.SelectDateWidget)
@@ -42,13 +42,17 @@ class UserWorkIncomeExpenseForm(forms.Form):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user')
         super().__init__(*args, **kwargs)
-        user_accounts = Account.objects.filter(user=user)
-        account_choices = [(None, None)]
-        for i, acct in enumerate(user_accounts):
-            account_choices.append((i, acct))
-        self.fields['account'] = forms.ChoiceField(choices=account_choices)
-        self.fields['account_401k'] = forms.ChoiceField(choices=account_choices)
-        self.fields['account_HSA'] = forms.ChoiceField(choices=account_choices)
+        user_checking_accounts = CheckingAccount.objects.filter(user=user)
+        user_ret_accounts = RetirementAccount.objects.filter(user=user)
+        checking_account_choices = [(None, None)]
+        ret_account_choices = [(None, None)]
+        for i, acct in enumerate(user_checking_accounts):
+            checking_account_choices.append((i, acct))
+        for i, acct in enumerate(user_ret_accounts):
+            ret_account_choices.append((i, acct))
+        self.fields['checking_account'] = forms.ChoiceField(choices=checking_account_choices)
+        self.fields['account_401k'] = forms.ChoiceField(choices=ret_account_choices)
+        self.fields['account_HSA'] = forms.ChoiceField(choices=ret_account_choices)
 
 
 class ExpenseForUserForm(forms.ModelForm):
