@@ -42,14 +42,19 @@ class UserWorkIncomeExpenseForm(forms.Form):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user')
         super().__init__(*args, **kwargs)
-        user_checking_accounts = CheckingAccount.objects.filter(user=user)
-        user_ret_accounts = RetirementAccount.objects.filter(user=user)
+        user_checking_accts = user.return_checking_accts()
+        user_checking_accts_names = [acct.name for acct in user_checking_accts]
+        user_checking_accounts = CheckingAccount.objects.all().filter(name__in=user_checking_accts_names)
+        user_ret_accts = RetirementAccount.objects.filter(user=user)
+        user_ret_accounts_names = [acct.name for acct in user_ret_accts]
+        user_ret_accounts = RetirementAccount.objects.all().filter(name__in=user_ret_accounts_names)
+
         checking_account_choices = [(None, None)]
         ret_account_choices = [(None, None)]
-        for i, acct in enumerate(user_checking_accounts):
-            checking_account_choices.append((i, acct))
-        for i, acct in enumerate(user_ret_accounts):
-            ret_account_choices.append((i, acct))
+        for acct in user_checking_accounts:
+            checking_account_choices.append((acct.pk, acct))
+        for acct in user_ret_accounts:
+            ret_account_choices.append((acct.pk, acct))
         self.fields['checking_account'] = forms.ChoiceField(choices=checking_account_choices)
         self.fields['account_401k'] = forms.ChoiceField(choices=ret_account_choices)
         self.fields['account_HSA'] = forms.ChoiceField(choices=ret_account_choices)

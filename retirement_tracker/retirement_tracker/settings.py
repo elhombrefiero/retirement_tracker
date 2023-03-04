@@ -28,7 +28,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', env('SECRET_KEY'))
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.0.101', 'finances.local']
+ALLOWED_HOSTS = ['192.168.0.101', 'finances.local', 'localhost']
 
 
 # Application definition
@@ -81,8 +81,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'retirement_tracker',
-        'USER': env['USER'],
-        'PASSWORD': env['PASSWORD'],
+        'USER': os.environ.get('USER', env('USER')),
+        'PASSWORD': os.environ.get('PASSWORD', env('PASSWORD')),
         'HOST': 'localhost',
         'PORT': '5432',
     }

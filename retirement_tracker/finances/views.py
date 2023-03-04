@@ -11,7 +11,7 @@ from django.utils import timezone
 from datetime import datetime
 
 from finances.models import User, Account, CheckingAccount, DebtAccount, Income, Expense, TradingAccount, \
-    RetirementAccount, MonthlyBudget
+    RetirementAccount, MonthlyBudget, BUDGET_GROUP_CHOICES, Transfer
 from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, \
     UserExpenseLookupForm, IncomeForUserForm, MonthlyBudgetForUserMonthYearForm, AddDebtAccountForm, \
     AddCheckingAccountForm, AddRetirementAccountForm, AddTradingAccountForm
@@ -416,20 +416,137 @@ class UserWorkRelatedIncomeView(FormView):
         account = CheckingAccount.objects.get(pk=post['checking_account'])
         account_401k = RetirementAccount.objects.get(pk=post['account_401k'])
         account_HSA = RetirementAccount.objects.get(pk=post['account_HSA'])
-        date = post['date']
-        date = datetime.strptime(date, '%Y-%m-%d')
-        gross_income = post['gross_income']
-        fed_income_tax = post['fed_income_tax']
-        social_security_tax = post['social_security_tax']
-        medicare = post['medicare']
-        state_income_tax = post['state_income_tax']
-        dental = post['dental']
-        medical = post['medical']
-        vision = post['vision']
-        retirement_401k = post['retirement_401k']
-        retirement_hsa = post['retirement_HSA']
+        print(f"account: {account.name}, {account.pk}")
+        print(f"account_401k: {account_401k.name}, {account_401k.pk}")
+        print(f"account_HSA: {account_HSA.name}, {account_HSA.pk}")
+        day = post['date_day']
+        month = post['date_month']
+        year = post['date_year']
+        date = datetime.strptime(f'{year}-{month}-{day}', '%Y-%m-%d')
+        gross_income = float(post['gross_income'])
+        fed_income_tax = float(post['fed_income_tax'])
+        social_security_tax = float(post['social_security_tax'])
+        medicare = float(post['medicare'])
+        state_income_tax = float(post['state_income_tax'])
+        dental = float(post['dental'])
+        medical = float(post['medical'])
+        vision = float(post['vision'])
+        retirement_401k = float(post['retirement_401k'])
+        retirement_hsa = float(post['retirement_HSA'])
 
-        new_inc = Income.objects.create()
+        new_inc = Income.objects.create(user=self.user,
+                                        account=account,
+                                        date=date,
+                                        category='Gross Income',
+                                        description='Gross Income',
+                                        amount=gross_income)
+        new_inc.save()
+        fed_exp = Expense.objects.create(user=self.user,
+                                         account=account,
+                                         date=date,
+                                         budget_group=BUDGET_GROUP_CHOICES[4][0],
+                                         category='Taxes',
+                                         where_bought='Work',
+                                         description='Federal Income Tax',
+                                         amount=fed_income_tax,
+                                         )
+        fed_exp.save()
+        ss_exp = Expense.objects.create(user=self.user,
+                                         account=account,
+                                         date=date,
+                                         budget_group=BUDGET_GROUP_CHOICES[4][0],
+                                         category='Taxes',
+                                         where_bought='Work',
+                                         description='Social Security Tax',
+                                         amount=social_security_tax,
+                                         )
+        ss_exp.save()
+        medicare_exp = Expense.objects.create(user=self.user,
+                                         account=account,
+                                         date=date,
+                                         budget_group=BUDGET_GROUP_CHOICES[4][0],
+                                         category='Taxes',
+                                         where_bought='Work',
+                                         description='Medicare Tax',
+                                         amount=medicare,
+                                         )
+        medicare_exp.save()
+        state_income_exp = Expense.objects.create(user=self.user,
+                                         account=account,
+                                         date=date,
+                                         budget_group=BUDGET_GROUP_CHOICES[4][0],
+                                         category='Taxes',
+                                         where_bought='Work',
+                                         description='State Income Tax',
+                                         amount=state_income_tax,
+                                         )
+        state_income_exp.save()
+        dental_exp = Expense.objects.create(user=self.user,
+                                         account=account,
+                                         date=date,
+                                         budget_group=BUDGET_GROUP_CHOICES[0][0],
+                                         category='Mandatory',
+                                         where_bought='Work',
+                                         description='Dental',
+                                         amount=dental,
+                                         )
+        dental_exp.save()
+        medical_exp = Expense.objects.create(user=self.user,
+                                         account=account,
+                                         date=date,
+                                         budget_group=BUDGET_GROUP_CHOICES[0][0],
+                                         category='Mandatory',
+                                         where_bought='Work',
+                                         description='Medical',
+                                         amount=medical,
+                                         )
+        medical_exp.save()
+        vision_exp = Expense.objects.create(user=self.user,
+                                         account=account,
+                                         date=date,
+                                         budget_group=BUDGET_GROUP_CHOICES[0][0],
+                                         category='Mandatory',
+                                         where_bought='Work',
+                                         description='Vision',
+                                         amount=vision,
+                                         )
+        vision_exp.save()
+        ret_401k_exp = Expense.objects.create(user=self.user,
+                                         account=account,
+                                         date=date,
+                                         budget_group=BUDGET_GROUP_CHOICES[2][0],
+                                         category='Retirement',
+                                         where_bought='Work',
+                                         description='401k Contribution',
+                                         amount=retirement_401k,
+                                         )
+        ret_401k_exp.save()
+        ret_401k_inc = Income.objects.create(user=self.user,
+                                             account=account_401k,
+                                             date=date,
+                                             category='401k',
+                                             description='401k Contirbution',
+                                             amount=retirement_401k)
+        ret_401k_inc.save()
+        ret_hsa_exp = Expense.objects.create(user=self.user,
+                                         account=account,
+                                         date=date,
+                                         budget_group=BUDGET_GROUP_CHOICES[2][0],
+                                         category='Retirement',
+                                         where_bought='Work',
+                                         description='HSA Contribution',
+                                         amount=retirement_hsa,
+                                         )
+        ret_hsa_exp.save()
+        ret_hsa_inc = Income.objects.create(user=self.user,
+                                            account=account_HSA,
+                                            date=date,
+                                            category='HSA',
+                                            description='HSA Contribution',
+                                            amount=retirement_hsa)
+        ret_hsa_inc.save()
+        self.success_url = f'/finances/user/{self.user.pk}'
+        return super().form_valid(form)
 
 
 class MonthlyBudgetForUserView(FormView):
