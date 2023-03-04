@@ -547,7 +547,6 @@ class UserWorkRelatedIncomeView(FormView):
 
 
 class MonthlyBudgetForUserView(FormView):
-    # TODO: Verify the behavior of this one.
     form_class = MonthlyBudgetForUserForm
     template_name = 'finances/monthlybudget_form_for_user.html'
     success_url = '/finances'
@@ -564,7 +563,9 @@ class MonthlyBudgetForUserView(FormView):
 
     def form_valid(self, form):
         post = self.request.POST
-        dtdate = datetime.strptime(post['date'], '%Y-%d-%m')
+        month = post['date_month']
+        year = post['date_year']
+        dtdate = datetime.strptime(f'{month}-{year}', '%m-%Y')
         newmb = MonthlyBudget.objects.create(user=self.user,
                                              date=dtdate,
                                              mandatory=post['mandatory'],
@@ -678,6 +679,21 @@ class MonthlyBudgetDeleteView(DeleteView):
 class MonthlyBudgetUpdateView(UpdateView):
     model = MonthlyBudget
     fields = '__all__'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data()
+        user_for_budget = self.object.user
+        budget_mand, budget_mort, statutory, budget_dgr, budget_disc = \
+            user_for_budget.estimate_budget_for_month_year(self.object.month, self.object.year)
+        context['user'] = user_for_budget
+        context['statutory'] = statutory
+        context['est_mand'] = budget_mand
+        context['est_mort'] = budget_mort
+        context['est_dgr'] = budget_dgr
+        context['est_disc'] = budget_disc
+        context['month'] = self.object.month
+        context['year'] = self.object.year
+        return context
 
 
 class TradingAccountView(DetailView):

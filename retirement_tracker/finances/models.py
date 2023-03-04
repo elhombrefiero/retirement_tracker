@@ -329,7 +329,7 @@ class User(models.Model):
         budget_dgr = takehome * self.DEFAULT_DGR_BUDGET_PCT / 100.0
         budget_disc = takehome * self.DEFAULT_DISC_BUDGET_PCT / 100.0
 
-        return budget_mand, budget_mort, statutory, budget_dgr, budget_disc
+        return round(float(budget_mand), 2), round(float(budget_mort), 2), round(float(statutory), 2), round(float(budget_dgr), 2), round(float(budget_disc), 2)
 
     def get_checking_total_month_year(self, month, year):
         """ Calculates the total balance for the given month and year"""

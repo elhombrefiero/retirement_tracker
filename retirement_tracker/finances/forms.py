@@ -126,6 +126,8 @@ class UserExpenseLookupForm(forms.Form):
 
 class MonthlyBudgetForUserForm(forms.ModelForm):
     """ Add a monthly budget for a given user."""
+    date = forms.DateField(label='Date for monthly budget', initial=now, widget=forms.SelectDateWidget)
+
     class Meta:
         model = MonthlyBudget
         exclude = ['user', 'month', 'year']

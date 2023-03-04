@@ -1,10 +1,18 @@
 {% extends 'finances/master_template.html' %}
 
 {% block header_extra %}
-    <title>Create Monthly Budget</title>
+    <title>Create or Update Monthly Budget</title>
 {% endblock %}
 
 {% block mymessage %}
+{% if month %}
+    <p>Statutory: {{statutory}}</p>
+    <p>{{user.name}}'s estimated budget values for {{month}}, {{year}}</p>
+    <p>Mandatory: {{est_mand}}</p>
+    <p>Mortgage: {{est_mort}}</p>
+    <p>Debts, Goals, Retirement: {{est_dgr}}</p>
+    <p>Discretionary: {{est_disc}}</p>
+{% endif %}
 <form method="POST" enctype="multipart/form-data">
     {{ form.non_field_errors }}
     {% csrf_token %}
