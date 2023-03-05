@@ -11,11 +11,12 @@ from django.utils import timezone
 from datetime import datetime
 
 from finances.models import User, Account, CheckingAccount, DebtAccount, Income, Expense, TradingAccount, \
-    RetirementAccount, MonthlyBudget, BUDGET_GROUP_CHOICES, Transfer
+    RetirementAccount, MonthlyBudget, BUDGET_GROUP_CHOICES, Transfer, Deposit, Withdrawal
 from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, \
     UserExpenseLookupForm, IncomeForUserForm, MonthlyBudgetForUserMonthYearForm, AddDebtAccountForm, \
     AddCheckingAccountForm, AddRetirementAccountForm, AddTradingAccountForm
 
+# TODO: Add a transfer form for user and put that on dropdown list. Also, the multiple expenses for one location.
 
 # Create your views here.
 
@@ -214,6 +215,8 @@ class AccountView(DetailView):
         # Get the latest incomes associated with this account
         context['incomes'] = Income.objects.filter(account=self.object).order_by('-date')
         context['expenses'] = Expense.objects.filter(account=self.object).order_by('-date')
+        context['deposits'] = Deposit.objects.filter(account=self.object).order_by('-date')
+        context['withdrawals'] = Withdrawal.objects.filter(account=self.object).order_by('-date')
         context['balance'] = self.object.return_balance()
         return context
 
