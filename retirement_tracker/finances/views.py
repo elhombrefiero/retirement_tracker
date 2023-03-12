@@ -20,6 +20,7 @@ from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetFo
 
 # Create your views here.
 
+
 class IndexView(TemplateView):
     template_name = 'finances/index.html'
 
@@ -34,7 +35,7 @@ class UserView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_net_worth = \
+        ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_tot_debt, ret_net_worth = \
             self.object.return_net_worth_at_retirement()
         context['projected_net_worth'] = ret_net_worth
         context['earliest_ret_date'] = self.object.get_earliest_retirement_date()
@@ -59,11 +60,11 @@ class UserYearView(DetailView):
         context = super().get_context_data(**kwargs)
         context['report_type'] = 'year'
         context['accounts'] = Account.objects.filter(user=self.object)
-        tot_checking, tot_retirement, tot_trading, net_worth = \
+        tot_checking, tot_retirement, tot_trading, tot_debt, net_worth = \
             self.object.return_net_worth_year(self.year)
         context['net_worth'] = net_worth
         context['year'] = self.year
-        ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_net_worth = \
+        ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_tot_debt, ret_net_worth = \
             self.object.return_net_worth_at_retirement()
         context['projected_net_worth'] = ret_net_worth
         return context
@@ -81,12 +82,16 @@ class UserMonthYearView(DetailView):
         context = super().get_context_data(**kwargs)
         context['report_type'] = 'month'
         context['accounts'] = Account.objects.filter(user=self.object)
-        tot_checking, tot_retirement, tot_trading, net_worth = \
+        tot_checking, tot_retirement, tot_trading, tot_debt, net_worth = \
             self.object.return_net_worth_month_year(self.month, self.year)
         context['net_worth'] = net_worth
+        context['checking_balance'] = tot_checking
+        context['retirement_balance'] = tot_retirement
+        context['trading_balance'] = tot_trading
+        context['debt_balance'] = tot_debt
         context['month'] = self.month
         context['year'] = self.year
-        ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_net_worth = \
+        ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_tot_debt, ret_net_worth = \
             self.object.return_net_worth_at_retirement()
         context['projected_net_worth'] = ret_net_worth
         date = datetime.strptime(f'{self.year}-{self.month}-01', '%Y-%B-%d')

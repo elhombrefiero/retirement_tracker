@@ -29,6 +29,7 @@ class User(models.Model):
     Checking Accounts
     Trading Accounts (Stocks)
     Retirement Account
+    Debt Account
     Incomes
     Expenses
     Monthly Budgets
@@ -78,10 +79,12 @@ class User(models.Model):
         tot_checking = 0.0
         tot_retirement = 0.0
         tot_trading = 0.0
+        tot_debt = 0.0
 
         user_checking_accts = self.return_checking_accts()
         user_ret_accts = [acct for acct in RetirementAccount.objects.filter(user=self)]
         user_trade_accts = [acct for acct in TradingAccount.objects.filter(user=self)]
+        user_debt_accts = [acct for acct in DebtAccount.objects.filter(user=self)]
 
         for account in user_checking_accts:
             tot_checking += account.return_balance_including_month_year(month, year)
@@ -92,14 +95,17 @@ class User(models.Model):
         for account in user_trade_accts:
             tot_trading += account.return_balance_including_month_year(month, year)
 
-        net_worth = tot_checking + tot_retirement + tot_trading
+        for account in user_debt_accts:
+            tot_debt += account.return_balance_including_month_year(month, year)
 
-        return round(tot_checking, 2), round(tot_retirement, 2), round(tot_trading, 2), round(net_worth, 2)
+        net_worth = tot_checking + tot_retirement + tot_trading - tot_debt
+
+        return round(tot_checking, 2), round(tot_retirement, 2), round(tot_trading, 2), round(tot_debt, 2), round(net_worth, 2)
 
     def return_net_worth_year(self, year:int):
 
-        tot_checking, tot_retirement, tot_trading, net_worth = self.return_net_worth_month_year('December', year)
-        return tot_checking, tot_retirement, tot_trading, net_worth
+        tot_checking, tot_retirement, tot_trading, tot_debt, net_worth = self.return_net_worth_month_year('December', year)
+        return tot_checking, tot_retirement, tot_trading, tot_debt, net_worth
 
     def return_net_worth_at_retirement(self):
         ret_date = self.return_retirement_datetime()
@@ -108,9 +114,9 @@ class User(models.Model):
         ret_month = ret_date.strftime('%B')
         ret_year = int(ret_date.strftime('%Y'))
 
-        tot_checking, tot_retirement, tot_trading, net_worth = self.return_net_worth_month_year(ret_month, ret_year)
+        tot_checking, tot_retirement, tot_trading, tot_debt, net_worth = self.return_net_worth_month_year(ret_month, ret_year)
 
-        return tot_checking, tot_retirement, tot_trading, net_worth
+        return tot_checking, tot_retirement, tot_trading, tot_debt, net_worth
 
     def return_retirement_datetime(self):
         """ Returns the timestamp at retirement age. """
@@ -144,6 +150,15 @@ class User(models.Model):
             tot_trade_amt += ret_acct.return_balance()
 
         return tot_trade_amt
+
+    def return_debt_acct_total(self):
+        tot_debt_amt = 0.0
+        user_debt_accts = DebtAccount.objects.filter(user=self)
+
+        for acct in user_debt_accts:
+            tot_debt_amt += acct.return_balance()
+
+        return tot_debt_amt
 
     def estimate_retirement_finances(self):
         """ Calculate the amount each retirement account will have at the time of retirement.
@@ -750,11 +765,17 @@ class DebtAccount(Account):
 
         Similar to a trading account.
     """
+    starting_balance = models.DecimalField(verbose_name='Starting balance in dollars', max_digits=9, decimal_places=2, default=0.0)
+    account_open_date = models.DateField(default=now)
     yearly_interest_pct = models.DecimalField(verbose_name='Yearly interest in percent',
                                               max_digits=4, decimal_places=2, default=0.0)
 
     def return_date_debt_paid(self):
         return self.return_time_to_reach_amount(0.0)
+
+    def return_balance(self):
+        deposits_minus_withdrawals = super().return_balance()
+        return round(float(self.starting_balance - deposits_minus_withdrawals), 2)
 
 
 class Withdrawal(models.Model):
@@ -766,6 +787,9 @@ class Withdrawal(models.Model):
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     amount = models.FloatField(verbose_name='Amount')
 
+    class Meta:
+        unique_together = ['account', 'date', 'amount']
+
 
 class Deposit(models.Model):
     """ Deposit for a given account.
@@ -775,6 +799,9 @@ class Deposit(models.Model):
     description = models.CharField(max_length=250)
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     amount = models.FloatField(verbose_name='Amount')
+
+    class Meta:
+        unique_together = ['account', 'date', 'amount']
 
 
 class Transfer(models.Model):
