@@ -207,16 +207,17 @@ class AccountUpdateView(UpdateView):
 
 
 class AccountView(DetailView):
+    """ View the deposits and withdrawals associated with this account.
+
+    The template will have a redirect to see all withdrawals and deposits"""
     model = Account
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
         # Get the latest incomes associated with this account
-        context['incomes'] = Income.objects.filter(account=self.object).order_by('-date')
-        context['expenses'] = Expense.objects.filter(account=self.object).order_by('-date')
-        context['deposits'] = Deposit.objects.filter(account=self.object).order_by('-date')
-        context['withdrawals'] = Withdrawal.objects.filter(account=self.object).order_by('-date')
+        context['deposits'] = Deposit.objects.filter(account=self.object).order_by('-date')[:25]
+        context['withdrawals'] = Withdrawal.objects.filter(account=self.object).order_by('-date')[:25]
         context['balance'] = self.object.return_balance()
         return context
 
@@ -688,6 +689,8 @@ class MonthlyBudgetUpdateView(UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data()
         user_for_budget = self.object.user
+        takehome = user_for_budget.return_takehome_pay_month_year(self.object.month, self.object.year)
+        context['takehome'] = takehome
         budget_mand, budget_mort, statutory, budget_dgr, budget_disc = \
             user_for_budget.estimate_budget_for_month_year(self.object.month, self.object.year)
         context['user'] = user_for_budget
@@ -696,6 +699,15 @@ class MonthlyBudgetUpdateView(UpdateView):
         context['est_mort'] = budget_mort
         context['est_dgr'] = budget_dgr
         context['est_disc'] = budget_disc
+        context['est_total'] = statutory + budget_mand + budget_mort + budget_dgr + budget_disc
+        actual_mand, actual_mort, actual_dgr, actual_disc, actual_statutory = \
+            user_for_budget.return_tot_expenses_by_budget_month_year(self.object.month, self.object.year)
+        context['current_mand'] = actual_mand
+        context['current_mort'] = actual_mort
+        context['current_dgr'] = actual_dgr
+        context['current_disc'] = actual_disc
+        context['actual_statutory'] = actual_statutory
+        context['current_total'] = actual_mand + actual_mort + actual_dgr + actual_disc + actual_statutory
         context['month'] = self.object.month
         context['year'] = self.object.year
         return context
