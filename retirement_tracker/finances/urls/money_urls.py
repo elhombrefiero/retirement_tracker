@@ -93,6 +93,10 @@ urlpatterns = [
     path('update_income/<int:pk>', views.IncomeUpdateView.as_view(), name='income-update'),
     # Ex. /finances/update_expense/1
     path('update_expense/<int:pk>', views.ExpenseUpdateView.as_view(), name='expense-update'),
+    # Ex. /finances/update_depsoit/1
+    path('update_deposit/<int:pk>', views.DepositUpdateView.as_view(), name='deposit-update'),
+    # Ex. /finances/update_withdrawal/1
+    path('update_withdrawal/<int:pk>', views.WithdrawalUpdateView.as_view(), name='withdrawal-update'),
     # Ex. /finances/delete_user/1
     path('delete_user/<int:pk>', views.UserDeleteView.as_view(), name='user-delete'),
     # Ex. finances/delete_account/1
@@ -107,6 +111,10 @@ urlpatterns = [
     path('delete_income/<int:pk>', views.IncomeDeleteView.as_view(), name='income-delete'),
     # Ex. finances/delete_expense/1
     path('delete_expense/<int:pk>', views.ExpenseDeleteView.as_view(), name='expense-delete'),
+    # Ex. finances/delete_withdrawal/1
+    path('delete_withdrawal/<int:pk>', views.WithdrawalDeleteView.as_view(), name='withdrawal-delete'),
+    # Ex. finances/delete_deposit/1
+    path('delete_deposit/<int:pk>', views.DepositDeleteView.as_view(), name='deposit-delete'),
     # Ex. /finances/user=user_id/account=account_id/enter_expense_by_location/extra=0
     path('user=<int:user_id>/account=<int:account_id>/enter_expense_by_location/extra=<int:extrarows>',
          views.add_expense_by_location_user_account, name='add_exp_by_loc'),

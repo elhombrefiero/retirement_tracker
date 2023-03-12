@@ -38,7 +38,7 @@
                 {% for deposit in deposits %}
                 <tr>
                     <td>{{deposit.date}}</td>
-                    <td><a href="/finances/deposit_overview/{{deposit.pk}}">{{deposit.description}}</a></td>
+                    <td><a href="/finances/update_deposit/{{deposit.pk}}">{{deposit.description}}</a></td>
                     <td>{{deposit.amount}}</td>
                 </tr>
                 {% endfor %}
@@ -58,7 +58,7 @@
             {% for withdrawal in withdrawals %}
             <tr>
                 <td>{{withdrawal.date}}</td>
-                <td><a href="/finances/withdrawal_overview/{{withdrawal.pk}}">{{withdrawal.description}}</a></td>
+                <td><a href="/finances/update_withdrawal/{{withdrawal.pk}}">{{withdrawal.description}}</a></td>
                 <td>{{withdrawal.amount}}</td>
             </tr>
             {% endfor %}

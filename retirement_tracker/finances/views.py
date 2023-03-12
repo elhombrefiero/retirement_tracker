@@ -416,6 +416,7 @@ class UserWorkRelatedIncomeView(FormView):
         return kwargs
 
     def form_valid(self, form):
+        # TODO: Set up so that the retirement and hsa entires are transfers.
         post = self.request.POST
         account = CheckingAccount.objects.get(pk=post['checking_account'])
         account_401k = RetirementAccount.objects.get(pk=post['account_401k'])
@@ -623,6 +624,16 @@ class ExpenseUpdateView(UpdateView):
     fields = '__all__'
 
 
+class DepositUpdateView(UpdateView):
+    model = Deposit
+    fields = '__all__'
+
+
+class DepositDeleteView(DeleteView):
+    model = Deposit
+    success_url = '/finances'
+
+
 class IncomeView(DetailView):
     model = Income
 
@@ -666,6 +677,16 @@ class IncomeDeleteView(DeleteView):
 class IncomeUpdateView(UpdateView):
     model = Income
     fields = '__all__'
+
+
+class WithdrawalUpdateView(UpdateView):
+    model = Withdrawal
+    fields = '__all__'
+
+
+class WithdrawalDeleteView(DeleteView):
+    model = Withdrawal
+    success_url = '/finances'
 
 
 class MonthlyBudgetView(DetailView):
