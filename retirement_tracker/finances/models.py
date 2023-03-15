@@ -13,8 +13,11 @@ BUDGET_GROUP_CHOICES = (
     ('Mortgage', 'Mortgage'),
     ('Debts, Goals, Retirement', 'Debts, Goals, Retirement'),
     ('Discretionary', 'Discretionary'),
-    ('Statutory', 'Statutory'),
 )
+BUDGET_GROUP_MANDATORY = BUDGET_GROUP_CHOICES[0][0]
+BUDGET_GROUP_MORTGAGE = BUDGET_GROUP_CHOICES[1][0]
+BUDGET_GROUP_DGR = BUDGET_GROUP_CHOICES[2][0]
+BUDGET_GROUP_DISC = BUDGET_GROUP_CHOICES[3][0]
 
 
 class User(models.Model):
@@ -30,8 +33,6 @@ class User(models.Model):
     Trading Accounts (Stocks)
     Retirement Account
     Debt Account
-    Incomes
-    Expenses
     Monthly Budgets
 
     Functions:
@@ -70,9 +71,10 @@ class User(models.Model):
         month = today.strftime('%B')
         year = today.strftime('%Y')
 
-        tot_checking, tot_retirement, tot_trading, net_worth = self.return_net_worth_month_year(month, year)
+        tot_checking, tot_retirement, tot_trading, tot_debt, net_worth = self.return_net_worth_month_year(month, year)
 
-        return round(tot_checking, 2), round(tot_retirement, 2), round(tot_trading, 2), round(net_worth, 2)
+        return round(tot_checking, 2), round(tot_retirement, 2), round(tot_trading, 2), round(tot_debt, 2), round(
+            net_worth, 2)
 
     def return_net_worth_month_year(self, month: str, year: int) -> (float, float, float, float):
         """ Returns the net worth of the user at a given point in time."""
@@ -100,11 +102,13 @@ class User(models.Model):
 
         net_worth = tot_checking + tot_retirement + tot_trading - tot_debt
 
-        return round(tot_checking, 2), round(tot_retirement, 2), round(tot_trading, 2), round(tot_debt, 2), round(net_worth, 2)
+        return round(tot_checking, 2), round(tot_retirement, 2), round(tot_trading, 2), round(tot_debt, 2), round(
+            net_worth, 2)
 
-    def return_net_worth_year(self, year:int):
+    def return_net_worth_year(self, year: int):
 
-        tot_checking, tot_retirement, tot_trading, tot_debt, net_worth = self.return_net_worth_month_year('December', year)
+        tot_checking, tot_retirement, tot_trading, tot_debt, net_worth = self.return_net_worth_month_year('December',
+                                                                                                          year)
         return tot_checking, tot_retirement, tot_trading, tot_debt, net_worth
 
     def return_net_worth_at_retirement(self):
@@ -114,7 +118,8 @@ class User(models.Model):
         ret_month = ret_date.strftime('%B')
         ret_year = int(ret_date.strftime('%Y'))
 
-        tot_checking, tot_retirement, tot_trading, tot_debt, net_worth = self.return_net_worth_month_year(ret_month, ret_year)
+        tot_checking, tot_retirement, tot_trading, tot_debt, net_worth = self.return_net_worth_month_year(ret_month,
+                                                                                                          ret_year)
 
         return tot_checking, tot_retirement, tot_trading, tot_debt, net_worth
 
@@ -185,12 +190,12 @@ class User(models.Model):
         beg_of_month_year = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         # Get the expenses from checking accounts and separate them by budget groups.
         checking_accts = self.return_checking_accts()
-        expenses = Expense.objects.filter(account=checking_accts, date__lt=beg_of_month_year)
-        mand_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_CHOICES[0][0])
-        mort_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_CHOICES[1][0])
-        dgr_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_CHOICES[2][0])
-        disc_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_CHOICES[3][0])
-        stat_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_CHOICES[4][0])
+        expenses = Withdrawal.objects.filter(account=checking_accts, date__lt=beg_of_month_year)
+        mand_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_MANDATORY)
+        mort_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_MORTGAGE)
+        dgr_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_DGR)
+        disc_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_DISC)
+        stat_exp = Statutory.filter(user=self, date__lt=beg_of_month_year)
 
         mand_tot = mand_exp.aggregate(total=Sum('amount'))['total']
         mort_tot = mort_exp.aggregate(total=Sum('amount'))['total']
@@ -229,35 +234,38 @@ class User(models.Model):
 
     def return_top_category(self, month, year, num_of_entries=5):
         """ Finds the maximum expenses by category. By default finds the top five for a given month/year"""
-        # TODO: Exclude mortgage and Statutory from lookup
+        # TODO: Exclude mortgage from lookup
         checking_accounts = self.return_checking_accts()
         beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
-        expenses = Expense.objects.filter(user=self, account__in=checking_accounts,
-                                          date__gte=beg_of_month, date__lt=end_of_month)
-        category_expenses = expenses.values('category').distinct().annotate(sum=Sum('amount')).order_by('-sum')[:num_of_entries]
+        expenses = Withdrawal.objects.filter(user=self, account__in=checking_accounts,
+                                             date__gte=beg_of_month, date__lt=end_of_month)
+        category_expenses = expenses.values('category').distinct().annotate(sum=Sum('amount')).order_by('-sum')[
+                            :num_of_entries]
         return category_expenses
 
     def return_top_description(self, month, year, num_of_entries=5):
         """ Finds the maximum expenses by category. By default finds the top five for a given month/year"""
-        # TODO: Exclude mortgage and Statutory from lookup
+        # TODO: Exclude mortgage from lookup
         checking_accounts = self.return_checking_accts()
         beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
-        expenses = Expense.objects.filter(user=self, account__in=checking_accounts,
-                                          date__gte=beg_of_month, date__lt=end_of_month)
-        description_expenses = expenses.values('description').distinct().annotate(sum=Sum('amount')).order_by('-sum')[:num_of_entries]
+        expenses = Withdrawal.objects.filter(user=self, account__in=checking_accounts,
+                                             date__gte=beg_of_month, date__lt=end_of_month)
+        description_expenses = expenses.values('description').distinct().annotate(sum=Sum('amount')).order_by('-sum')[
+                               :num_of_entries]
         return description_expenses
 
     def return_top_location(self, month, year, num_of_entries=5):
         """ Finds the maximum expenses by category. By default finds the top five for a given month/year"""
-        # TODO: Exclude mortgage and Statutory from lookup
+        # TODO: Exclude mortgage from lookup
         checking_accounts = self.return_checking_accts()
         beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
-        expenses = Expense.objects.filter(user=self, account__in=checking_accounts,
-                                          date__gte=beg_of_month, date__lt=end_of_month)
-        location_expenses = expenses.values('where_bought').distinct().annotate(sum=Sum('amount')).order_by('-sum')[:num_of_entries]
+        expenses = Withdrawal.objects.filter(user=self, account__in=checking_accounts,
+                                             date__gte=beg_of_month, date__lt=end_of_month)
+        location_expenses = expenses.values('location').distinct().annotate(sum=Sum('amount')).order_by('-sum')[
+                            :num_of_entries]
         return location_expenses
 
     def return_aggregated_monthly_expenses_by_budgetgroup(self, month, year):
@@ -265,15 +273,15 @@ class User(models.Model):
         beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
         checking_accts = self.return_checking_accts()
-        expenses = Expense.objects.filter(user=self, account__in=checking_accts,
-                                          date__gte=beg_of_month, date__lt=end_of_month)
-        mand_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_CHOICES[0][0]).aggregate(total=Sum('amount'))[
+        expenses = Withdrawal.objects.filter(user=self, account__in=checking_accts,
+                                             date__gte=beg_of_month, date__lt=end_of_month)
+        mand_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_MANDATORY).aggregate(total=Sum('amount'))[
             'total']
-        mort_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_CHOICES[1][0]).aggregate(total=Sum('amount'))[
+        mort_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_MORTGAGE).aggregate(total=Sum('amount'))[
             'total']
-        dgr_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_CHOICES[2][0]).aggregate(total=Sum('amount'))[
+        dgr_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_DGR).aggregate(total=Sum('amount'))[
             'total']
-        disc_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_CHOICES[3][0]).aggregate(total=Sum('amount'))[
+        disc_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_DISC).aggregate(total=Sum('amount'))[
             'total']
         stat_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_CHOICES[4][0]).aggregate(total=Sum('amount'))[
             'total']
@@ -288,42 +296,38 @@ class User(models.Model):
         beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
 
-        mandatory_expenses = Expense.objects.filter(user=self,
-                                                    account__in=checking_accts,
-                                                    budget_group=BUDGET_GROUP_CHOICES[0][0],
-                                                    date__gte=beg_of_month, date__lt=end_of_month)
+        mandatory_expenses = Withdrawal.objects.filter(account__in=checking_accts,
+                                                       budget_group=BUDGET_GROUP_MANDATORY,
+                                                       date__gte=beg_of_month, date__lt=end_of_month)
         mandatory_total = mandatory_expenses.aggregate(total=Sum('amount'))['total']
         mandatory_total = float(mandatory_total) if mandatory_total is not None else 0.0
 
-        mortgage_expenses = Expense.objects.filter(user=self,
-                                                   account__in=checking_accts,
-                                                   budget_group=BUDGET_GROUP_CHOICES[1][0],
-                                                   date__gte=beg_of_month, date__lt=end_of_month)
+        mortgage_expenses = Withdrawal.objects.filter(account__in=checking_accts,
+                                                      budget_group=BUDGET_GROUP_MORTGAGE,
+                                                      date__gte=beg_of_month, date__lt=end_of_month)
         mortgage_total = mortgage_expenses.aggregate(total=Sum('amount'))['total']
         mortgage_total = float(mortgage_total) if mortgage_total is not None else 0.0
 
-        dgr_expenses = Expense.objects.filter(user=self,
-                                              account__in=checking_accts,
-                                              budget_group=BUDGET_GROUP_CHOICES[2][0],
-                                              date__gte=beg_of_month, date__lt=end_of_month)
+        dgr_expenses = Withdrawal.objects.filter(account__in=checking_accts,
+                                                 budget_group=BUDGET_GROUP_DGR,
+                                                 date__gte=beg_of_month, date__lt=end_of_month)
         dgr_total = dgr_expenses.aggregate(total=Sum('amount'))['total']
         dgr_total = float(dgr_total) if dgr_total is not None else 0.0
 
-        discretionary_expenses = Expense.objects.filter(user=self,
-                                                        account__in=checking_accts,
-                                                        budget_group=BUDGET_GROUP_CHOICES[3][0],
-                                                        date__gte=beg_of_month, date__lt=end_of_month)
+        discretionary_expenses = Withdrawal.objects.filter(account__in=checking_accts,
+                                                           budget_group=BUDGET_GROUP_DISC,
+                                                           date__gte=beg_of_month, date__lt=end_of_month)
         discretionary_total = discretionary_expenses.aggregate(total=Sum('amount'))['total']
         discretionary_total = float(discretionary_total) if discretionary_total is not None else 0.0
 
-        statutory_expenses = Expense.objects.filter(user=self,
-                                                    account__in=checking_accts,
-                                                    budget_group=BUDGET_GROUP_CHOICES[4][0],
-                                                    date__gte=beg_of_month, date__lt=end_of_month)
+        statutory_expenses = Statutory.objects.filter(user=self,
+                                                      date__gte=beg_of_month, date__lt=end_of_month)
         statutory_total = statutory_expenses.aggregate(total=Sum('amount'))['total']
         statutory_total = float(statutory_total) if statutory_total is not None else 0.0
 
-        return round(mandatory_total, 2), round(mortgage_total, 2), round(dgr_total, 2), round(discretionary_total, 2), round(statutory_total, 2)
+        return round(mandatory_total, 2), round(mortgage_total, 2), \
+               round(dgr_total, 2), round(discretionary_total, 2), \
+               round(statutory_total, 2)
 
     def estimate_budget_for_month_year(self, month: str, year: int):
         """ Estimates and sets monthly budget values based on takehome pay and budget expenses."""
@@ -344,7 +348,8 @@ class User(models.Model):
         budget_dgr = takehome * self.DEFAULT_DGR_BUDGET_PCT / 100.0
         budget_disc = takehome * self.DEFAULT_DISC_BUDGET_PCT / 100.0
 
-        return round(float(budget_mand), 2), round(float(budget_mort), 2), round(float(statutory), 2), round(float(budget_dgr), 2), round(float(budget_disc), 2)
+        return round(float(budget_mand), 2), round(float(budget_mort), 2), round(float(statutory), 2), round(
+            float(budget_dgr), 2), round(float(budget_disc), 2)
 
     def get_checking_total_month_year(self, month, year):
         """ Calculates the total balance for the given month and year"""
@@ -375,15 +380,24 @@ class User(models.Model):
     def return_takehome_pay_month_year(self, month, year):
         """ Calculates the take home pay for a given month and year."""
         income = 0
-        stat_expenses = 0
+        stat_expenses = self.return_statutory_month_year(month, year)
         user_accounts = self.return_checking_accts()
         for acct in user_accounts:
             income += acct.return_income_month_year(month, year)
-            stat_expenses += acct.return_statutory_month_year(month, year)
 
         return round(income - stat_expenses, 2)
 
-    def set_budget_month_year(self, month, year, statutory, budget_mand, budget_mort, budget_dgr, budget_disc):
+    def return_statutory_month_year(self, month: str, year: int):
+        start_datetime = datetime.strptime(f'{month}-1-{year}', '%B-%d-%Y')
+        end_datetime = start_datetime + relativedelta(months=+1, seconds=-1)
+
+        month_expense = Statutory.objects.filter(user=self, date__gte=start_datetime, date__lte=end_datetime)
+        month_expense = month_expense.aggregate(total=Sum('amount'))['total']
+        month_expense = month_expense if month_expense is not None else 0.0
+
+        return float(month_expense)
+
+    def set_budget_month_year(self, month, year, budget_mand, budget_mort, budget_dgr, budget_disc):
         """ Set monthly budget based on user inputs."""
 
         month_year_dt = datetime.strptime(f'{month}-01-{year}', '%B-%d-%Y')
@@ -397,7 +411,6 @@ class User(models.Model):
         mbudget.mortgage = budget_mort
         mbudget.debts_goals_retirement = budget_dgr
         mbudget.discretionary = budget_disc
-        mbudget.statutory = statutory
 
         mbudget.save()
 
@@ -421,8 +434,8 @@ class User(models.Model):
         return reverse('finances:user_overview', args=[self.pk])
 
     def get_earliest_latest_dates(self):
-        user_expenses = Expense.objects.filter(user=self)
-        user_incomes = Income.objects.filter(user=self)
+        user_expenses = Withdrawal.objects.filter(user=self)
+        user_incomes = Deposit.objects.filter(user=self)
         user_earliest = min(user_expenses.earliest('date').date,
                             user_incomes.earliest('date').date)
         user_latest = max(user_expenses.latest('date').date,
@@ -510,13 +523,13 @@ class User(models.Model):
         # TODO: First get the distinct dates and use that to get the summation for every day.
 
         user_checking = CheckingAccount.objects.filter(user=self)
-        expenses = Expense.objects.filter(user=self, account__in=user_checking,
-                                          date__gte=start_date, date__lt=end_date)
+        expenses = Withdrawal.objects.filter(user=self, account__in=user_checking,
+                                             date__gte=start_date, date__lt=end_date)
         if budget_group:
             expenses = expenses.filter(budget_group=budget_group)
 
         cumulative_balance = expenses.annotate(cumsum=Window(Sum('amount'),
-                                               order_by=F('date').asc())).order_by('date', 'cumsum')
+                                                             order_by=F('date').asc())).order_by('date', 'cumsum')
         return cumulative_balance
 
     def return_cumulative_incomes(self, start_date, end_date):
@@ -526,11 +539,11 @@ class User(models.Model):
         """
 
         user_checking = CheckingAccount.objects.filter(user=self)
-        incomes = Income.objects.filter(user=self, account__in=user_checking,
-                                        date__gte=start_date, date__lt=end_date)
+        incomes = Deposit.objects.filter(user=self, account__in=user_checking,
+                                         date__gte=start_date, date__lt=end_date)
 
         cumulative_balance = incomes.annotate(cumsum=Window(Sum('amount'),
-                                               order_by=F('date').asc())).order_by('date', 'cumsum')
+                                                            order_by=F('date').asc())).order_by('date', 'cumsum')
 
         return cumulative_balance
 
@@ -558,6 +571,9 @@ class Account(models.Model):
         return_latest_date: returns the latest database date for the account
     """
     name = models.CharField(max_length=160)
+    starting_balance = models.DecimalField(verbose_name='Starting balance in dollars', max_digits=9, decimal_places=2,
+                                           default=0.0)
+    opening_date = models.DateField(verbose_name='Date where starting balance starts')
     url = models.URLField(verbose_name="Account URL", blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
@@ -608,18 +624,7 @@ class Account(models.Model):
         start_datetime = datetime.strptime(f'{month}-1-{year}', '%B-%d-%Y')
         end_datetime = start_datetime + relativedelta(months=+1, seconds=-1)
 
-        month_expense = Expense.objects.filter(account=self, date__gte=start_datetime, date__lte=end_datetime)
-        month_expense = month_expense.aggregate(total=Sum('amount'))['total']
-        month_expense = month_expense if month_expense is not None else 0.0
-
-        return float(month_expense)
-
-    def return_statutory_month_year(self, month: str, year: int):
-        start_datetime = datetime.strptime(f'{month}-1-{year}', '%B-%d-%Y')
-        end_datetime = start_datetime + relativedelta(months=+1, seconds=-1)
-
-        month_expense = Expense.objects.filter(account=self, date__gte=start_datetime, date__lte=end_datetime)
-        month_expense = month_expense.filter(budget_group='Statutory')
+        month_expense = Withdrawal.objects.filter(account=self, date__gte=start_datetime, date__lte=end_datetime)
         month_expense = month_expense.aggregate(total=Sum('amount'))['total']
         month_expense = month_expense if month_expense is not None else 0.0
 
@@ -765,8 +770,7 @@ class DebtAccount(Account):
 
         Similar to a trading account.
     """
-    starting_balance = models.DecimalField(verbose_name='Starting balance in dollars', max_digits=9, decimal_places=2, default=0.0)
-    account_open_date = models.DateField(default=now)
+
     yearly_interest_pct = models.DecimalField(verbose_name='Yearly interest in percent',
                                               max_digits=4, decimal_places=2, default=0.0)
 
@@ -775,53 +779,103 @@ class DebtAccount(Account):
 
     def return_balance(self):
         deposits_minus_withdrawals = super().return_balance()
-        return round(float(self.starting_balance - deposits_minus_withdrawals), 2)
+        return round(float(self.starting_balance) - deposits_minus_withdrawals, 2)
 
 
 class Withdrawal(models.Model):
     """ Withdrawal for a given account.
 
     """
-    date = models.DateField(default=now)
-    description = models.CharField(max_length=250)
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
+    date = models.DateField(default=now)
+    budget_group = models.CharField(max_length=200, choices=BUDGET_GROUP_CHOICES)
+    category = models.CharField(max_length=200)
+    location = models.CharField(max_length=64)
+    description = models.CharField(max_length=250)
     amount = models.FloatField(verbose_name='Amount')
+    slug_field = models.SlugField(null=True, blank=True)
+    # Optional group for any specific purpose (e.g., vacation in Hawaii)
+    group = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
-        unique_together = ['account', 'date', 'amount']
+        unique_together = ['account', 'date', 'amount', 'description']
+
+    def __str__(self):
+        return f"{self.description} at {self.location} on {self.date} - Account: {self.account.name} {self.budget_group} ${self.amount}"
+
+    def save(self, *args, **kwargs):
+        if not self.slug_field:
+            self.slug_field = slugify(self.description)
+        super(Withdrawal, self).save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('finances:withdrawal_overview', args=[self.pk])
 
 
 class Deposit(models.Model):
     """ Deposit for a given account.
 
     """
-    date = models.DateField(default=now)
-    description = models.CharField(max_length=250)
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
+    date = models.DateField(default=now)
+    category = models.CharField(max_length=128)
+    description = models.CharField(max_length=250)
+    location = models.CharField(max_length=64)
     amount = models.FloatField(verbose_name='Amount')
+    slug_field = models.SlugField(null=True, blank=True)
+    # Optional group for any specific purpose (e.g., vacation in Hawaii)
+    group = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
-        unique_together = ['account', 'date', 'amount']
+        unique_together = ['account', 'date', 'amount', 'description']
+
+    def __str__(self):
+        return f"{self.description} at {self.location} on {self.date} - Account: {self.account.name} ${self.amount}"
+
+    def save(self, *args, **kwargs):
+        if not self.slug_field:
+            self.slug_field = slugify(self.description)
+        super(Deposit, self).save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('finances:deposit_overview', args=[self.pk])
 
 
 class Transfer(models.Model):
     """ Transfer of money from account 1 to account 2. """
 
+    account_from = models.ForeignKey(Account, verbose_name='Account for Withdrawal (money coming from)',
+                                     on_delete=models.CASCADE, related_name='from_account')
+    account_to = models.ForeignKey(Account, verbose_name='Account for Deposit (money going to)',
+                                   on_delete=models.CASCADE, related_name='to_account')
     date = models.DateField(default=now)
+    budget_group = models.CharField(max_length=200, choices=BUDGET_GROUP_CHOICES)
+    category = models.CharField(max_length=128)
+    location = models.CharField(max_length=64)
     description = models.CharField(max_length=250)
-    account_from = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='from_account')
-    account_to = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='to_account')
     amount = models.FloatField(verbose_name='Amount')
+    slug_field = models.SlugField(null=True, blank=True)
+    # Optional group for any specific purpose (e.g., vacation in Hawaii)
+    group = models.CharField(max_length=100, null=True, blank=True)
 
     def save(self, *args, **kwargs):
-        withdrawal_obj = Withdrawal.objects.create(date=self.date,
+        withdrawal_obj = Withdrawal.objects.create(account=self.account_from,
+                                                   date=self.date,
+                                                   budget_group=self.budget_group,
+                                                   category=self.category,
+                                                   location=self.location,
                                                    description=self.description,
-                                                   account=self.account_from,
-                                                   amount=self.amount)
-        deposit_obj = Deposit.objects.create(date=self.date,
+                                                   amount=self.amount,
+                                                   slug_field=self.slug_field,
+                                                   group=self.group)
+        deposit_obj = Deposit.objects.create(account=self.account_to,
+                                             date=self.date,
+                                             category=self.category,
                                              description=self.description,
-                                             account=self.account_to,
-                                             amount=self.amount)
+                                             location=self.location,
+                                             amount=self.amount,
+                                             slug_field=self.slug_field,
+                                             group=self.group)
         withdrawal_obj.save()
         deposit_obj.save()
         self.save(*args, **kwargs)
@@ -1022,87 +1076,6 @@ class RetirementAccount(Account):
         return reverse('finances:raccount_overview', args=[self.pk])
 
 
-class Expense(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    account = models.ForeignKey(Account, on_delete=models.CASCADE)
-    date = models.DateField(default=now)
-    budget_group = models.CharField(max_length=200, choices=BUDGET_GROUP_CHOICES)
-    category = models.CharField(max_length=200)
-    where_bought = models.CharField(max_length=64)
-    description = models.CharField(max_length=200)
-    amount = models.DecimalField(max_digits=8, decimal_places=2)
-    slug_field = models.SlugField(null=True, blank=True)
-    # Optional group for any specific purpose (e.g., vacation in Hawaii)
-    group = models.CharField(max_length=100, null=True, blank=True)
-
-    def __str__(self):
-        return "{}\t{}\t{:50}\t{}\t{}\t{}".format(self.date,
-                                                  self.account.name,
-                                                  self.budget_group,
-                                                  self.where_bought,
-                                                  self.description,
-                                                  self.amount)
-
-    def save(self, *args, **kwargs):
-        if not self.slug_field:
-            self.slug_field = slugify(self.description)
-        try:
-            withdrawalobj = Withdrawal.objects.get(account=self.account,
-                                                   date=self.date,
-                                                   description=self.description)
-        except Withdrawal.DoesNotExist:
-            withdrawalobj = Withdrawal.objects.create(account=self.account,
-                                                      date=self.date,
-                                                      description=self.description,
-                                                      amount=self.amount)
-        else:
-            withdrawalobj.amount = self.amount
-        withdrawalobj.save()
-        super(Expense, self).save(*args, **kwargs)
-
-    def get_absolute_url(self):
-        return reverse('finances:expense_overview', args=[self.pk])
-
-    class Meta:
-        unique_together = ['account', 'date', 'description', 'amount']
-
-
-class Income(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    account = models.ForeignKey(Account, on_delete=models.CASCADE)
-    date = models.DateField(default=now)
-    category = models.CharField(max_length=128)
-    description = models.CharField(max_length=200)
-    amount = models.DecimalField(max_digits=8, decimal_places=2)
-    # Optional group for any specific purpose (e.g., vacation in Hawaii)
-    group = models.CharField(max_length=100, null=True, blank=True)
-
-    def __str__(self):
-        return "{} on {} - {}".format(self.description, self.date, self.amount)
-
-    def save(self, *args, **kwargs):
-        try:
-            depositobj = Deposit.objects.get(account=self.account,
-                                             date=self.date,
-                                             description=self.description)
-        except Deposit.DoesNotExist:
-            depositobj = Deposit.objects.create(account=self.account,
-                                                date=self.date,
-                                                description=self.description,
-                                                amount=self.amount)
-        else:
-            depositobj.amount = self.amount
-
-        depositobj.save()
-        super(Income, self).save(*args, **kwargs)
-
-    def get_absolute_url(self):
-        return reverse('finances:income_overview', args=[self.pk])
-
-    class Meta:
-        unique_together = ['account', 'date', 'description', 'amount']
-
-
 class MonthlyBudget(models.Model):
     """ The monthly budgets set for a given user."""
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -1111,7 +1084,6 @@ class MonthlyBudget(models.Model):
     year = models.IntegerField(null=True, blank=True)
 
     mandatory = models.FloatField(default=0.0)
-    statutory = models.FloatField(default=0.0)
     mortgage = models.FloatField(default=0.0)
     debts_goals_retirement = models.FloatField(default=0.0)
     discretionary = models.FloatField(default=0.0)
@@ -1139,3 +1111,13 @@ class Interest(models.Model):
     date = models.DateField(default=now)
     amount = models.DecimalField(max_digits=8, decimal_places=2)
 
+
+class Statutory(models.Model):
+    """ Tracking of statutory spending to simplify take home pay calculation.
+
+    Essentially, this tracks is the "ether" where statutory spending comes out of gross income.
+    """
+    User = models.ForeignKey(User, on_delete=models.CASCADE)
+    date = models.DateField(default=now)
+    category = models.CharField(max_length=200)
+    description = models.CharField(max_length=250)

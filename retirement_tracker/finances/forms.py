@@ -1,15 +1,15 @@
 from django import forms
 from django.utils.timezone import now
 
-from finances.models import User, Expense, Account, DebtAccount, TradingAccount, RetirementAccount, MonthlyBudget, Income, CheckingAccount
+from finances.models import User, Expense, Account, DebtAccount, TradingAccount, RetirementAccount, MonthlyBudget, \
+    Income, CheckingAccount, BUDGET_GROUP_MANDATORY, BUDGET_GROUP_MORTGAGE, BUDGET_GROUP_DGR, BUDGET_GROUP_DISC
 
 FORM_BUDGET_GROUP_CHOICES = (
     (None, None),
-    ('Mandatory', 'Mandatory'),
-    ('Mortgage', 'Mortgage'),
-    ('Debts, Goals, Retirement', 'Debts, Goals, Retirement'),
-    ('Discretionary', 'Discretionary'),
-    ('Statutory', 'Statutory'),
+    (BUDGET_GROUP_MANDATORY, BUDGET_GROUP_MANDATORY),
+    (BUDGET_GROUP_MORTGAGE, BUDGET_GROUP_MORTGAGE),
+    (BUDGET_GROUP_DGR, BUDGET_GROUP_DGR),
+    (BUDGET_GROUP_DISC, BUDGET_GROUP_DISC),
 )
 
 
@@ -118,10 +118,10 @@ class UserExpenseLookupForm(forms.Form):
         self.fields['description'] = forms.ChoiceField(choices=description_choices)
         # Fill in choices for location
         location_choices = [(None, None)]
-        user_where_bought = list(user_expenses.values_list('where_bought', flat=True).distinct())
+        user_where_bought = list(user_expenses.values_list('location', flat=True).distinct())
         for loc in user_where_bought:
             location_choices.append((loc, loc))
-        self.fields['where_bought'] = forms.ChoiceField(choices=location_choices)
+        self.fields['location'] = forms.ChoiceField(choices=location_choices)
 
 
 class MonthlyBudgetForUserForm(forms.ModelForm):

@@ -130,7 +130,7 @@ class Command(BaseCommand):
                 defaults={'amount': expense['amount'],
                           'budget_group': expense['budget_group'],
                           'category': expense['category'],
-                          'where_bought': expense['where_bought'],
+                          'location': expense['location'],
                           'group': expense['group']}
             )
             obj.save()

@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from datetime import datetime
 
-from finances.models import User, Account, CheckingAccount, DebtAccount, Income, Expense, TradingAccount, \
+from finances.models import User, Account, CheckingAccount, DebtAccount, TradingAccount, \
     RetirementAccount, MonthlyBudget, BUDGET_GROUP_CHOICES, Transfer, Deposit, Withdrawal
 from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, \
     UserExpenseLookupForm, IncomeForUserForm, MonthlyBudgetForUserMonthYearForm, AddDebtAccountForm, \
@@ -358,7 +358,7 @@ class ExpenseForUserView(FormView):
         expenses_six_mo_prior = Expense.objects.filter(user=self.user, date__gte=six_months_prior)
         distinct_cat = list(expenses_six_mo_prior.values_list('category', flat=True).distinct())
         distinct_desc = list(expenses_six_mo_prior.values_list('description', flat=True).distinct())
-        distinct_where = list(expenses_six_mo_prior.values_list('where_bought', flat=True).distinct())
+        distinct_where = list(expenses_six_mo_prior.values_list('location', flat=True).distinct())
         distinct_group = list(expenses_six_mo_prior.values_list('group', flat=True).distinct())
         context['user'] = self.user
         context['distinct_cat'] = distinct_cat
@@ -375,7 +375,7 @@ class ExpenseForUserView(FormView):
                                             date=post['date'],
                                             budget_group=post['budget_group'],
                                             category=post['category'],
-                                            where_bought=post['where_bought'],
+                                            where_bought=post['location'],
                                             description=post['description'],
                                             amount=post['amount'],
                                             slug_field=post['slug_field'],
@@ -825,7 +825,7 @@ def add_expense_by_location_user_account(request, user_id: int, account_id: int,
                                                      date=form.cleaned_data['date'],
                                                      budget_group=form.cleaned_data['budget_group'],
                                                      category=form.cleaned_data['category'],
-                                                     where_bought=form.cleaned_data['where_bought'],
+                                                     where_bought=form.cleaned_data['location'],
                                                      description=form.cleaned_data['description'],
                                                      amount=form.cleaned_data['amount'],
                                                      slug_field=form.cleaned_data['slug_field'],

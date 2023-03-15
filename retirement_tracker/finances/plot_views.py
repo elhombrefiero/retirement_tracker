@@ -246,7 +246,7 @@ class ExpenseByLocationPlotView(DetailView):
         labels = list()
         data_sum = list()
         for toploc in top_5loc:
-            labels.append(toploc['where_bought'])
+            labels.append(toploc['location'])
             data_sum.append(toploc['sum'])
 
         data['labels'] = labels
