@@ -1,8 +1,8 @@
 from django import forms
 from django.utils.timezone import now
 
-from finances.models import User, Expense, Account, DebtAccount, TradingAccount, RetirementAccount, MonthlyBudget, \
-    Income, CheckingAccount, BUDGET_GROUP_MANDATORY, BUDGET_GROUP_MORTGAGE, BUDGET_GROUP_DGR, BUDGET_GROUP_DISC
+from finances.models import User, Withdrawal, Transfer, Deposit, Account, DebtAccount, TradingAccount, RetirementAccount, \
+    MonthlyBudget, CheckingAccount, BUDGET_GROUP_MANDATORY, BUDGET_GROUP_MORTGAGE, BUDGET_GROUP_DGR, BUDGET_GROUP_DISC
 
 FORM_BUDGET_GROUP_CHOICES = (
     (None, None),
@@ -19,6 +19,32 @@ class UserForm(forms.ModelForm):
     class Meta:
         model = User
         fields = '__all__'
+
+
+class DepositForUserForm(forms.ModelForm):
+    class Meta:
+        model = Deposit
+
+
+class WithdrawalByLocForm(forms.ModelForm):
+    """ Add or update an expense."""
+
+    class Meta:
+        model = Withdrawal
+
+class WithdrawalForUserForm(forms.ModelForm):
+    class Meta:
+        model = Withdrawal
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user')
+        super().__init__(*args, **kwargs)
+        user_accts = user.return_all_accounts()
+
+        user_account_choices = [(None, None)]
+        for acct in user_accts:
+            user_account_choices.append((acct.pk, acct))
+        self.fields['user_accounts'] = forms.ChoiceField(choices=user_account_choices)
 
 
 class UserWorkIncomeExpenseForm(forms.Form):
@@ -60,22 +86,6 @@ class UserWorkIncomeExpenseForm(forms.Form):
         self.fields['account_HSA'] = forms.ChoiceField(choices=ret_account_choices)
 
 
-class ExpenseForUserForm(forms.ModelForm):
-    """ Add expense for a given user"""
-
-    class Meta:
-        model = Expense
-        exclude = ['user']
-
-
-class IncomeForUserForm(forms.ModelForm):
-    """ Add income for a given user"""
-
-    class Meta:
-        model = Income
-        exclude = ['user']
-
-
 class UserExpenseLookupForm(forms.Form):
     """ Used to lookup expenses for a given user."""
     MONTH_CHOICES = ((None, None), ('January', 'January'), ('February', 'February'), ('March', 'March'),
@@ -103,23 +113,24 @@ class UserExpenseLookupForm(forms.Form):
         for year in range(earliest, latest + 1):
             year_choices.append((year, year))
         self.fields['year'] = forms.ChoiceField(choices=year_choices)
-        user_expenses = Expense.objects.filter(user=user)
+        user_accounts = user.return_all_accounts()
+        user_withdrawals = Withdrawal.objects.filter(account__in=user_accounts)
         # Fill in choices for category
         category_choices = [(None, None)]
-        user_categories = list(user_expenses.values_list('category', flat=True).distinct())
+        user_categories = list(user_withdrawals.values_list('category', flat=True).distinct())
         for cat in user_categories:
             category_choices.append((cat, cat))
         self.fields['category'] = forms.ChoiceField(choices=category_choices)
         # Fill in choices for description
         description_choices = [(None, None)]
-        user_description = list(user_expenses.values_list('description', flat=True).distinct())
+        user_description = list(user_withdrawals.values_list('description', flat=True).distinct())
         for desc in user_description:
             description_choices.append((desc, desc))
         self.fields['description'] = forms.ChoiceField(choices=description_choices)
         # Fill in choices for location
         location_choices = [(None, None)]
-        user_where_bought = list(user_expenses.values_list('location', flat=True).distinct())
-        for loc in user_where_bought:
+        location = list(user_withdrawals.values_list('location', flat=True).distinct())
+        for loc in location:
             location_choices.append((loc, loc))
         self.fields['location'] = forms.ChoiceField(choices=location_choices)
 
@@ -139,14 +150,6 @@ class MonthlyBudgetForUserMonthYearForm(forms.ModelForm):
     class Meta:
         model = MonthlyBudget
         exclude = ['user', 'date', 'month', 'year']
-
-
-class ExpenseByLocForm(forms.ModelForm):
-    """ Add or update an expense."""
-
-    class Meta:
-        model = Expense
-        exclude = ['user', 'account']
 
 
 class AddCheckingAccountForm(forms.ModelForm):
@@ -175,3 +178,10 @@ class AddRetirementAccountForm(forms.ModelForm):
     class Meta:
         model = RetirementAccount
         exclude = ['user']
+
+
+class TransferBetweenAccountsForm(forms.ModelForm):
+
+    class Meta:
+        model = Transfer
+        fields = '__all__'

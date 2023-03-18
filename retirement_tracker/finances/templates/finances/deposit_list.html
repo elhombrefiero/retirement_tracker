@@ -1,11 +1,11 @@
 {% extends 'finances/master_template.html' %}
 
 {% block header_extra %}
-    <Title>Expenses</Title>
+    <Title>Deposits</Title>
 {% endblock %}
 
 {% block mymessage %}
-<!--Table of expenses-->
+<!--Table of incomes-->
 <table class="table">
     <thead>
         <tr>
@@ -15,11 +15,11 @@
         </tr>
     </thead>
     <tbody>
-        {% for expense in page_obj %}
+        {% for deposit in page_obj %}
         <tr>
-            <td>{{expense.date}}</td>
-            <td><a href="/finances/expense_overview/{{expense.pk}}">{{expense.description}}</a></td>
-            <td>{{expense.amount}}</td>
+            <td>{{deposit.date}}</td>
+            <td><a href="/finances/deposit_overview/{{deposit.pk}}">{{deposit.description}}</a></td>
+            <td>{{deposit.amount}}</td>
         </tr>
         {% endfor %}
     </tbody>

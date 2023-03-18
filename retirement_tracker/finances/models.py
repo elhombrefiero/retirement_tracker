@@ -232,6 +232,11 @@ class User(models.Model):
 
         return user_accounts
 
+    def return_all_accounts(self):
+
+        all_accounts = Account.objects.filter(user=self)
+        return all_accounts
+
     def return_top_category(self, month, year, num_of_entries=5):
         """ Finds the maximum expenses by category. By default finds the top five for a given month/year"""
         # TODO: Exclude mortgage from lookup
@@ -1117,7 +1122,9 @@ class Statutory(models.Model):
 
     Essentially, this tracks is the "ether" where statutory spending comes out of gross income.
     """
-    User = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     date = models.DateField(default=now)
     category = models.CharField(max_length=200)
+    location = models.CharField(max_length=200)
     description = models.CharField(max_length=250)
+    amount = models.FloatField(verbose_name='Amount')

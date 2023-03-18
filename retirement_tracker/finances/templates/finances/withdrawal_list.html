@@ -1,11 +1,11 @@
 {% extends 'finances/master_template.html' %}
 
 {% block header_extra %}
-    <Title>Incomes</Title>
+    <Title>Withdrawal</Title>
 {% endblock %}
 
 {% block mymessage %}
-<!--Table of incomes-->
+<!--Table of expenses-->
 <table class="table">
     <thead>
         <tr>
@@ -15,11 +15,11 @@
         </tr>
     </thead>
     <tbody>
-        {% for income in page_obj %}
+        {% for withdrawal in page_obj %}
         <tr>
-            <td>{{income.date}}</td>
-            <td><a href="/finances/income_overview/{{income.pk}}">{{income.description}}</a></td>
-            <td>{{income.amount}}</td>
+            <td>{{withdrawal.date}}</td>
+            <td><a href="/finances/withdrawal_overview/{{withdrawal.pk}}">{{withdrawal.description}}</a></td>
+            <td>{{withdrawal.amount}}</td>
         </tr>
         {% endfor %}
     </tbody>

@@ -11,12 +11,15 @@ from django.utils import timezone
 from datetime import datetime
 
 from finances.models import User, Account, CheckingAccount, DebtAccount, TradingAccount, \
-    RetirementAccount, MonthlyBudget, BUDGET_GROUP_CHOICES, Transfer, Deposit, Withdrawal
-from finances.forms import ExpenseByLocForm, ExpenseForUserForm, MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, \
-    UserExpenseLookupForm, IncomeForUserForm, MonthlyBudgetForUserMonthYearForm, AddDebtAccountForm, \
-    AddCheckingAccountForm, AddRetirementAccountForm, AddTradingAccountForm
+    RetirementAccount, MonthlyBudget, BUDGET_GROUP_MANDATORY, BUDGET_GROUP_MORTGAGE, BUDGET_GROUP_DGR, \
+    BUDGET_GROUP_DISC, Transfer, Deposit, Withdrawal, Statutory
+from finances.forms import MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, \
+    UserExpenseLookupForm, MonthlyBudgetForUserMonthYearForm, AddDebtAccountForm, \
+    AddCheckingAccountForm, AddRetirementAccountForm, AddTradingAccountForm, TransferBetweenAccountsForm, \
+    WithdrawalForUserForm, DepositForUserForm
 
-# TODO: Add a transfer form for user and put that on dropdown list. Also, the multiple expenses for one location.
+
+# TODO: Add a transfer form for user and put that on dropdown list. Also, group the multiple expenses for one location.
 
 # Create your views here.
 
@@ -118,6 +121,24 @@ class UserMonthYearView(DetailView):
         return context
 
 
+class UserTransferView(FormView):
+    form_class = TransferBetweenAccountsForm
+    template_name = 'finances/transfer_form.html'
+    success_url = '/finances'
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        self.user = User.objects.get(pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.user
+        user_accounts = self.user.return_all_accounts()
+        context['accounts'] = user_accounts
+        return context
+
+
 class UserAccountsAvailable(ListView):
     model = Account
     template_name = 'finances/user_accounts.html'
@@ -132,8 +153,8 @@ class UserAccountsAvailable(ListView):
 
 
 class UserExpensesAvailable(ListView):
-    model = Expense
-    template_name = 'finances/expenses_list.html'
+    model = Withdrawal
+    template_name = 'finances/withdrawal_list.html'
     paginate_by = 25
 
     def dispatch(self, request, *args, **kwargs):
@@ -142,12 +163,13 @@ class UserExpensesAvailable(ListView):
 
     def get_queryset(self):
         userobj = User.objects.get(pk=self.userpk)
-        return Expense.objects.filter(user=userobj).order_by('-date')
+        user_accts = userobj.return_all_accounts()
+        return Withdrawal.objects.filter(account__in=user_accts).order_by('-date')
 
 
 class UserIncomesAvailable(ListView):
-    model = Income
-    template_name = 'finances/incomes_list.html'
+    model = Deposit
+    template_name = 'finances/deposit_list.html'
     paginate_by = 25
 
     def dispatch(self, request, *args, **kwargs):
@@ -156,7 +178,8 @@ class UserIncomesAvailable(ListView):
 
     def get_queryset(self):
         userobj = User.objects.get(pk=self.userpk)
-        return Income.objects.filter(user=userobj).order_by('-date')
+        user_accounts = userobj.return_all_accounts()
+        return Withdrawal.objects.filter(account__in=user_accounts).order_by('-date')
 
 
 class UserReportsAvailable(DetailView):
@@ -333,18 +356,18 @@ class TradingAccountForUserView(FormView):
         return super().form_valid(form)
 
 
-class ExpenseView(DetailView):
-    model = Expense
+class WithdrawalView(DetailView):
+    model = Withdrawal
 
 
-class ExpenseCreateView(CreateView):
-    model = Expense
+class WithdrawalCreateView(CreateView):
+    model = Withdrawal
     fields = '__all__'
 
 
-class ExpenseForUserView(FormView):
-    form_class = ExpenseForUserForm
-    template_name = 'finances/expense_form_for_user.html'
+class WithdrawalForUserView(FormView):
+    form_class = WithdrawalForUserForm
+    template_name = 'finances/withdrawal_form_for_user.html'
     success_url = '/finances'
 
     def dispatch(self, request, *args, **kwargs):
@@ -355,7 +378,8 @@ class ExpenseForUserView(FormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         six_months_prior = timezone.now() + relativedelta(months=-6)
-        expenses_six_mo_prior = Expense.objects.filter(user=self.user, date__gte=six_months_prior)
+        user_accounts = self.user.return_all_accounts()
+        expenses_six_mo_prior = Withdrawal.objects.filter(account__in=user_accounts, date__gte=six_months_prior)
         distinct_cat = list(expenses_six_mo_prior.values_list('category', flat=True).distinct())
         distinct_desc = list(expenses_six_mo_prior.values_list('description', flat=True).distinct())
         distinct_where = list(expenses_six_mo_prior.values_list('location', flat=True).distinct())
@@ -370,17 +394,16 @@ class ExpenseForUserView(FormView):
     def form_valid(self, form):
         post = self.request.POST
         account = Account.objects.get(pk=post['account'])
-        newexpense = Expense.objects.create(user=self.user,
-                                            account=account,
-                                            date=post['date'],
-                                            budget_group=post['budget_group'],
-                                            category=post['category'],
-                                            where_bought=post['location'],
-                                            description=post['description'],
-                                            amount=post['amount'],
-                                            slug_field=post['slug_field'],
-                                            group=['group'],
-                                            )
+        newexpense = Withdrawal.objects.create(account=account,
+                                               date=post['date'],
+                                               budget_group=post['budget_group'],
+                                               category=post['category'],
+                                               location=post['location'],
+                                               description=post['description'],
+                                               amount=post['amount'],
+                                               slug_field=post['slug_field'],
+                                               group=['group'],
+                                               )
         newexpense.save()
         self.success_url = f'/finances/user/{self.user.pk}'
         return super().form_valid(form)
@@ -421,7 +444,6 @@ class UserWorkRelatedIncomeView(FormView):
         return kwargs
 
     def form_valid(self, form):
-        # TODO: Set up so that the retirement and hsa entires are transfers.
         post = self.request.POST
         account = CheckingAccount.objects.get(pk=post['checking_account'])
         account_401k = RetirementAccount.objects.get(pk=post['account_401k'])
@@ -441,116 +463,112 @@ class UserWorkRelatedIncomeView(FormView):
         retirement_401k = float(post['retirement_401k'])
         retirement_hsa = float(post['retirement_HSA'])
 
-        new_inc = Income.objects.create(user=self.user,
-                                        account=account,
-                                        date=date,
-                                        category='Gross Income',
-                                        description='Gross Income',
-                                        amount=gross_income)
+        new_inc = Deposit.objects.create(user=self.user,
+                                         account=account,
+                                         date=date,
+                                         category='Gross Income',
+                                         description='Gross Income',
+                                         amount=gross_income)
         new_inc.save()
-        fed_exp = Expense.objects.create(user=self.user,
-                                         account=account,
-                                         date=date,
-                                         budget_group=BUDGET_GROUP_CHOICES[4][0],
-                                         category='Taxes',
-                                         where_bought='Work',
-                                         description='Federal Income Tax',
-                                         amount=fed_income_tax,
-                                         )
+        fed_exp = Statutory.objects.create(user=self.user,
+                                        date=date,
+                                            category='Taxes',
+                                            location='Work',
+                                            description='Federal Income Tax',
+                                            amount=fed_income_tax,
+                                            )
         fed_exp.save()
-        ss_exp = Expense.objects.create(user=self.user,
-                                         account=account,
-                                         date=date,
-                                         budget_group=BUDGET_GROUP_CHOICES[4][0],
-                                         category='Taxes',
-                                         where_bought='Work',
-                                         description='Social Security Tax',
-                                         amount=social_security_tax,
-                                         )
+        ss_exp = Statutory.objects.create(user=self.user,
+                                           date=date,
+                                           category='Taxes',
+                                           location='Work',
+                                           description='Social Security Tax',
+                                           amount=social_security_tax,
+                                           )
         ss_exp.save()
-        medicare_exp = Expense.objects.create(user=self.user,
-                                         account=account,
-                                         date=date,
-                                         budget_group=BUDGET_GROUP_CHOICES[4][0],
-                                         category='Taxes',
-                                         where_bought='Work',
-                                         description='Medicare Tax',
-                                         amount=medicare,
-                                         )
+        medicare_exp = Statutory.objects.create(user=self.user,
+                                                 date=date,
+                                                 category='Taxes',
+                                                 location='Work',
+                                                 description='Medicare Tax',
+                                                 amount=medicare,
+                                                 )
         medicare_exp.save()
-        state_income_exp = Expense.objects.create(user=self.user,
-                                         account=account,
-                                         date=date,
-                                         budget_group=BUDGET_GROUP_CHOICES[4][0],
-                                         category='Taxes',
-                                         where_bought='Work',
-                                         description='State Income Tax',
-                                         amount=state_income_tax,
-                                         )
+        state_income_exp = Statutory.objects.create(user=self.user,
+                                                     date=date,
+                                                     category='Taxes',
+                                                     location='Work',
+                                                     description='State Income Tax',
+                                                     amount=state_income_tax,
+                                                     )
         state_income_exp.save()
-        dental_exp = Expense.objects.create(user=self.user,
-                                         account=account,
-                                         date=date,
-                                         budget_group=BUDGET_GROUP_CHOICES[0][0],
-                                         category='Mandatory',
-                                         where_bought='Work',
-                                         description='Dental',
-                                         amount=dental,
-                                         )
+        dental_exp = Withdrawal.objects.create(user=self.user,
+                                               account=account,
+                                               date=date,
+                                               budget_group=BUDGET_GROUP_MANDATORY,
+                                               category='Mandatory',
+                                               location='Work',
+                                               description='Dental',
+                                               amount=dental,
+                                               )
         dental_exp.save()
-        medical_exp = Expense.objects.create(user=self.user,
-                                         account=account,
-                                         date=date,
-                                         budget_group=BUDGET_GROUP_CHOICES[0][0],
-                                         category='Mandatory',
-                                         where_bought='Work',
-                                         description='Medical',
-                                         amount=medical,
-                                         )
+        medical_exp = Withdrawal.objects.create(user=self.user,
+                                                account=account,
+                                                date=date,
+                                                budget_group=BUDGET_GROUP_MANDATORY,
+                                                category='Mandatory',
+                                                location='Work',
+                                                description='Medical',
+                                                amount=medical,
+                                                )
         medical_exp.save()
-        vision_exp = Expense.objects.create(user=self.user,
-                                         account=account,
-                                         date=date,
-                                         budget_group=BUDGET_GROUP_CHOICES[0][0],
-                                         category='Mandatory',
-                                         where_bought='Work',
-                                         description='Vision',
-                                         amount=vision,
-                                         )
+        vision_exp = Withdrawal.objects.create(user=self.user,
+                                               account=account,
+                                               date=date,
+                                               budget_group=BUDGET_GROUP_MANDATORY,
+                                               category='Mandatory',
+                                               location='Work',
+                                               description='Vision',
+                                               amount=vision,
+                                               )
         vision_exp.save()
-        ret_401k_exp = Expense.objects.create(user=self.user,
-                                         account=account,
-                                         date=date,
-                                         budget_group=BUDGET_GROUP_CHOICES[2][0],
-                                         category='Retirement',
-                                         where_bought='Work',
-                                         description='401k Contribution',
-                                         amount=retirement_401k,
-                                         )
-        ret_401k_exp.save()
-        ret_401k_inc = Income.objects.create(user=self.user,
-                                             account=account_401k,
-                                             date=date,
-                                             category='401k',
-                                             description='401k Contirbution',
-                                             amount=retirement_401k)
-        ret_401k_inc.save()
-        ret_hsa_exp = Expense.objects.create(user=self.user,
-                                         account=account,
-                                         date=date,
-                                         budget_group=BUDGET_GROUP_CHOICES[2][0],
-                                         category='Retirement',
-                                         where_bought='Work',
-                                         description='HSA Contribution',
-                                         amount=retirement_hsa,
-                                         )
-        ret_hsa_exp.save()
-        ret_hsa_inc = Income.objects.create(user=self.user,
-                                            account=account_HSA,
-                                            date=date,
-                                            category='HSA',
-                                            description='HSA Contribution',
-                                            amount=retirement_hsa)
+        if account != account_401k:
+            ret_401k_trans = Transfer.objects.create(account_from=account,
+                                                     account_to=account_401k,
+                                                     date=date,
+                                                     budget_group=BUDGET_GROUP_DGR,
+                                                     category='Retirement',
+                                                     location='Work',
+                                                     description='401k Contribution',
+                                                     amount=retirement_401k,
+                                                     )
+            ret_401k_trans.save()
+        else:
+            ret_401k_inc = Deposit.objects.create(account=account_401k,
+                                                  date=date,
+                                                  category='401k',
+                                                  description='401k Contirbution',
+                                                  location='Work',
+                                                  amount=retirement_401k)
+            ret_401k_inc.save()
+        if account != account_HSA:
+            ret_hsa_trans = Transfer.objects.create(account_from=account,
+                                                    account_to=account_HSA,
+                                                    date=date,
+                                                    budget_group=BUDGET_GROUP_DGR,
+                                                    category='Retirement',
+                                                    location='Work',
+                                                    description='HSA Contribution',
+                                                    amount=retirement_hsa
+                                                    )
+            ret_hsa_trans.save()
+        else:
+            ret_hsa_inc = Deposit.objects.create(account=account_HSA,
+                                                 date=date,
+                                                 category='HSA',
+                                                 description='HSA Contribution',
+                                                 location='Work',
+                                                 amount=retirement_hsa)
         ret_hsa_inc.save()
         self.success_url = f'/finances/user/{self.user.pk}'
         return super().form_valid(form)
@@ -619,13 +637,13 @@ class MonthlyBudgetForUserViewMonthYear(FormView):
         return context
 
 
-class ExpenseDeleteView(DeleteView):
-    model = Expense
+class WithdrawalDeleteView(DeleteView):
+    model = Withdrawal
     success_url = '/finances'
 
 
 class ExpenseUpdateView(UpdateView):
-    model = Expense
+    model = Withdrawal
     fields = '__all__'
 
 
@@ -639,18 +657,14 @@ class DepositDeleteView(DeleteView):
     success_url = '/finances'
 
 
-class IncomeView(DetailView):
-    model = Income
+class DepositView(DetailView):
+    model = Deposit
+    template_name = 'finances/object_detail.html'
 
 
-class IncomeCreateView(CreateView):
-    model = Income
-    fields = '__all__'
-
-
-class IncomeForUserView(FormView):
-    """ Input an income for a user. """
-    form_class = IncomeForUserForm
+class DepositForUserView(FormView):
+    """ Input a deposit for a user. """
+    form_class = DepositForUserForm
     template_name = 'finances/income_form_for_user.html'
     success_url = '/finances'
 
@@ -662,7 +676,8 @@ class IncomeForUserView(FormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         six_months_prior = timezone.now() + relativedelta(months=-6)
-        incomes_six_months_prior = Income.objects.filter(user=self.user, date__gte=six_months_prior)
+        user_accounts = self.user.return_all_accounts()
+        incomes_six_months_prior = Deposit.objects.filter(account__in=user_accounts, date__gte=six_months_prior)
         distinct_cat = list(incomes_six_months_prior.values_list('category', flat=True).distinct())
         distinct_desc = list(incomes_six_months_prior.values_list('description', flat=True).distinct())
         distinct_group = list(incomes_six_months_prior.values_list('group', flat=True).distinct())
@@ -674,24 +689,19 @@ class IncomeForUserView(FormView):
         return context
 
 
-class IncomeDeleteView(DeleteView):
-    model = Income
+class DepositDeleteView(DeleteView):
+    model = Deposit
     success_url = '/finances'
 
 
-class IncomeUpdateView(UpdateView):
-    model = Income
+class DepositUpdateView(UpdateView):
+    model = Deposit
     fields = '__all__'
 
 
 class WithdrawalUpdateView(UpdateView):
     model = Withdrawal
     fields = '__all__'
-
-
-class WithdrawalDeleteView(DeleteView):
-    model = Withdrawal
-    success_url = '/finances'
 
 
 class MonthlyBudgetView(DetailView):
@@ -746,8 +756,8 @@ class TradingAccountView(DetailView):
         context = super().get_context_data(**kwargs)
 
         # Get the latest incomes associated with this account
-        context['incomes'] = Income.objects.filter(account=self.object).order_by('-date')[:10]
-        context['expenses'] = Expense.objects.filter(account=self.object).order_by('-date')[:10]
+        context['incomes'] = Deposit.objects.filter(account=self.object).order_by('-date')[:10]
+        context['expenses'] = Withdrawal.objects.filter(account=self.object).order_by('-date')[:10]
         context['balance'] = self.object.return_balance()
         return context
 
@@ -775,8 +785,8 @@ class RetirementAccountView(DetailView):
         context = super().get_context_data(**kwargs)
 
         # Get the latest incomes associated with this account
-        context['incomes'] = Income.objects.filter(account=self.object).order_by('-date')[:10]
-        context['expenses'] = Expense.objects.filter(account=self.object).order_by('-date')[:10]
+        context['incomes'] = Deposit.objects.filter(account=self.object).order_by('-date')[:10]
+        context['expenses'] = Withdrawal.objects.filter(account=self.object).order_by('-date')[:10]
         context['balance'] = self.object.return_balance()
         return context
 
@@ -821,16 +831,16 @@ def add_expense_by_location_user_account(request, user_id: int, account_id: int,
         formset = ExpenseFormSet(request.POST)
         if formset.is_valid():
             for form in formset:
-                new_expense = Expense.objects.create(user=user, account=account,
-                                                     date=form.cleaned_data['date'],
-                                                     budget_group=form.cleaned_data['budget_group'],
-                                                     category=form.cleaned_data['category'],
-                                                     where_bought=form.cleaned_data['location'],
-                                                     description=form.cleaned_data['description'],
-                                                     amount=form.cleaned_data['amount'],
-                                                     slug_field=form.cleaned_data['slug_field'],
-                                                     group=form.cleaned_data['group']
-                                                     )
+                new_expense = Withdrawal.objects.create(user=user, account=account,
+                                                        date=form.cleaned_data['date'],
+                                                        budget_group=form.cleaned_data['budget_group'],
+                                                        category=form.cleaned_data['category'],
+                                                        location=form.cleaned_data['location'],
+                                                        description=form.cleaned_data['description'],
+                                                        amount=form.cleaned_data['amount'],
+                                                        slug_field=form.cleaned_data['slug_field'],
+                                                        group=form.cleaned_data['group']
+                                                        )
                 new_expense.save()
             return HttpResponseRedirect(f'/finances/user={user.id}/account={account.id}/enter_expense_by_location'
                                         f'/extra=0')
