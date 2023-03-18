@@ -58,7 +58,7 @@ class User(models.Model):
     # TODO: Determine way to generate input files for sankey diagram and add button to open sankey page with the
     #  inputs. Or throw monthly budget portions and expenses.
 
-    def return_net_worth(self) -> (float, float, float, float):
+    def return_net_worth(self) -> (float, float, float, float, float):
         """ Returns the user net worth and totals for all accounts:
             -checking,
             -retirement, and
@@ -436,7 +436,7 @@ class User(models.Model):
         return latest_rt_dt
 
     def get_absolute_url(self):
-        return reverse('finances:user_overview', args=[self.pk])
+        return reverse('user_overview', args=[self.pk])
 
     def get_earliest_latest_dates(self):
         user_expenses = Withdrawal.objects.filter(user=self)
@@ -590,7 +590,7 @@ class Account(models.Model):
         all_expense = Withdrawal.objects.filter(account=self).aggregate(total=Sum('amount'))['total']
         all_expense = all_expense if all_expense is not None else 0.0
 
-        return round(float(all_income) - float(all_expense), 2)
+        return round(float(self.starting_balance) + float(all_income) - float(all_expense), 2)
 
     def return_balance_year(self, year: int):
         start_datetime = datetime(year, 1, 1)
@@ -604,7 +604,7 @@ class Account(models.Model):
         all_expense = all_expense.aggregate(total=Sum('amount'))['total']
         all_expense = all_expense if all_expense is not None else 0.0
 
-        return float(all_income) - float(all_expense)
+        return round(float(self.starting_balance) + float(all_income) - float(all_expense), 2)
 
     def return_balance_month_year(self, month: str, year: int):
         """ Gets the total balance of the account for a given month"""
@@ -613,7 +613,7 @@ class Account(models.Model):
 
         month_expense = self.return_expense_month_year(month, year)
 
-        return float(month_income) - float(month_expense)
+        return round(float(self.starting_balance) + float(month_income) - float(month_expense), 2)
 
     def return_income_month_year(self, month: str, year: int):
         start_datetime = datetime.strptime(f'{month}-1-{year}', '%B-%d-%Y')
@@ -651,7 +651,7 @@ class Account(models.Model):
         all_expense = all_expense.aggregate(total=Sum('amount'))['total']
         all_expense = all_expense if all_expense is not None else 0.0
 
-        return float(all_income) - float(all_expense)
+        return round(float(self.starting_balance) + float(all_income) - float(all_expense), 2)
 
     def return_balance_including_month_year(self, month: str, year: int):
         """ Returns the balance up to the end of the requested month/year"""

@@ -44,7 +44,7 @@ class UserView(DetailView):
         context['earliest_ret_date'] = self.object.get_earliest_retirement_date()
         context['retirement_date'] = self.object.return_retirement_datetime()
         context['accounts'] = Account.objects.filter(user=self.object)
-        tot_checking, tot_retirement, tot_trading, net_worth = \
+        tot_checking, tot_retirement, tot_trading, tot_debt, net_worth = \
             self.object.return_net_worth()
         context['net_worth'] = net_worth
         return context
@@ -270,7 +270,8 @@ class CheckingAccountForUserView(FormView):
         post = self.request.POST
         newchecking = CheckingAccount.objects.create(user=self.user,
                                                      name=post['name'],
-                                                     url=post['Account URL'],
+                                                     opening_date=post['opening_date'],
+                                                     url=post['url'],
                                                      monthly_interest_pct=float(post['monthly_interest_pct']))
         newchecking.save()
         self.success_url = f'/finances/user/{self.user.pk}'
@@ -777,7 +778,6 @@ class TradingAccountUpdateView(UpdateView):
     model = TradingAccount
     fields = '__all__'
 
-
 class RetirementAccountView(DetailView):
     model = RetirementAccount
 
@@ -805,6 +805,11 @@ class RetirementAccountDeleteView(DeleteView):
 class RetirementAccountUpdateView(UpdateView):
     model = RetirementAccount
     fields = '__all__'
+
+
+# class MultipleWithdrawalsForUser(FormView):
+#     template_name = 'mult_withdrawal.html'
+#     form_class =
 
 
 def add_expense_by_location_user_account(request, user_id: int, account_id: int, extrarows: int = 0):

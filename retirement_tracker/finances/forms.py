@@ -1,5 +1,6 @@
 from django import forms
 from django.utils.timezone import now
+from django.forms import modelformset_factory
 
 from finances.models import User, Withdrawal, Transfer, Deposit, Account, DebtAccount, TradingAccount, RetirementAccount, \
     MonthlyBudget, CheckingAccount, BUDGET_GROUP_MANDATORY, BUDGET_GROUP_MORTGAGE, BUDGET_GROUP_DGR, BUDGET_GROUP_DISC
@@ -24,6 +25,7 @@ class UserForm(forms.ModelForm):
 class DepositForUserForm(forms.ModelForm):
     class Meta:
         model = Deposit
+        fields = '__all__'
 
 
 class WithdrawalByLocForm(forms.ModelForm):
@@ -31,10 +33,12 @@ class WithdrawalByLocForm(forms.ModelForm):
 
     class Meta:
         model = Withdrawal
+        fields = '__all__'
 
 class WithdrawalForUserForm(forms.ModelForm):
     class Meta:
         model = Withdrawal
+        fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user')
@@ -185,3 +189,6 @@ class TransferBetweenAccountsForm(forms.ModelForm):
     class Meta:
         model = Transfer
         fields = '__all__'
+
+
+# WithdrawalFormSet = formset_factory()
