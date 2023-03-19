@@ -98,20 +98,25 @@
         </a>
         </div>
         <div class="dropdown-item">
-        <a href="/finances/user/{{object.pk}}/add_income" class="dropdown-item">
-          Income
+        <a href="/finances/user/{{object.pk}}/add_deposit" class="dropdown-item">
+          Deposit
         </a>
         </div>
         <div class="dropdown-item">
-        <a href="/finances/user/{{object.pk}}/add_expense" class="dropdown-item">
-          Expense
+        <a href="/finances/user/{{object.pk}}/add_withdrawal" class="dropdown-item">
+          Withdrawal
         </a>
         </div>
-<!--        <div class="dropdown-item">-->
-<!--          <a href="/finances/user/{{object.pk}}/transfer" class="dropdown-item">-->
-<!--          Transfer-->
-<!--        </a>-->
-<!--        </div>-->
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/add_statutory" class="dropdown-item">
+          Statutory
+        </a>
+        </div>
+        <div class="dropdown-item">
+          <a href="/finances/user/{{object.pk}}/transfer_money" class="dropdown-item">
+          Transfer
+        </a>
+        </div>
         <div class="dropdown-item">
         {% if month and year %}
         <a href="/finances/user/{{object.pk}}/{{month}}/{{year}}/add_monthly_budget" class="dropdown-item">

@@ -1,10 +1,9 @@
 from django.contrib import admin
-from finances.models import Account, CheckingAccount, RetirementAccount, DebtAccount, User, \
+from finances.models import CheckingAccount, RetirementAccount, DebtAccount, User, \
                             MonthlyBudget, Deposit, Withdrawal, Transfer
 
 # Register your models here.
 admin.site.register(User)
-admin.site.register(Account)
 admin.site.register(CheckingAccount)
 admin.site.register(RetirementAccount)
 admin.site.register(DebtAccount)

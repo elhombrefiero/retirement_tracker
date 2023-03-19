@@ -2,7 +2,7 @@ from django import forms
 from django.utils.timezone import now
 from django.forms import modelformset_factory
 
-from finances.models import User, Withdrawal, Transfer, Deposit, Account, DebtAccount, TradingAccount, RetirementAccount, \
+from finances.models import User, Withdrawal, Transfer, Deposit, Statutory, DebtAccount, TradingAccount, RetirementAccount, \
     MonthlyBudget, CheckingAccount, BUDGET_GROUP_MANDATORY, BUDGET_GROUP_MORTGAGE, BUDGET_GROUP_DGR, BUDGET_GROUP_DISC
 
 FORM_BUDGET_GROUP_CHOICES = (
@@ -49,6 +49,14 @@ class WithdrawalForUserForm(forms.ModelForm):
         for acct in user_accts:
             user_account_choices.append((acct.pk, acct))
         self.fields['user_accounts'] = forms.ChoiceField(choices=user_account_choices)
+
+
+class StatutoryForUserForm(forms.ModelForm):
+    """ Add a statutory payment for the user."""
+
+    class Meta:
+        model = Statutory
+        exclude = ['user']
 
 
 class UserWorkIncomeExpenseForm(forms.Form):

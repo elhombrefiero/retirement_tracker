@@ -28,7 +28,11 @@ urlpatterns = [
     # Ex. /finances/user/1/add_withdrawal
     path('user/<int:pk>/add_withdrawal', views.WithdrawalForUserView.as_view(), name='user_add_withdrawal'),
     # Ex. /finances/user/1/add_income
-    path('user/<int:pk>/add_income', views.DepositForUserView.as_view(), name='user_add_deposit'),
+    path('user/<int:pk>/add_deposit', views.DepositForUserView.as_view(), name='user_add_deposit'),
+    # Ex. /finances/user/1/transfer_money
+    path('user/<int:pk>/transfer_money', views.UserTransferView.as_view(), name='user_transfer'),
+    # Ex. /finances/user/1/add_statutory
+    path('user/<int:pk>/add_statutory', views.StatutoryForUserView.as_view(), name='user_add_statutory'),
     # Ex. /finances/user/1/add_monthly_budget
     path('user/<int:pk>/add_monthly_budget', views.MonthlyBudgetForUserView.as_view(), name='user_add_monthly_budget'),
     # Ex. /finances/user/1/accounts

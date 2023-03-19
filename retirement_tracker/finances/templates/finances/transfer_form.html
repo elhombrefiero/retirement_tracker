@@ -1,5 +1,9 @@
 {% extends 'finances/master_template.html' %}
 
+{% block header_extra %}
+    <title>Transfer Between Accounts for {{user}}</title>
+{% endblock %}
+
 {% block mymessage %}
 <form method="POST" enctype="multipart/form-data">
     {{ form.non_field_errors }}
@@ -7,5 +11,4 @@
     {{form.as_p}}
     <input type="submit" value="Submit">
 </form>
-<button class="button is-small" onclick="window.location.href='/finances/delete_user/{{user.pk}}';">Delete Deposit</button>
 {% endblock %}

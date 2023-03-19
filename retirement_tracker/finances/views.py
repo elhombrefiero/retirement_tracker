@@ -16,7 +16,7 @@ from finances.models import User, Account, CheckingAccount, DebtAccount, Trading
 from finances.forms import MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, \
     UserExpenseLookupForm, MonthlyBudgetForUserMonthYearForm, AddDebtAccountForm, \
     AddCheckingAccountForm, AddRetirementAccountForm, AddTradingAccountForm, TransferBetweenAccountsForm, \
-    WithdrawalForUserForm, DepositForUserForm
+    WithdrawalForUserForm, DepositForUserForm, StatutoryForUserForm
 
 
 # TODO: Add a transfer form for user and put that on dropdown list. Also, group the multiple expenses for one location.
@@ -270,6 +270,7 @@ class CheckingAccountForUserView(FormView):
         post = self.request.POST
         newchecking = CheckingAccount.objects.create(user=self.user,
                                                      name=post['name'],
+                                                     starting_balance=float(post['starting_balance']),
                                                      opening_date=post['opening_date'],
                                                      url=post['url'],
                                                      monthly_interest_pct=float(post['monthly_interest_pct']))
@@ -297,6 +298,8 @@ class DebtAccountForUserView(FormView):
         post = self.request.POST
         newdebtacct = DebtAccount.objects.create(user=self.user,
                                                  name=post['name'],
+                                                 starting_balance=float(post['starting_balance']),
+                                                 opening_date=post['opening_date'],
                                                  url=post['url'],
                                                  yearly_interest_pct=float(post['yearly_interest_pct']))
         newdebtacct.save()
@@ -324,6 +327,8 @@ class RetirementAccountForUserView(FormView):
         newretacct = RetirementAccount.objects.create(user=self.user,
                                                       name=post['name'],
                                                       url=post['url'],
+                                                      starting_balance=float(post['starting_balance']),
+                                                      opening_date=post['opening_date'],
                                                       yearly_withdrawal_rate=float(post['yearly_withdrawal_rate']),
                                                       target_amount=post['target_amount'])
         newretacct.save()
@@ -351,6 +356,8 @@ class TradingAccountForUserView(FormView):
         newtradeacct = TradingAccount.objects.create(user=self.user,
                                                      name=post['name'],
                                                      url=post['url'],
+                                                     starting_balance=float(post['starting_balance']),
+                                                     opening_date=post['opening_date'],
                                                      )
         newtradeacct.save()
         self.success_url = f'/finances/user/{self.user.pk}'
@@ -472,36 +479,36 @@ class UserWorkRelatedIncomeView(FormView):
                                          amount=gross_income)
         new_inc.save()
         fed_exp = Statutory.objects.create(user=self.user,
-                                        date=date,
-                                            category='Taxes',
-                                            location='Work',
-                                            description='Federal Income Tax',
-                                            amount=fed_income_tax,
-                                            )
-        fed_exp.save()
-        ss_exp = Statutory.objects.create(user=self.user,
                                            date=date,
                                            category='Taxes',
                                            location='Work',
-                                           description='Social Security Tax',
-                                           amount=social_security_tax,
+                                           description='Federal Income Tax',
+                                           amount=fed_income_tax,
                                            )
+        fed_exp.save()
+        ss_exp = Statutory.objects.create(user=self.user,
+                                          date=date,
+                                          category='Taxes',
+                                          location='Work',
+                                          description='Social Security Tax',
+                                          amount=social_security_tax,
+                                          )
         ss_exp.save()
         medicare_exp = Statutory.objects.create(user=self.user,
-                                                 date=date,
-                                                 category='Taxes',
-                                                 location='Work',
-                                                 description='Medicare Tax',
-                                                 amount=medicare,
-                                                 )
+                                                date=date,
+                                                category='Taxes',
+                                                location='Work',
+                                                description='Medicare Tax',
+                                                amount=medicare,
+                                                )
         medicare_exp.save()
         state_income_exp = Statutory.objects.create(user=self.user,
-                                                     date=date,
-                                                     category='Taxes',
-                                                     location='Work',
-                                                     description='State Income Tax',
-                                                     amount=state_income_tax,
-                                                     )
+                                                    date=date,
+                                                    category='Taxes',
+                                                    location='Work',
+                                                    description='State Income Tax',
+                                                    amount=state_income_tax,
+                                                    )
         state_income_exp.save()
         dental_exp = Withdrawal.objects.create(user=self.user,
                                                account=account,
@@ -690,6 +697,30 @@ class DepositForUserView(FormView):
         return context
 
 
+class StatutoryForUserView(FormView):
+    form_class = StatutoryForUserForm
+    template_name = 'finances/income_form_for_user.html'
+    success_url = '/finances'
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = kwargs.get('pk')
+        self.user = User.objects.get(pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        post = self.request.POST
+        newstatutory = Statutory.objects.create(user=self.user,
+                                                date=post['date'],
+                                                category=post['category'],
+                                                location=post['location'],
+                                                description=post['description'],
+                                                amount=float(post['amount']))
+
+        newstatutory.save()
+        self.success_url = f'/finances/user/{self.user.pk}'
+        return super().form_valid(form)
+
+
 class DepositDeleteView(DeleteView):
     model = Deposit
     success_url = '/finances'
@@ -777,6 +808,7 @@ class TradingAccountDeleteView(DeleteView):
 class TradingAccountUpdateView(UpdateView):
     model = TradingAccount
     fields = '__all__'
+
 
 class RetirementAccountView(DetailView):
     model = RetirementAccount

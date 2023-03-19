@@ -105,6 +105,27 @@ class User(models.Model):
         return round(tot_checking, 2), round(tot_retirement, 2), round(tot_trading, 2), round(tot_debt, 2), round(
             net_worth, 2)
 
+    def return_statutory_including_month_year(self, month, year):
+        """ Returns the total statutory for the user up to the end of the requested month and year"""
+
+        datetime_inclusive = datetime.strptime(f'{year}-{month}-01', '%Y-%B-%d')
+        datetime_inclusive = datetime_inclusive + relativedelta(months=+1)
+
+        all_stat = self.return_statutory_up_to_month_year(datetime_inclusive.strftime('%B'), datetime_inclusive.year)
+
+        return all_stat
+    def return_statutory_up_to_month_year(self, month, year):
+        """ Returns the statutory up to the end of the month and year"""
+
+        up_to_datetime = datetime.strptime(f'{year}-{month}-01', '%Y-%B-%d')
+        up_to_datetime = up_to_datetime + relativedelta(seconds=-1)
+
+        all_stat = Statutory.objects.filter(user=self, date__lt=up_to_datetime)
+        all_stat = all_stat.aggregate(total=Sum('amount'))['total']
+        all_stat = all_stat if all_stat is not None else 0.0
+
+        return round(float(all_stat), 2)
+
     def return_net_worth_year(self, year: int):
 
         tot_checking, tot_retirement, tot_trading, tot_debt, net_worth = self.return_net_worth_month_year('December',
@@ -288,8 +309,7 @@ class User(models.Model):
             'total']
         disc_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_DISC).aggregate(total=Sum('amount'))[
             'total']
-        stat_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_CHOICES[4][0]).aggregate(total=Sum('amount'))[
-            'total']
+        stat_exp = Statutory.filter(user=self, date__gte=beg_of_month, date__lt=end_of_month).aggregate(total=Sum('amount'))['total']
 
         return mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp
 
@@ -757,7 +777,7 @@ class Account(models.Model):
         return time_to_reach
 
     def get_absolute_url(self):
-        return reverse('finances:account_overview', args=[self.pk])
+        return reverse('account_overview', args=[self.pk])
 
     def __str__(self):
         return self.name
@@ -775,7 +795,10 @@ class DebtAccount(Account):
 
         Similar to a trading account.
     """
-
+    # starting_balance = models.DecimalField(verbose_name='Starting debt in dollars (do not use negative values)',
+    #                                        max_digits=9,
+    #                                        decimal_places=2,
+    #                                        default=0.0)
     yearly_interest_pct = models.DecimalField(verbose_name='Yearly interest in percent',
                                               max_digits=4, decimal_places=2, default=0.0)
 
