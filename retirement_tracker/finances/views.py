@@ -103,6 +103,8 @@ class UserMonthYearView(DetailView):
         except MonthlyBudget.DoesNotExist:
             mbudget = MonthlyBudget.objects.create(user=self.object, date=date)
             mbudget.save()
+        statutory = self.object.return_statutory_month_year(self.month, self.year)
+        context['statutory'] = statutory
         context['monthly_budget'] = mbudget
         takehome_pay = self.object.return_takehome_pay_month_year(self.month, self.year)
         context['takehome_pay'] = takehome_pay
@@ -113,7 +115,7 @@ class UserMonthYearView(DetailView):
         context['tot_debts_goals_retirement_expenses'] = dgr_exp
         context['tot_discretionary_expenses'] = disc_exp
         context['tot_statutory_expenses'] = stat_exp
-        context['leftover_statutory'] = round(float(mbudget.statutory - stat_exp), 2)
+        context['leftover_statutory'] = round(float(statutory - stat_exp), 2)
         context['leftover_mandatory'] = round(float(mbudget.mandatory - mand_exp), 2)
         context['leftover_mortgage'] = round(float(mbudget.mortgage - mort_exp), 2)
         context['leftover_dgr'] = round(float(mbudget.debts_goals_retirement - dgr_exp), 2)
@@ -179,7 +181,21 @@ class UserIncomesAvailable(ListView):
     def get_queryset(self):
         userobj = User.objects.get(pk=self.userpk)
         user_accounts = userobj.return_all_accounts()
-        return Withdrawal.objects.filter(account__in=user_accounts).order_by('-date')
+        return Deposit.objects.filter(account__in=user_accounts).order_by('-date')
+
+
+class UserStatutoryAvailable(ListView):
+    model = Statutory
+    template_name = 'finances/statutory_list.html'
+    paginate_by = 25
+
+    def dispatch(self, request, *args, **kwargs):
+        self.userpk = kwargs['pk']
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        userobj = User.objects.get(pk=self.userpk)
+        return Statutory.objects.filter(user=userobj).order_by('-date')
 
 
 class UserReportsAvailable(DetailView):
@@ -471,8 +487,7 @@ class UserWorkRelatedIncomeView(FormView):
         retirement_401k = float(post['retirement_401k'])
         retirement_hsa = float(post['retirement_HSA'])
 
-        new_inc = Deposit.objects.create(user=self.user,
-                                         account=account,
+        new_inc = Deposit.objects.create(account=account,
                                          date=date,
                                          category='Gross Income',
                                          description='Gross Income',
@@ -502,44 +517,46 @@ class UserWorkRelatedIncomeView(FormView):
                                                 amount=medicare,
                                                 )
         medicare_exp.save()
-        state_income_exp = Statutory.objects.create(user=self.user,
+        if state_income_tax > 0.0:
+            state_income_exp = Statutory.objects.create(user=self.user,
+                                                        date=date,
+                                                        category='Taxes',
+                                                        location='Work',
+                                                        description='State Income Tax',
+                                                        amount=state_income_tax,
+                                                        )
+            state_income_exp.save()
+        if dental > 0.0:
+            dental_exp = Withdrawal.objects.create(account=account,
+                                                   date=date,
+                                                   budget_group=BUDGET_GROUP_MANDATORY,
+                                                   category='Mandatory',
+                                                   location='Work',
+                                                   description='Dental',
+                                                   amount=dental,
+                                                   )
+            dental_exp.save()
+        if medical > 0.0:
+            medical_exp = Withdrawal.objects.create(account=account,
                                                     date=date,
-                                                    category='Taxes',
+                                                    budget_group=BUDGET_GROUP_MANDATORY,
+                                                    category='Mandatory',
                                                     location='Work',
-                                                    description='State Income Tax',
-                                                    amount=state_income_tax,
+                                                    description='Medical',
+                                                    amount=medical,
                                                     )
-        state_income_exp.save()
-        dental_exp = Withdrawal.objects.create(user=self.user,
-                                               account=account,
-                                               date=date,
-                                               budget_group=BUDGET_GROUP_MANDATORY,
-                                               category='Mandatory',
-                                               location='Work',
-                                               description='Dental',
-                                               amount=dental,
-                                               )
-        dental_exp.save()
-        medical_exp = Withdrawal.objects.create(user=self.user,
-                                                account=account,
-                                                date=date,
-                                                budget_group=BUDGET_GROUP_MANDATORY,
-                                                category='Mandatory',
-                                                location='Work',
-                                                description='Medical',
-                                                amount=medical,
-                                                )
-        medical_exp.save()
-        vision_exp = Withdrawal.objects.create(user=self.user,
-                                               account=account,
-                                               date=date,
-                                               budget_group=BUDGET_GROUP_MANDATORY,
-                                               category='Mandatory',
-                                               location='Work',
-                                               description='Vision',
-                                               amount=vision,
-                                               )
-        vision_exp.save()
+            medical_exp.save()
+        if vision > 0.0:
+            vision_exp = Withdrawal.objects.create(user=self.user,
+                                                   account=account,
+                                                   date=date,
+                                                   budget_group=BUDGET_GROUP_MANDATORY,
+                                                   category='Mandatory',
+                                                   location='Work',
+                                                   description='Vision',
+                                                   amount=vision,
+                                                   )
+            vision_exp.save()
         if account != account_401k:
             ret_401k_trans = Transfer.objects.create(account_from=account,
                                                      account_to=account_401k,
@@ -645,10 +662,6 @@ class MonthlyBudgetForUserViewMonthYear(FormView):
         return context
 
 
-class WithdrawalDeleteView(DeleteView):
-    model = Withdrawal
-    success_url = '/finances'
-
 
 class ExpenseUpdateView(UpdateView):
     model = Withdrawal
@@ -662,12 +675,30 @@ class DepositUpdateView(UpdateView):
 
 class DepositDeleteView(DeleteView):
     model = Deposit
+    template_name = 'finances/object_confirm_delete.html'
+    success_url = '/finances'
+
+
+class WithdrawalDeleteView(DeleteView):
+    model = Withdrawal
+    template_name = 'finances/object_confirm_delete.html'
+    success_url = '/finances'
+
+
+class StatutoryDeleteView(DeleteView):
+    model = Statutory
+    template_name = 'finances/object_confirm_delete.html'
     success_url = '/finances'
 
 
 class DepositView(DetailView):
     model = Deposit
-    template_name = 'finances/object_detail.html'
+    template_name = 'finances/deposit_detail.html'
+
+
+class StatutoryView(DetailView):
+    model = Statutory
+    template_name = 'finances/statutory_detail.html'
 
 
 class DepositForUserView(FormView):
@@ -733,6 +764,11 @@ class DepositUpdateView(UpdateView):
 
 class WithdrawalUpdateView(UpdateView):
     model = Withdrawal
+    fields = '__all__'
+
+
+class StatutoryUpdateView(UpdateView):
+    model = Statutory
     fields = '__all__'
 
 

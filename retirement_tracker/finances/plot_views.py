@@ -363,13 +363,14 @@ class MonthlyBudgetPlotView(DetailView):
             mb = MonthlyBudget.objects.get(user=self.user, month=self.month, year=self.year)
         except MonthlyBudget.DoesNotExist:
             return redirect('user_add_monthly_budget_month_year', self.user.pk, self.month, self.year)
+        statutory = self.user.return_statutory_month_year(self.month, self.year)
         config = get_pie_chart_config('Budgeted')
         data = {
             'labels': ['Mandatory', 'Statutory', 'Mortgage', 'Debts, Goals, Retirement', 'Discretionary'],
             'datasets': [
                 {
                     'label': 'Budgeted',
-                    'data': [mb.mandatory, mb.statutory, mb.mortgage, mb.debts_goals_retirement, mb.discretionary],
+                    'data': [mb.mandatory, statutory, mb.mortgage, mb.debts_goals_retirement, mb.discretionary],
                     'backgroundColor': [cjs.get_color('red'), cjs.get_color('orange'), cjs.get_color('yellow'),
                                         cjs.get_color('green'), cjs.get_color('blue')],
                 }

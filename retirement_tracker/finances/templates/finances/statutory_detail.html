@@ -1,0 +1,7 @@
+{% extends 'finances/master_template.html' %}
+
+{% block mymessage %}
+<h1>{{object}}</h1>
+<button class="button is-small" onclick="window.location.href='/finances/update_statutory/{{object.pk}}';">Update Statutory</button>
+<button class="button is-small" onclick="window.location.href='/finances/delete_statutory/{{object.pk}}';">Delete Statutory</button>
+{% endblock %}

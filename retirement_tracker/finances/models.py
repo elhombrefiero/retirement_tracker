@@ -459,8 +459,9 @@ class User(models.Model):
         return reverse('user_overview', args=[self.pk])
 
     def get_earliest_latest_dates(self):
-        user_expenses = Withdrawal.objects.filter(user=self)
-        user_incomes = Deposit.objects.filter(user=self)
+        all_user_accts = self.return_all_accounts()
+        user_expenses = Withdrawal.objects.filter(account__in=all_user_accts)
+        user_incomes = Deposit.objects.filter(account__in=all_user_accts)
         user_earliest = min(user_expenses.earliest('date').date,
                             user_incomes.earliest('date').date)
         user_latest = max(user_expenses.latest('date').date,
@@ -541,14 +542,16 @@ class User(models.Model):
         return date_json
 
     def return_cumulative_expenses(self, start_date, end_date, budget_group=None):
-        """ Returns the cumulative expenses of all of the checking accounts within a date range.
+        """ Returns the cumulative expenses of all the checking accounts within a date range.
 
         The start date is inclusive whereas the end_date is not.
         """
         # TODO: First get the distinct dates and use that to get the summation for every day.
+        # TODO: Account for the statutory expenses, if desired.
+        # TODO: Consider aggregating all of the expenses here and returning a json of all of the data
 
         user_checking = CheckingAccount.objects.filter(user=self)
-        expenses = Withdrawal.objects.filter(user=self, account__in=user_checking,
+        expenses = Withdrawal.objects.filter(account__in=user_checking,
                                              date__gte=start_date, date__lt=end_date)
         if budget_group:
             expenses = expenses.filter(budget_group=budget_group)
@@ -564,7 +567,7 @@ class User(models.Model):
         """
 
         user_checking = CheckingAccount.objects.filter(user=self)
-        incomes = Deposit.objects.filter(user=self, account__in=user_checking,
+        incomes = Deposit.objects.filter(account__in=user_checking,
                                          date__gte=start_date, date__lt=end_date)
 
         cumulative_balance = incomes.annotate(cumsum=Window(Sum('amount'),
@@ -1151,3 +1154,9 @@ class Statutory(models.Model):
     location = models.CharField(max_length=200)
     description = models.CharField(max_length=250)
     amount = models.FloatField(verbose_name='Amount')
+
+    def __str__(self):
+        return f'{self.date} {self.description} {self.amount}'
+
+    class Meta:
+        unique_together = ['user', 'description', 'amount']

@@ -170,6 +170,11 @@
           Expenses
         </a>
         </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/statutory" class="dropdown-item">
+          Statutory
+        </a>
+        </div>
       </div>
     </div>
 </nav>
@@ -204,7 +209,7 @@
         <tbody>
         <tr>
           <td>Statutory</td>
-          <td>{{monthly_budget.statutory}}</td>
+          <td>{{statutory}}</td>
           <td>{{tot_statutory_expenses}}</td>
           <td>{{leftover_statutory}}</td>
         </tr>

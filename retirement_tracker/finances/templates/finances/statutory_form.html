@@ -1,0 +1,11 @@
+{% extends 'finances/master_template.html' %}
+
+{% block mymessage %}
+<form method="POST" enctype="multipart/form-data">
+    {{ form.non_field_errors }}
+    {% csrf_token %}
+    {{form.as_p}}
+    <input type="submit" value="Submit">
+</form>
+<button class="button is-small" onclick="window.location.href='/finances/delete_statutory/{{statutory.pk}}';">Delete Statutory</button>
+{% endblock %}
