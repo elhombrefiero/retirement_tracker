@@ -1,11 +1,11 @@
 {% extends 'finances/master_template.html' %}
 
 {% block header_extra %}
-    <Title>Statutory Entries</Title>
+    <Title>Transfer Entries</Title>
 {% endblock %}
 
 {% block mymessage %}
-<!--Table of incomes-->
+<!--Table of transfers-->
 <table class="table">
     <thead>
         <tr>
@@ -15,11 +15,11 @@
         </tr>
     </thead>
     <tbody>
-        {% for statutory in page_obj %}
+        {% for transfer in page_obj %}
         <tr>
-            <td>{{statutory.date}}</td>
-            <td><a href="/finances/statutory_overview/{{statutory.pk}}">{{statutory.description}}</a></td>
-            <td>{{statutory.amount}}</td>
+            <td>{{transfer.date}}</td>
+            <td><a href="/finances/transfer_overview/{{transfer.pk}}">{{transfer.description}}</a></td>
+            <td>{{transfer.amount}}</td>
         </tr>
         {% endfor %}
     </tbody>

@@ -42,7 +42,9 @@ urlpatterns = [
     # Ex. /finances/user/1/incomes
     path('user/<int:pk>/incomes', views.UserIncomesAvailable.as_view(), name='user_available_incomes'),
     # Ex. /finances/user/1/statutory
-    path('user/<int:pk>/statutory', views.UserStatutoryAvailable.as_view(), name='user_available_statutory'),
+    path('user/<int:pk>/statutory_entries', views.UserStatutoryAvailable.as_view(), name='user_available_statutory'),
+    # Ex. /finances/user/1/transfers
+    path('user/<int:pk>/transfers', views.UserStatutoryAvailable.as_view(), name='user_available_statutory'),
     # Ex. /finances/user/1/reports
     path('user/<int:pk>/reports', views.UserReportsAvailable.as_view(), name='user_available_reports'),
     # Ex. /finances/user/1/monthly_budgets

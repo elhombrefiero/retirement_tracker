@@ -40,16 +40,6 @@ class WithdrawalForUserForm(forms.ModelForm):
         model = Withdrawal
         fields = '__all__'
 
-    def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user')
-        super().__init__(*args, **kwargs)
-        user_accts = user.return_all_accounts()
-
-        user_account_choices = [(None, None)]
-        for acct in user_accts:
-            user_account_choices.append((acct.pk, acct))
-        self.fields['user_accounts'] = forms.ChoiceField(choices=user_account_choices)
-
 
 class StatutoryForUserForm(forms.ModelForm):
     """ Add a statutory payment for the user."""

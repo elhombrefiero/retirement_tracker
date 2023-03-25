@@ -198,6 +198,19 @@ class UserStatutoryAvailable(ListView):
         return Statutory.objects.filter(user=userobj).order_by('-date')
 
 
+class UserTransfersAvailable(ListView):
+    model = Transfer
+    template_name = 'finances/user_transfers'
+    paginate_by = 25
+
+    def dispatch(self, request, *args, **kwargs):
+        self.userpk = kwargs['pk']
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        userobj = User.objects.get(pk=self.userpk)
+        return Transfer.objects.filter(user=userobj).order_by('-date')
+
 class UserReportsAvailable(DetailView):
     model = User
     template_name = 'finances/user_reports.html'
@@ -429,7 +442,7 @@ class WithdrawalForUserView(FormView):
                                                group=['group'],
                                                )
         newexpense.save()
-        self.success_url = f'/finances/user/{self.user.pk}'
+        self.success_url = f'/finances/user/{self.user.pk}/add_withdrawal'
         return super().form_valid(form)
 
 
@@ -704,7 +717,7 @@ class StatutoryView(DetailView):
 class DepositForUserView(FormView):
     """ Input a deposit for a user. """
     form_class = DepositForUserForm
-    template_name = 'finances/income_form_for_user.html'
+    template_name = 'finances/deposit_form_for_user.html'
     success_url = '/finances'
 
     def dispatch(self, request, *args, **kwargs):
@@ -719,14 +732,31 @@ class DepositForUserView(FormView):
         incomes_six_months_prior = Deposit.objects.filter(account__in=user_accounts, date__gte=six_months_prior)
         distinct_cat = list(incomes_six_months_prior.values_list('category', flat=True).distinct())
         distinct_desc = list(incomes_six_months_prior.values_list('description', flat=True).distinct())
+        distinct_where = list(incomes_six_months_prior.values_list('location', flat=True).distinct())
         distinct_group = list(incomes_six_months_prior.values_list('group', flat=True).distinct())
         context['user'] = self.user
         context['distinct_cat'] = distinct_cat
         context['distinct_desc'] = distinct_desc
+        context['distinct_where'] = distinct_where
         context['distinct_group'] = distinct_group
 
         return context
 
+    def form_valid(self, form):
+        post = self.request.POST
+        account = Account.objects.get(pk=post['account'])
+        newdeposit = Deposit.objects.create(account=account,
+                                            date=post['date'],
+                                            category=post['category'],
+                                            description=post['description'],
+                                            location=post['location'],
+                                            amount=post['amount'],
+                                            slug_field=post['slug_field'],
+                                            group=post['group']
+                                            )
+        newdeposit.save()
+        self.success_url = f'/finances/user/{self.user.pk}/add_deposit'
+        return super().form_valid(form)
 
 class StatutoryForUserView(FormView):
     form_class = StatutoryForUserForm
