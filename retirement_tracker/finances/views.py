@@ -19,8 +19,6 @@ from finances.forms import MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, 
     WithdrawalForUserForm, DepositForUserForm, StatutoryForUserForm
 
 
-# TODO: Add a transfer form for user and put that on dropdown list. Also, group the multiple expenses for one location.
-
 # Create your views here.
 
 
@@ -210,6 +208,7 @@ class UserTransfersAvailable(ListView):
     def get_queryset(self):
         userobj = User.objects.get(pk=self.userpk)
         return Transfer.objects.filter(user=userobj).order_by('-date')
+
 
 class UserReportsAvailable(DetailView):
     model = User
@@ -616,10 +615,14 @@ class MonthlyBudgetForUserView(FormView):
     form_class = MonthlyBudgetForUserForm
     template_name = 'finances/monthlybudget_form_for_user.html'
     success_url = '/finances'
+    #TODO: Add a dropdown that will call a function to return the monthlybudget values from the user based on a given selected month/year
+
 
     def dispatch(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
         self.user = User.objects.get(pk=pk)
+        self.month = kwargs.get('month')
+        self.year = kwargs.get('year')
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -632,14 +635,20 @@ class MonthlyBudgetForUserView(FormView):
         month = post['date_month']
         year = post['date_year']
         dtdate = datetime.strptime(f'{month}-{year}', '%m-%Y')
-        newmb = MonthlyBudget.objects.create(user=self.user,
-                                             date=dtdate,
-                                             mandatory=post['mandatory'],
-                                             mortgage=post['mortgage'],
-                                             debts_goals_retirement=post['debts_goals_retirement'],
-                                             discretionary=post['discretionary'],
-                                             statutory=post['statutory']
-                                             )
+        newmb, created = MonthlyBudget.objects.get_or_create(user=self.user, month=month, year=year)
+        if not created:
+            newmb = MonthlyBudget.objects.create(user=self.user,
+                                                 date=dtdate,
+                                                 mandatory=post['mandatory'],
+                                                 mortgage=post['mortgage'],
+                                                 debts_goals_retirement=post['debts_goals_retirement'],
+                                                 discretionary=post['discretionary'],
+                                                 )
+        else:
+            newmb.mandatory = post['mandatory']
+            newmb.mortgage = post['mortgage']
+            newmb.debts_goals_retirement = post['debts_goals_retirement']
+            newmb.discretionary = post['discretionary']
         newmb.save()
         self.success_url = f'/finances/user/{self.user.pk}'
         return super().form_valid(form)
@@ -674,6 +683,22 @@ class MonthlyBudgetForUserViewMonthYear(FormView):
 
         return context
 
+    def form_valid(self, form):
+        post = self.request.POST
+        month = post['date_month']
+        year = post['date_year']
+        dtdate = datetime.strptime(f'{month}-{year}', '%m-%Y')
+        try:
+            newmb = MonthlyBudget.objects.get(user=self.user, month=month, year=year)
+        except MonthlyBudget.DoesNotExist:
+            newmb = MonthlyBudget.objects.create(user=self.user, date=dtdate)
+        newmb.mandatory = post['mandatory']
+        newmb.mortgage = post['mortgage']
+        newmb.debts_goals_retirement = post['debts_goals_retirement']
+        newmb.discretionary = post['discretionary']
+        newmb.save()
+        self.success_url = f'/finances/user/{self.user.pk}'
+        return super().form_valid(form)
 
 
 class ExpenseUpdateView(UpdateView):
@@ -757,6 +782,7 @@ class DepositForUserView(FormView):
         newdeposit.save()
         self.success_url = f'/finances/user/{self.user.pk}/add_deposit'
         return super().form_valid(form)
+
 
 class StatutoryForUserView(FormView):
     form_class = StatutoryForUserForm

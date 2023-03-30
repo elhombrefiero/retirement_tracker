@@ -114,6 +114,7 @@ class User(models.Model):
         all_stat = self.return_statutory_up_to_month_year(datetime_inclusive.strftime('%B'), datetime_inclusive.year)
 
         return all_stat
+
     def return_statutory_up_to_month_year(self, month, year):
         """ Returns the statutory up to the end of the month and year"""
 
@@ -303,13 +304,18 @@ class User(models.Model):
                                              date__gte=beg_of_month, date__lt=end_of_month)
         mand_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_MANDATORY).aggregate(total=Sum('amount'))[
             'total']
+        mand_exp = mand_exp if mand_exp is not None else 0.0
         mort_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_MORTGAGE).aggregate(total=Sum('amount'))[
             'total']
+        mort_exp = mort_exp if mort_exp is not None else 0.0
         dgr_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_DGR).aggregate(total=Sum('amount'))[
             'total']
+        dgr_exp = dgr_exp if dgr_exp is not None else 0.0
         disc_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_DISC).aggregate(total=Sum('amount'))[
             'total']
+        disc_exp = disc_exp if disc_exp is not None else 0.0
         stat_exp = Statutory.filter(user=self, date__gte=beg_of_month, date__lt=end_of_month).aggregate(total=Sum('amount'))['total']
+        stat_exp = stat_exp if stat_exp is not None else 0.0
 
         return mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp
 
@@ -359,13 +365,12 @@ class User(models.Model):
 
         # Get accounts associated with the user
         user_accounts = self.return_checking_accts()
+        statutory = self.return_statutory_month_year(month, year)
 
         # Get the total income from base accounts for the current month/year
         total_income = 0.0
-        statutory = 0.0
         for account in user_accounts:
             total_income += account.return_income_month_year(month, year)
-            statutory += account.return_statutory_month_year(month, year)
 
         takehome = total_income - statutory
         budget_mort = takehome * self.DEFAULT_MORTGAGE_BUDGET_PCT / 100.0
@@ -798,10 +803,6 @@ class DebtAccount(Account):
 
         Similar to a trading account.
     """
-    # starting_balance = models.DecimalField(verbose_name='Starting debt in dollars (do not use negative values)',
-    #                                        max_digits=9,
-    #                                        decimal_places=2,
-    #                                        default=0.0)
     yearly_interest_pct = models.DecimalField(verbose_name='Yearly interest in percent',
                                               max_digits=4, decimal_places=2, default=0.0)
 
