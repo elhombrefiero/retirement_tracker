@@ -45,6 +45,10 @@ class UserView(DetailView):
         tot_checking, tot_retirement, tot_trading, tot_debt, net_worth = \
             self.object.return_net_worth()
         context['net_worth'] = net_worth
+        context['checking_balance'] = tot_checking
+        context['retirement_balance'] = tot_retirement
+        context['trading_balance'] = tot_trading
+        context['debt_balance'] = tot_debt
         return context
 
 
@@ -63,6 +67,10 @@ class UserYearView(DetailView):
         context['accounts'] = Account.objects.filter(user=self.object)
         tot_checking, tot_retirement, tot_trading, tot_debt, net_worth = \
             self.object.return_net_worth_year(self.year)
+        context['checking_balance'] = tot_checking
+        context['retirement_balance'] = tot_retirement
+        context['trading_balance'] = tot_trading
+        context['debt_balance'] = tot_debt
         context['net_worth'] = net_worth
         context['year'] = self.year
         ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_tot_debt, ret_net_worth = \
