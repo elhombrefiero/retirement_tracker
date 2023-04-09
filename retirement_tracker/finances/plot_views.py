@@ -228,6 +228,25 @@ class ExpenseByDescriptionPlotView(DetailView):
         return JsonResponse(config)
 
 
+class MonthlyBudgetByUserMonthYear(DetailView):
+    model = User
+
+    def dispatch(self, request, *args, **kwargs):
+        self.month = kwargs['month']
+        self.year = kwargs['year']
+        userpk = kwargs['pk']
+        self.user = User.objects.get(pk=userpk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self):
+        try:
+            mb = MonthlyBudget.objects.get(user=self.user, month=self.month, year=self.year)
+        except MonthlyBudget.DoesNotExist:
+            return 0.0, 0.0, 0.0, 0.0
+
+        return mb.mandatory, mb.mortgage, mb.debts_goals_retirement, mb.discretionary
+
+
 class ExpenseByLocationPlotView(DetailView):
     model = User
 
