@@ -53,10 +53,9 @@ urlpatterns = [
     path('user/<int:pk>/<int:year>', views.UserYearView.as_view(), name='user_year'),
     # Ex. /finances/usr/1/January/2022
     path('user/<int:pk>/<str:month>/<int:year>/', views.UserMonthYearView.as_view(), name='user_month_year'),
-    # Ex. /finances/user/1/January/2022/add_monthly_budget
-    path('user/<int:pk>/<str:month>/<int:year>/add_monthly_budget', views.MonthlyBudgetForUserViewMonthYear.as_view(),
-         name='user_add_monthly_budget_month_year'),
-    path('user/<int:pk>/<str:month>/<int:year>/view_monthly_budget', views.MonthlyBudgetForUserViewMonthYear.as_view(), name='user_monthly_budget'),
+    # Ex. /finances/user/1/January/2022/view_monthly_budget
+    path('user/<int:pk>/<str:month>/<int:year>/view_monthly_budget', views.MonthlyBudgetForUserView.as_view(),
+         name='user_monthly_budget'),
     # Ex. /finances/user/1/lookup_expenses
     path('user/<int:pk>/lookup_expenses', views.ExpenseLookupForUserView.as_view(), name='user_expense_lookup'),
     # Ex. /finances/user/1/add_work_income
@@ -83,8 +82,6 @@ urlpatterns = [
     path('add_retirement_account/', views.RetirementAccountCreateView.as_view(), name='raccount-add'),
     # Ex. /finances/add_trading_account
     path('add_trading_account/', views.TradingAccountCreateView.as_view(), name='taccount-add'),
-    # Ex. /finances/add_monthly_budget
-    path('add_monthly_budget/', views.MonthlyBudgetCreateView.as_view(), name='mbudget-add'),
     # Ex. /finances/update_user/1
     path('update_user/<int:pk>', views.UserUpdateView.as_view(), name='user-update'),
     # Ex. /finances/update_account/1
@@ -93,8 +90,6 @@ urlpatterns = [
     path('update_retirement_account/<int:pk>', views.RetirementAccountUpdateView.as_view(), name='raccount-update'),
     # Ex. /finances/update_trading_account/1
     path('update_trading_account/<int:pk>', views.TradingAccountUpdateView.as_view(), name='taccount-update'),
-    # Ex. /finances/update_monthly_budget/1
-    path('update_monthly_budget/<int:pk>', views.MonthlyBudgetUpdateView.as_view(), name='mbudget-update'),
     # Ex. /finances/update_income/1
     path('update_deposit/<int:pk>', views.DepositUpdateView.as_view(), name='deposit-update'),
     # Ex. /finances/update_withdrawal/1

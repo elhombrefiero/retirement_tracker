@@ -35,6 +35,7 @@ class WithdrawalByLocForm(forms.ModelForm):
         model = Withdrawal
         fields = '__all__'
 
+
 class WithdrawalForUserForm(forms.ModelForm):
     class Meta:
         model = Withdrawal
@@ -148,6 +149,7 @@ class MonthlyBudgetForUserForm(forms.ModelForm):
 
 class MonthlyBudgetForUserMonthYearForm(forms.ModelForm):
     """ Add a monthly budget for a given user, month and year"""
+    date = forms.DateField(label='Date of paycheck', initial=now, widget=forms.SelectDateWidget)
 
     class Meta:
         model = MonthlyBudget

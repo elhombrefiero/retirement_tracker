@@ -238,13 +238,22 @@ class MonthlyBudgetByUserMonthYear(DetailView):
         self.user = User.objects.get(pk=userpk)
         return super().dispatch(request, *args, **kwargs)
 
-    def get(self):
+    def get(self, request, *args, **kwargs):
+        return_json = {'mandatory': 0.0,
+                       'mortgage': 0.0,
+                       'debts_goals_retirement': 0.0,
+                       'discretionary': 0.0}
         try:
             mb = MonthlyBudget.objects.get(user=self.user, month=self.month, year=self.year)
         except MonthlyBudget.DoesNotExist:
-            return 0.0, 0.0, 0.0, 0.0
+            return JsonResponse(return_json)
 
-        return mb.mandatory, mb.mortgage, mb.debts_goals_retirement, mb.discretionary
+        return_json = {'mandatory': mb.mandatory,
+                       'mortgage': mb.mortgage,
+                       'debts_goals_retirement': mb.debts_goals_retirement,
+                       'discretionary': mb.discretionary}
+
+        return JsonResponse(return_json)
 
 
 class ExpenseByLocationPlotView(DetailView):

@@ -629,13 +629,13 @@ class MonthlyBudgetForUserView(FormView):
     def dispatch(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
         self.user = User.objects.get(pk=pk)
-        self.month = kwargs.get('month')
-        self.year = kwargs.get('year')
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['user'] = self.user
+        year_month_dict = self.user.return_year_month_for_monthly_budgets()
+        context['monthly_budgets_year_month'] = year_month_dict
         return context
 
     def form_valid(self, form):
@@ -643,7 +643,7 @@ class MonthlyBudgetForUserView(FormView):
         month = post['date_month']
         year = post['date_year']
         dtdate = datetime.strptime(f'{month}-{year}', '%m-%Y')
-        newmb, created = MonthlyBudget.objects.get_or_create(user=self.user, month=month, year=year)
+        newmb, created = MonthlyBudget.objects.get_or_create(user=self.user, date=dtdate)
         if not created:
             newmb = MonthlyBudget.objects.create(user=self.user,
                                                  date=dtdate,
@@ -657,53 +657,6 @@ class MonthlyBudgetForUserView(FormView):
             newmb.mortgage = post['mortgage']
             newmb.debts_goals_retirement = post['debts_goals_retirement']
             newmb.discretionary = post['discretionary']
-        newmb.save()
-        self.success_url = f'/finances/user/{self.user.pk}'
-        return super().form_valid(form)
-
-
-class MonthlyBudgetForUserViewMonthYear(FormView):
-    form_class = MonthlyBudgetForUserMonthYearForm
-    template_name = 'finances/monthlybudget_form_for_user.html'
-    success_url = f'/finances/'
-
-    def dispatch(self, request, *args, **kwargs):
-        pk = kwargs.get('pk')
-        self.month = kwargs.get('month')
-        self.year = kwargs.get('year')
-        self.user = User.objects.get(pk=pk)
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['user'] = self.user
-        context['month'] = self.month
-        context['year'] = self.year
-        takehome = self.user.return_takehome_pay_month_year(self.month, self.year)
-        context['takehome'] = takehome
-        budget_mand, budget_mort, statutory, budget_dgr, budget_disc = \
-            self.user.estimate_budget_for_month_year(self.month, self.year)
-        context['est_mand'] = budget_mand
-        context['est_mort'] = budget_mort
-        context['statutory'] = statutory
-        context['est_dgr'] = budget_dgr
-        context['est_disc'] = budget_disc
-
-        return context
-
-    def form_valid(self, form):
-        post = self.request.POST
-        month = post['date_month']
-        year = post['date_year']
-        dtdate = datetime.strptime(f'{month}-{year}', '%m-%Y')
-        try:
-            newmb = MonthlyBudget.objects.get(user=self.user, month=month, year=year)
-        except MonthlyBudget.DoesNotExist:
-            newmb = MonthlyBudget.objects.create(user=self.user, date=dtdate)
-        newmb.mandatory = post['mandatory']
-        newmb.mortgage = post['mortgage']
-        newmb.debts_goals_retirement = post['debts_goals_retirement']
-        newmb.discretionary = post['discretionary']
         newmb.save()
         self.success_url = f'/finances/user/{self.user.pk}'
         return super().form_valid(form)
@@ -838,11 +791,6 @@ class StatutoryUpdateView(UpdateView):
 
 class MonthlyBudgetView(DetailView):
     model = MonthlyBudget
-
-
-class MonthlyBudgetCreateView(CreateView):
-    model = MonthlyBudget
-    fields = '__all__'
 
 
 class MonthlyBudgetDeleteView(DeleteView):
