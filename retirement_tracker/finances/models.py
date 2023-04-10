@@ -1160,4 +1160,4 @@ class Statutory(models.Model):
         return f'{self.date} {self.description} {self.amount}'
 
     class Meta:
-        unique_together = ['user', 'description', 'amount']
+        unique_together = ['user', 'date', 'description', 'amount']
