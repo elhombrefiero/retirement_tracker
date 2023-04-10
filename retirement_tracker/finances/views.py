@@ -769,11 +769,6 @@ class StatutoryForUserView(FormView):
         return super().form_valid(form)
 
 
-class DepositDeleteView(DeleteView):
-    model = Deposit
-    success_url = '/finances'
-
-
 class DepositUpdateView(UpdateView):
     model = Deposit
     fields = '__all__'
