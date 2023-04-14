@@ -185,6 +185,7 @@ class AddRetirementAccountForm(forms.ModelForm):
 
 
 class TransferBetweenAccountsForm(forms.ModelForm):
+    date = forms.DateField(label='Transfer Date', initial=now, widget=forms.SelectDateWidget)
 
     class Meta:
         model = Transfer

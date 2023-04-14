@@ -146,6 +146,25 @@ class UserTransferView(FormView):
         context['accounts'] = user_accounts
         return context
 
+    def form_valid(self, form):
+        post = self.request.POST
+        month = post['date_month']
+        day = post['date_day']
+        year = post['date_year']
+        dtdate = datetime.strptime(f'{month}-{day}-{year}', '%m-%d-%Y')
+        newtransfer = Transfer.objects.create(account_from=int(post['account_from']),
+                                              account_to=int(post['account_to']),
+                                              date=dtdate,
+                                              budget_group=post['budget_group'],
+                                              category=post['category'],
+                                              location=post['location'],
+                                              description=post['description'],
+                                              amount=float(post['amount']),
+                                              slug_field=post['slug_field'],
+                                              group=post['group'])
+        newtransfer.save()
+        self.success_url = f'/finances/user/{self.user.pk}'
+        return super().form_valid(form)
 
 class UserAccountsAvailable(ListView):
     model = Account
