@@ -166,6 +166,7 @@ class UserTransferView(FormView):
         self.success_url = f'/finances/user/{self.user.pk}'
         return super().form_valid(form)
 
+
 class UserAccountsAvailable(ListView):
     model = Account
     template_name = 'finances/user_accounts.html'

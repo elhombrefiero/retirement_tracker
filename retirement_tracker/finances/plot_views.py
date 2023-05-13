@@ -376,6 +376,48 @@ class ExpenseCumulativeMonthYearPlotView(DetailView):
         return JsonResponse(return_dict)
 
 
+class TotalCumulativeMonthYearPlotView(DetailView):
+    model = User
+
+    def dispatch(self, request, *args, **kwargs):
+        self.month = kwargs['month']
+        self.year = kwargs['year']
+        userpk = kwargs['pk']
+        self.user = User.objects.get(pk=userpk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        start_date = datetime.strptime(f'{self.month}-01-{self.year}', '%B-%d-%Y')
+        end_date = start_date + relativedelta(months=+1)
+        config = get_line_chart_config(f'Cumulative Total for {self.month}, {self.year}')
+        cumulative_total = self.user.return_cumulative_total(start_date, end_date)
+
+        return_dict = dict()
+        return_dict['config'] = config
+
+        xy_data = []
+        labels = []
+        for date_key in sorted(cumulative_total.keys()):
+            labels.append(date_key)
+            xy_data.append(
+                {'x': date_key, 'y': float(cumulative_total[date_key]['cumulative'])})
+
+        data = {
+            'labels': labels,
+            'datasets': [{
+                'label': 'Cumulative Total',
+                'backgroundColor': cjs.get_color('red', 0.5),
+                'borderColor': cjs.get_color('red'),
+                'fill': False,
+                'data': xy_data
+            }]
+        }
+
+        return_dict['data'] = data
+
+        return JsonResponse(return_dict)
+
+
 class MonthlyBudgetPlotView(DetailView):
     model = User
 

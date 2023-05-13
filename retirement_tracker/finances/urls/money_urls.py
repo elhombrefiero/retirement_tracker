@@ -95,7 +95,7 @@ urlpatterns = [
     # Ex. /finances/update_withdrawal/1
     path('update_withdrawal/<int:pk>', views.WithdrawalUpdateView.as_view(), name='withdrawal-update'),
     # Ex. /finances/update_depsoit/1
-    path('update_deposit/<int:pk>', views.DepositUpdateView.as_view(), name='deposit-update'),
+    path('update_monthlybudget/<int:pk>', views.MonthlyBudgetUpdateView.as_view(), name='mbudget-update'),
     # Ex. /finances/update_withdrawal/1
     path('update_withdrawal/<int:pk>', views.WithdrawalUpdateView.as_view(), name='withdrawal-update'),
     # Ex. /finances/update_statutory/1

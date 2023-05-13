@@ -261,36 +261,36 @@ class User(models.Model):
 
     def return_top_category(self, month, year, num_of_entries=5):
         """ Finds the maximum expenses by category. By default finds the top five for a given month/year"""
-        # TODO: Exclude mortgage from lookup
         checking_accounts = self.return_checking_accts()
         beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
-        expenses = Withdrawal.objects.filter(user=self, account__in=checking_accounts,
+        expenses = Withdrawal.objects.filter(account__in=checking_accounts,
                                              date__gte=beg_of_month, date__lt=end_of_month)
+        expenses = expenses.exclude(budget_group=BUDGET_GROUP_MORTGAGE)
         category_expenses = expenses.values('category').distinct().annotate(sum=Sum('amount')).order_by('-sum')[
                             :num_of_entries]
         return category_expenses
 
     def return_top_description(self, month, year, num_of_entries=5):
         """ Finds the maximum expenses by category. By default finds the top five for a given month/year"""
-        # TODO: Exclude mortgage from lookup
         checking_accounts = self.return_checking_accts()
         beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
-        expenses = Withdrawal.objects.filter(user=self, account__in=checking_accounts,
+        expenses = Withdrawal.objects.filter(account__in=checking_accounts,
                                              date__gte=beg_of_month, date__lt=end_of_month)
+        expenses = expenses.exclude(budget_group=BUDGET_GROUP_MORTGAGE)
         description_expenses = expenses.values('description').distinct().annotate(sum=Sum('amount')).order_by('-sum')[
                                :num_of_entries]
         return description_expenses
 
     def return_top_location(self, month, year, num_of_entries=5):
         """ Finds the maximum expenses by category. By default finds the top five for a given month/year"""
-        # TODO: Exclude mortgage from lookup
         checking_accounts = self.return_checking_accts()
         beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
-        expenses = Withdrawal.objects.filter(user=self, account__in=checking_accounts,
+        expenses = Withdrawal.objects.filter(account__in=checking_accounts,
                                              date__gte=beg_of_month, date__lt=end_of_month)
+        expenses = expenses.exclude(budget_group=BUDGET_GROUP_MORTGAGE)
         location_expenses = expenses.values('location').distinct().annotate(sum=Sum('amount')).order_by('-sum')[
                             :num_of_entries]
         return location_expenses
@@ -300,7 +300,7 @@ class User(models.Model):
         beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
         checking_accts = self.return_checking_accts()
-        expenses = Withdrawal.objects.filter(user=self, account__in=checking_accts,
+        expenses = Withdrawal.objects.filter(account__in=checking_accts,
                                              date__gte=beg_of_month, date__lt=end_of_month)
         mand_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_MANDATORY).aggregate(total=Sum('amount'))[
             'total']
@@ -550,6 +550,7 @@ class User(models.Model):
         """ Returns the cumulative expenses of all the checking accounts within a date range.
 
         The start date is inclusive whereas the end_date is not.
+        Optional budget_group argument lets the user filter by budget_group.
         """
         # TODO: First get the distinct dates and use that to get the summation for every day.
         # TODO: Account for the statutory expenses, if desired.
@@ -566,7 +567,7 @@ class User(models.Model):
         return cumulative_balance
 
     def return_cumulative_incomes(self, start_date, end_date):
-        """ Returns the cumulative expenses of all the checking accounts within a date range.
+        """ Returns the cumulative incomes of all the checking accounts within a date range.
 
         The start date is inclusive whereas the end_date is not.
         """
@@ -579,6 +580,53 @@ class User(models.Model):
                                                             order_by=F('date').asc())).order_by('date', 'cumsum')
 
         return cumulative_balance
+
+    def return_cumulative_total(self, start_date, end_date):
+        """ Returns the cumulative total (income - expenses) of all the checking accounts within a date range.
+
+        Start date is inclusive whereas the end_date is not.
+
+        Return structure will be in the form of:
+            cumulative[datetime]['cumulative'] = cumulative_amount
+        """
+        user_checking = CheckingAccount.objects.filter(user=self)
+        incomes = Deposit.objects.filter(account__in=user_checking,
+                                         date__gte=start_date, date__lt=end_date).order_by('date')
+        expenses = Withdrawal.objects.filter(account__in=user_checking,
+                                             date__gte=start_date, date__lt=end_date).order_by('date')
+
+        # Put all incomes and expenses in a dictionary
+        all_income_exp = {}
+        for income in incomes:
+            if income.date not in all_income_exp:
+                all_income_exp[income.date] = dict()
+                all_income_exp[income.date]['income'] = income.amount
+            else:
+                if 'income' not in all_income_exp[income.date]:
+                    all_income_exp[income.date]['income'] = income.amount
+                else:
+                    all_income_exp[income.date]['income'] = all_income_exp[income.date]['income'] + income.amount
+
+        for expense in expenses:
+            if expense.date not in all_income_exp:
+                all_income_exp[expense.date] = dict()
+                all_income_exp[expense.date]['expense'] = expense.amount
+            else:
+                if 'expense' not in all_income_exp[expense.date]:
+                    all_income_exp[expense.date]['expense'] = expense.amount
+                else:
+                    all_income_exp[expense.date]['expense'] = all_income_exp[expense.date]['expense'] + expense.amount
+
+        # Iterate through the dictionary and add a total amount
+        total = 0.0
+        for date_key in sorted(all_income_exp.keys()):
+            if 'income' in all_income_exp[date_key]:
+                total = total + all_income_exp[date_key]['income']
+            if 'expense' in all_income_exp[date_key]:
+                total = total - all_income_exp[date_key]['expense']
+            all_income_exp[date_key]['cumulative'] = total
+
+        return all_income_exp
 
     def __str__(self):
         return self.name
