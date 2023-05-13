@@ -1,5 +1,6 @@
 from django.db import models
 from django.db.models import Sum, Max, F, Window
+from django.db.models.functions import TruncDay
 from django.utils.timezone import now
 from django.utils.text import slugify
 from django.shortcuts import reverse
@@ -552,9 +553,15 @@ class User(models.Model):
         The start date is inclusive whereas the end_date is not.
         Optional budget_group argument lets the user filter by budget_group.
         """
-        # TODO: First get the distinct dates and use that to get the summation for every day.
         # TODO: Account for the statutory expenses, if desired.
         # TODO: Consider aggregating all of the expenses here and returning a json of all of the data
+
+        # from django.db.models.functions import TruncMonth
+        # Sales.objects
+        # .annotate(month=TruncMonth('timestamp'))  # Truncate to month and add to select list
+        # .values('month')  # Group By month
+        # .annotate(c=Count('id'))  # Select the count of the grouping
+        # .order_by()
 
         user_checking = CheckingAccount.objects.filter(user=self)
         expenses = Withdrawal.objects.filter(account__in=user_checking,
@@ -562,8 +569,13 @@ class User(models.Model):
         if budget_group:
             expenses = expenses.filter(budget_group=budget_group)
 
-        cumulative_balance = expenses.annotate(cumsum=Window(Sum('amount'),
-                                                             order_by=F('date').asc())).order_by('date', 'cumsum')
+        summed_expenses = expenses.annotate(day=TruncDay('date')).values('day').annotate(cumsum=Sum('amount')).order_by('date')
+        total = 0.0
+        cumulative_balance = dict()
+        for summed_expense in summed_expenses:
+            total += summed_expense['cumsum']
+            cumulative_balance[summed_expense['day']] = total
+
         return cumulative_balance
 
     def return_cumulative_incomes(self, start_date, end_date):
@@ -576,8 +588,14 @@ class User(models.Model):
         incomes = Deposit.objects.filter(account__in=user_checking,
                                          date__gte=start_date, date__lt=end_date)
 
-        cumulative_balance = incomes.annotate(cumsum=Window(Sum('amount'),
-                                                            order_by=F('date').asc())).order_by('date', 'cumsum')
+        summed_incomes = incomes.annotate(day=TruncDay('date')).values('day').annotate(cumsum=Sum('amount')).order_by('date')
+        total = 0.0
+        cumulative_balance = dict()
+        for summed_income in summed_incomes:
+            total += summed_income['cumsum']
+            cumulative_balance[summed_income['day']] = total
+        # cumulative_balance = incomes.annotate(cumsum=Window(Sum('amount'),
+        #                                                     order_by=F('date').asc())).order_by('date', 'cumsum')
 
         return cumulative_balance
 

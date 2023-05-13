@@ -304,19 +304,21 @@ class IncomeCumulativeMonthYearPlotView(DetailView):
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
+
         start_date = datetime.strptime(f'{self.month}-01-{self.year}', '%B-%d-%Y')
         end_date = start_date + relativedelta(months=+1)
-        config = get_line_chart_config(f'Cumulative Expenses for {self.month}, {self.year}')
+        config = get_line_chart_config(f'Cumulative Incomes for {self.month}, {self.year}')
         cumulative_income = self.user.return_cumulative_incomes(start_date, end_date)
         return_dict = dict()
         return_dict['config'] = config
 
         xy_data = []
         labels = []
-        for income in cumulative_income:
-            labels.append(income.date)
+        for income_day in cumulative_income:
+            # TODO: Try converting the date to timestamp
+            labels.append(income_day)
             xy_data.append(
-                {'x': income.date, 'y': float(income.cumsum)})
+                {'x': income_day, 'y': float(cumulative_income[income_day])})
 
         data = {
             'labels': labels,
@@ -355,10 +357,10 @@ class ExpenseCumulativeMonthYearPlotView(DetailView):
 
         xy_data = []
         labels = []
-        for expense in cumulative_expenses:
-            labels.append(expense.date)
+        for expensedate in cumulative_expenses:
+            labels.append(expensedate)
             xy_data.append(
-                {'x': expense.date, 'y': float(expense.cumsum)})
+                {'x': expensedate, 'y': float(cumulative_expenses[expensedate])})
 
         data = {
             'labels': labels,
