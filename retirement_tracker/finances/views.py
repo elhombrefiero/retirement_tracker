@@ -1,6 +1,6 @@
 from dateutil.relativedelta import relativedelta
 from django.shortcuts import render, HttpResponseRedirect, HttpResponse
-from django.core.exceptions import BadRequest
+#from django.core.exceptions import BadRequest
 from django.forms import formset_factory
 from django.views.generic import DetailView, TemplateView, FormView, ListView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
@@ -586,8 +586,7 @@ class UserWorkRelatedIncomeView(FormView):
                                                     )
             medical_exp.save()
         if vision > 0.0:
-            vision_exp = Withdrawal.objects.create(user=self.user,
-                                                   account=account,
+            vision_exp = Withdrawal.objects.create(account=account,
                                                    date=date,
                                                    budget_group=BUDGET_GROUP_MANDATORY,
                                                    category='Mandatory',
@@ -608,7 +607,8 @@ class UserWorkRelatedIncomeView(FormView):
                                                      )
             ret_401k_trans.save()
         else:
-            ret_401k_inc = Deposit.objects.create(account=account_401k,
+            ret_401k_inc = Deposit.objects.create(user=self.user,
+                                                  account=account_401k,
                                                   date=date,
                                                   category='401k',
                                                   description='401k Contirbution',
@@ -633,7 +633,7 @@ class UserWorkRelatedIncomeView(FormView):
                                                  description='HSA Contribution',
                                                  location='Work',
                                                  amount=retirement_hsa)
-        ret_hsa_inc.save()
+            ret_hsa_inc.save()
         self.success_url = f'/finances/user/{self.user.pk}'
         return super().form_valid(form)
 
@@ -912,11 +912,13 @@ def add_expense_by_location_user_account(request, user_id: int, account_id: int,
     try:
         user = User.objects.get(id=user_id)
     except:
-        return BadRequest('User does not exist')
+        pass
+        #return BadRequest('User does not exist')
     try:
         account = Account.objects.get(id=account_id, user=user)
     except:
-        return BadRequest(f'Account is not for {user.name}')
+        pass
+        #return BadRequest(f'Account is not for {user.name}')
 
     initial_dict = {'user': user, 'account': account}
     initial_dicts = [initial_dict]

@@ -314,7 +314,9 @@ class User(models.Model):
         disc_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_DISC).aggregate(total=Sum('amount'))[
             'total']
         disc_exp = disc_exp if disc_exp is not None else 0.0
-        stat_exp = Statutory.filter(user=self, date__gte=beg_of_month, date__lt=end_of_month).aggregate(total=Sum('amount'))['total']
+        stat_exp = \
+        Statutory.filter(user=self, date__gte=beg_of_month, date__lt=end_of_month).aggregate(total=Sum('amount'))[
+            'total']
         stat_exp = stat_exp if stat_exp is not None else 0.0
 
         return mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp
@@ -357,8 +359,8 @@ class User(models.Model):
         statutory_total = float(statutory_total) if statutory_total is not None else 0.0
 
         return round(mandatory_total, 2), round(mortgage_total, 2), \
-               round(dgr_total, 2), round(discretionary_total, 2), \
-               round(statutory_total, 2)
+            round(dgr_total, 2), round(discretionary_total, 2), \
+            round(statutory_total, 2)
 
     def estimate_budget_for_month_year(self, month: str, year: int):
         """ Estimates and sets monthly budget values based on takehome pay and budget expenses."""
@@ -891,26 +893,42 @@ class Transfer(models.Model):
     group = models.CharField(max_length=100, null=True, blank=True)
 
     def save(self, *args, **kwargs):
-        withdrawal_obj = Withdrawal.objects.create(account=self.account_from,
-                                                   date=self.date,
-                                                   budget_group=self.budget_group,
-                                                   category=self.category,
-                                                   location=self.location,
-                                                   description=self.description,
-                                                   amount=self.amount,
-                                                   slug_field=self.slug_field,
-                                                   group=self.group)
-        deposit_obj = Deposit.objects.create(account=self.account_to,
-                                             date=self.date,
-                                             category=self.category,
-                                             description=self.description,
-                                             location=self.location,
-                                             amount=self.amount,
-                                             slug_field=self.slug_field,
-                                             group=self.group)
-        withdrawal_obj.save()
-        deposit_obj.save()
-        self.save(*args, **kwargs)
+        withdrawal_obj, created = Withdrawal.objects.get_or_create(account=self.account_from,
+                                                                   date=self.date,
+                                                                   amount=self.amount,
+                                                                   description=self.description,
+                                                                   defaults={'budget_group': self.budget_group,
+                                                                             'category': self.category,
+                                                                             'location': self.location,
+                                                                             'slug_field': self.slug_field,
+                                                                             'group': self.group})
+
+        if not created:
+            withdrawal_obj.budget_group = self.budget_group
+            withdrawal_obj.category = self.category
+            withdrawal_obj.location = self.location
+            withdrawal_obj.slug_field = self.slug_field
+            withdrawal_obj.group = self.group
+            withdrawal_obj.save()
+
+        deposit_obj, created = Deposit.objects.get_or_create(account=self.account_to,
+                                                             date=self.date,
+                                                             description=self.description,
+                                                             amount=self.amount,
+                                                             defaults={
+                                                                 'category': self.category,
+                                                                 'location': self.location,
+                                                                 'slug_field': self.slug_field,
+                                                                 'group': self.group
+                                                             }
+                                                             )
+        if not created:
+            deposit_obj.category = self.category
+            deposit_obj.location = self.location
+            deposit_obj.slug_field = self.slug_field
+            deposit_obj.group = self.group
+            deposit_obj.save()
+        super(Transfer, self).save(*args, **kwargs)
 
 
 class TradingAccount(Account):
