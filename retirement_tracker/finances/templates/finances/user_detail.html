@@ -286,7 +286,15 @@
     </div>
   </div>
 </nav>
-<!--TODO: Chart of cumulative net for month-->
+
+<nav class="level is-mobile">
+  <div class="tile is-ancestor">
+    <div class="tile">
+      <canvas id="linechart_cumulativetot"></canvas>
+    </div>
+  </div>
+</nav>
+
 {% endblock %}
 
 {% block jsstuff %}
@@ -322,6 +330,11 @@
     });
   const ctx8 = document.getElementById('linechart_cumulativeinc');
   var income_cum_chart = new Chart(ctx8, {
+    type: 'line',
+    });
+
+  const ctx9 = document.getElementById('linechart_cumulativetot');
+  var total_cum_chart = new Chart(ctx9, {
     type: 'line',
     });
 
@@ -374,6 +387,12 @@
           income_cum_chart.data = result.data;
           income_cum_chart.options = result.config.options;
           income_cum_chart.update();
+          });
+      url =   "{% url 'plot_totals_cumulative_month_year' object.pk month year %}";
+      $.getJSON(url, function(result) {
+          total_cum_chart.data = result.data;
+          total_cum_chart.options = result.config.options;
+          total_cum_chart.update();
           });
       });
   </script>

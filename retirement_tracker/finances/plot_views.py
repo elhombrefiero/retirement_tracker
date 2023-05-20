@@ -304,19 +304,21 @@ class IncomeCumulativeMonthYearPlotView(DetailView):
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
+
         start_date = datetime.strptime(f'{self.month}-01-{self.year}', '%B-%d-%Y')
         end_date = start_date + relativedelta(months=+1)
-        config = get_line_chart_config(f'Cumulative Expenses for {self.month}, {self.year}')
+        config = get_line_chart_config(f'Cumulative Incomes for {self.month}, {self.year}')
         cumulative_income = self.user.return_cumulative_incomes(start_date, end_date)
         return_dict = dict()
         return_dict['config'] = config
 
         xy_data = []
         labels = []
-        for income in cumulative_income:
-            labels.append(income.date)
+        for income_day in cumulative_income:
+            # TODO: Try converting the date to timestamp
+            labels.append(income_day)
             xy_data.append(
-                {'x': income.date, 'y': float(income.cumsum)})
+                {'x': income_day, 'y': float(cumulative_income[income_day])})
 
         data = {
             'labels': labels,
@@ -355,15 +357,57 @@ class ExpenseCumulativeMonthYearPlotView(DetailView):
 
         xy_data = []
         labels = []
-        for expense in cumulative_expenses:
-            labels.append(expense.date)
+        for expensedate in cumulative_expenses:
+            labels.append(expensedate)
             xy_data.append(
-                {'x': expense.date, 'y': float(expense.cumsum)})
+                {'x': expensedate, 'y': float(cumulative_expenses[expensedate])})
 
         data = {
             'labels': labels,
             'datasets': [{
                 'label': 'Cumulative Expenses',
+                'backgroundColor': cjs.get_color('red', 0.5),
+                'borderColor': cjs.get_color('red'),
+                'fill': False,
+                'data': xy_data
+            }]
+        }
+
+        return_dict['data'] = data
+
+        return JsonResponse(return_dict)
+
+
+class TotalCumulativeMonthYearPlotView(DetailView):
+    model = User
+
+    def dispatch(self, request, *args, **kwargs):
+        self.month = kwargs['month']
+        self.year = kwargs['year']
+        userpk = kwargs['pk']
+        self.user = User.objects.get(pk=userpk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        start_date = datetime.strptime(f'{self.month}-01-{self.year}', '%B-%d-%Y')
+        end_date = start_date + relativedelta(months=+1)
+        config = get_line_chart_config(f'Cumulative Total for {self.month}, {self.year}')
+        cumulative_total = self.user.return_cumulative_total(start_date, end_date)
+
+        return_dict = dict()
+        return_dict['config'] = config
+
+        xy_data = []
+        labels = []
+        for date_key in sorted(cumulative_total.keys()):
+            labels.append(date_key)
+            xy_data.append(
+                {'x': date_key, 'y': float(cumulative_total[date_key]['cumulative'])})
+
+        data = {
+            'labels': labels,
+            'datasets': [{
+                'label': 'Cumulative Total',
                 'backgroundColor': cjs.get_color('red', 0.5),
                 'borderColor': cjs.get_color('red'),
                 'fill': False,
