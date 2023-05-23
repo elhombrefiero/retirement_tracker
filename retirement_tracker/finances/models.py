@@ -77,6 +77,21 @@ class User(models.Model):
         return round(tot_checking, 2), round(tot_retirement, 2), round(tot_trading, 2), round(tot_debt, 2), round(
             net_worth, 2)
 
+    def needs_monthly_budget(self, month, year):
+        """ Checks whether the user should update a monthly budget at the given month/year combo.
+
+        Returns True if no monthly budget exists or if any monthly budget designations are 0.0."""
+
+        try:
+            mb_check = MonthlyBudget.objects.get(user=self, month=month, year=year)
+        except MonthlyBudget.DoesNotExist:
+            return True
+
+        if mb_check.mandatory == 0.0 or mb_check.mortgage == 0.0 or mb_check.debts_goals_retirement == 0.0 or mb_check.discretionary == 0.0:
+            return True
+
+        return False
+
     def return_net_worth_month_year(self, month: str, year: int) -> (float, float, float, float):
         """ Returns the net worth of the user at a given point in time."""
         tot_checking = 0.0
@@ -316,8 +331,8 @@ class User(models.Model):
             'total']
         disc_exp = disc_exp if disc_exp is not None else 0.0
         stat_exp = \
-        Statutory.filter(user=self, date__gte=beg_of_month, date__lt=end_of_month).aggregate(total=Sum('amount'))[
-            'total']
+            Statutory.objects.filter(user=self, date__gte=beg_of_month, date__lt=end_of_month).aggregate(total=Sum('amount'))[
+                'total']
         stat_exp = stat_exp if stat_exp is not None else 0.0
 
         return mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp
@@ -571,7 +586,8 @@ class User(models.Model):
         if budget_group:
             expenses = expenses.filter(budget_group=budget_group)
 
-        summed_expenses = expenses.annotate(day=TruncDay('date')).values('day').annotate(cumsum=Sum('amount')).order_by('date')
+        summed_expenses = expenses.annotate(day=TruncDay('date')).values('day').annotate(cumsum=Sum('amount')).order_by(
+            'date')
         total = 0.0
         cumulative_balance = dict()
         for summed_expense in summed_expenses:
@@ -590,7 +606,8 @@ class User(models.Model):
         incomes = Deposit.objects.filter(account__in=user_checking,
                                          date__gte=start_date, date__lt=end_date)
 
-        summed_incomes = incomes.annotate(day=TruncDay('date')).values('day').annotate(cumsum=Sum('amount')).order_by('date')
+        summed_incomes = incomes.annotate(day=TruncDay('date')).values('day').annotate(cumsum=Sum('amount')).order_by(
+            'date')
         total = 0.0
         cumulative_balance = dict()
         for summed_income in summed_incomes:

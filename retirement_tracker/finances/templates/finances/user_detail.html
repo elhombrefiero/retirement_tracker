@@ -184,6 +184,11 @@
     </div>
 </nav>
 {% if report_type == 'month' %}
+  {% if needs_monthly_budget %}
+  <div class="header">
+    <a href="/finances/user/{{object.pk}}/{{month}}/{{year}}/view_monthly_budget">Update monthly budget for {{month}}, {{year}}</a>
+  </div>
+  {% endif %}
 <nav class="level">
   <div class="level-item has-text-centered">
     <p class="title"> {{object.name}}'s Report for {{month}}, {{year}}</p>
@@ -197,6 +202,7 @@
   </div>
 </nav>
 {% endif %}
+
 
 {% if report_type == 'month' %}
 <nav class="level">

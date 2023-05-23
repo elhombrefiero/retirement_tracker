@@ -100,6 +100,7 @@ class UserMonthYearView(DetailView):
         context['debt_balance'] = tot_debt
         context['month'] = self.month
         context['year'] = self.year
+        context['needs_monthly_budget'] = self.object.needs_monthly_budget(self.month, self.year)
         ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_tot_debt, ret_net_worth = \
             self.object.return_net_worth_at_retirement()
         context['projected_net_worth'] = ret_net_worth
@@ -643,26 +644,44 @@ class MonthlyBudgetForUserView(FormView):
     form_class = MonthlyBudgetForUserForm
     template_name = 'finances/monthlybudget_form_for_user.html'
     success_url = '/finances'
-    #TODO: Add a dropdown that will call a function to return the monthlybudget values from the user based on a given selected month/year
-
 
     def dispatch(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
+        self.month = kwargs.get('month')
+        self.year = kwargs.get('year')
         self.user = User.objects.get(pk=pk)
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+
+        context['month'] = self.month
+        context['year'] = self.year
         context['user'] = self.user
-        year_month_dict = self.user.return_year_month_for_monthly_budgets()
-        context['monthly_budgets_year_month'] = year_month_dict
+        takehome = self.user.return_takehome_pay_month_year(self.month, self.year)
+        budget_mand, budget_mort, statutory, budget_dgr, budget_disc = \
+            self.user.estimate_budget_for_month_year(self.month, self.year)
+        context['takehome'] = takehome
+        context['statutory'] = statutory
+        context['est_mand'] = budget_mand
+        context['est_mort'] = budget_mort
+        context['est_dgr'] = budget_dgr
+        context['est_disc'] = budget_disc
+        context['est_total'] = statutory + budget_mand + budget_mort + budget_dgr + budget_disc
+        actual_mand, actual_mort, actual_dgr, actual_disc, actual_statutory = \
+            self.user.return_tot_expenses_by_budget_month_year(self.month, self.year)
+        context['current_mand'] = actual_mand
+        context['current_mort'] = actual_mort
+        context['current_dgr'] = actual_dgr
+        context['current_disc'] = actual_disc
+        context['actual_statutory'] = actual_statutory
+        context['current_total'] = actual_mand + actual_mort + actual_dgr + actual_disc + actual_statutory
         return context
 
     def form_valid(self, form):
         post = self.request.POST
-        month = post['date_month']
-        year = post['date_year']
-        dtdate = datetime.strptime(f'{month}-{year}', '%m-%Y')
+        dtdate = datetime.strptime(f'{self.month}-{self.year}', '%m-%Y')
         newmb, created = MonthlyBudget.objects.get_or_create(user=self.user, date=dtdate)
         if not created:
             newmb = MonthlyBudget.objects.create(user=self.user,
