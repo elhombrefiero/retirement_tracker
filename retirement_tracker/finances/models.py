@@ -518,8 +518,8 @@ class User(models.Model):
         The return data is formatted as such:
 
         year_month = {
-            year: [
-                month: {name: January, exists: True}
+            year<int>: [
+                month: {name: January}
                 ]
             }
         """
@@ -528,19 +528,12 @@ class User(models.Model):
         latest = user_monthly_budgets.latest('date').date
         year_month = {}
         mydate = earliest
-        while mydate <= latest:
+        while mydate < latest:
             year = mydate.year
             month = datetime.strptime(str(mydate.month), '%m').strftime('%B')
             if year not in year_month:
                 year_month[year] = []
-            try:
-                mb = MonthlyBudget.objects.get(user=self, month=month, year=year)
-            except MonthlyBudget.DoesNotExist:
-                exists = False
-                pk = None
-            else:
-                pk = mb.pk
-            year_month[year].append({'name': month, 'pk': pk})
+            year_month[year].append({'name': month})
             mydate = mydate + relativedelta(months=+1)
         return year_month
 

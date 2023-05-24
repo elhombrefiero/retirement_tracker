@@ -17,11 +17,7 @@
         <tr>
             <td>{{year}}</td>
             {% for month in month_list %}
-              {% if month.pk %}
-              <td><a href="/finances/update_monthly_budget/{{month.pk}}">{{month.name}}</a></td>
-              {% else %}
-              <td><a href="/finances/user/{{object.pk}}/add_monthly_budget">{{month.name}}</a></td>
-              {% endif %}
+                <td><a href="/finances/user/{{object.pk}}/{{month.name}}/{{year}}/view_monthly_budget">{{month}}</a></td>
             {% endfor %}
         {% endfor %}
         </tr>

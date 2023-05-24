@@ -5,14 +5,55 @@
 {% endblock %}
 
 {% block mymessage %}
-{% if month %}
-    <p>Statutory: {{statutory}}</p>
-    <p>Estimated values for {{month}}, {{year}}</p>
-    <p>Mandatory: {{est_mand}}</p>
-    <p>Mortgage: {{est_mort}}</p>
-    <p>Debts, Goals, Retirement: {{est_dgr}}</p>
-    <p>Discretionary: {{est_disc}}</p>
-{% endif %}
+<p>{{user.name}}'s estimated budget values for {{month}}, {{year}}</p>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Budget Group</th>
+      <th>Estimated Amount</th>
+      <th>Current for {{month}}/{{year}}</th>
+    </tr>
+  </thead>
+  <tfoot>
+    <tr>
+      <th>Takehome Pay</th>
+      <th>{{takehome}}</th>
+      <th>{{takehome_current}}</th>
+    </tr>
+  </tfoot>
+  <tbody>
+    <tr>
+      <td>Statutory (actual)</td>
+      <td>{{statutory}}</td>
+      <td>{{actual_statutory}}</td>
+    </tr>
+    <tr>
+      <td>Mandatory</td>
+      <td>{{est_mand}}</td>
+      <td>{{current_mand}}</td>
+    </tr>
+    <tr>
+      <td>Mortgage</td>
+      <td>{{est_mort}}</td>
+      <td>{{current_mort}}</td>
+    </tr>
+    <tr>
+      <td>Debts, Goals, Retirement</td>
+      <td>{{est_dgr}}</td>
+      <td>{{current_dgr}}</td>
+    </tr>
+    <tr>
+      <td>Discretionary</td>
+      <td>{{est_disc}}</td>
+      <td>{{current_disc}}</td>
+    </tr>
+    <tr>
+      <td>Total</td>
+      <td>{{est_total}}</td>
+      <td>{{current_total}}</td>
+    </tr>
+  </tbody>
+</table>
 <form method="POST" enctype="multipart/form-data">
     {{ form.non_field_errors }}
     {% csrf_token %}
