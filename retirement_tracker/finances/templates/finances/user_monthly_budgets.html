@@ -17,7 +17,7 @@
         <tr>
             <td>{{year}}</td>
             {% for month in month_list %}
-                <td><a href="/finances/user/{{object.pk}}/{{month.name}}/{{year}}/view_monthly_budget">{{month}}</a></td>
+                <td><a href="/finances/user/{{object.pk}}/{{month.name}}/{{year}}/view_monthly_budget">{{month.name}}</a></td>
             {% endfor %}
         {% endfor %}
         </tr>
