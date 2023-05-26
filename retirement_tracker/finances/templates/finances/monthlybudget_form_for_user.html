@@ -2,10 +2,25 @@
 
 {% block header_extra %}
     <title>Monthly Budget for {{user}}, {{month}}, {{year}}</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
 {% endblock %}
 
 {% block mymessage %}
 <p>{{user.name}}'s estimated budget values for {{month}}, {{year}}</p>
+<table class="table">
+    <thead>
+    <th>Gross Income</th>
+    <th>Statutory</th>
+    <th>Takehome Pay</th>
+    </thead>
+    <tbody>
+    <tr>
+        <td> {{ gross_income }}</td>
+        <td> {{ statutory }}</td>
+        <td id="id_takehome"> {{ takehome }}</td>
+    </tr>
+    </tbody>
+</table>
 <table class="table">
   <thead>
     <tr>
@@ -14,19 +29,7 @@
       <th>Current for {{month}}/{{year}}</th>
     </tr>
   </thead>
-  <tfoot>
-    <tr>
-      <th>Takehome Pay</th>
-      <th>{{takehome}}</th>
-      <th>{{takehome_current}}</th>
-    </tr>
-  </tfoot>
   <tbody>
-    <tr>
-      <td>Statutory (actual)</td>
-      <td>{{statutory}}</td>
-      <td>{{actual_statutory}}</td>
-    </tr>
     <tr>
       <td>Mandatory</td>
       <td>{{est_mand}}</td>
@@ -54,10 +57,55 @@
     </tr>
   </tbody>
 </table>
+<table>
+    <thead>
+    <tr>
+        <th>Leftover</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td id="id_leftover"></td>
+    </tr>
+    </tbody>
+</table>
 <form method="POST" enctype="multipart/form-data">
     {{ form.non_field_errors }}
     {% csrf_token %}
     {{form.as_p}}
     <input type="submit" value="Submit">
 </form>
+{% endblock %}
+
+{% block jsstuff %}
+<script>
+    $(document).ready(function () {
+        setInterval(function () {
+            calculate_difference()
+            }, 1000);
+        })
+    function calculate_difference() {
+        var takehome = Number(document.getElementById("id_takehome").innerHTML);
+        var mandatory = document.getElementById("id_mandatory").value;
+        var mortgage = document.getElementById("id_mortgage").value;
+        var dgr = document.getElementById("id_debts_goals_retirement").value;
+        var disc = document.getElementById("id_discretionary").value;
+        var leftover = takehome - mandatory - mortgage - dgr - disc;
+        document.getElementById("id_leftover").innerHTML = rounder(leftover, 2)
+    }
+    function rounder (num, places, mode) {
+      // (A1) MULTIPLIER
+      var mult = parseInt("1" + "0".repeat(places));
+      num = num * mult;
+
+      // (A2) ROUND OFF
+      if (mode === 1) { num = Math.ceil(num); }
+      else if (mode === 0) { num = Math.floor(num); }
+      else { num = Math.round(num); }
+
+      // (A3) RETURN RESULTS
+      return num / mult;
+    }
+</script>
+
 {% endblock %}

@@ -664,6 +664,7 @@ class MonthlyBudgetForUserView(FormView):
             self.user.estimate_budget_for_month_year(self.month, self.year)
         context['takehome'] = takehome
         context['statutory'] = statutory
+        context['gross_income'] = takehome + statutory
         context['est_mand'] = budget_mand
         context['est_mort'] = budget_mort
         context['est_dgr'] = budget_dgr
