@@ -681,7 +681,7 @@ class MonthlyBudgetForUserView(FormView):
 
     def form_valid(self, form):
         post = self.request.POST
-        dtdate = datetime.strptime(f'{self.month}-{self.year}', '%m-%Y')
+        dtdate = datetime.strptime(f'{self.month}-{self.year}', '%B-%Y')
         newmb, created = MonthlyBudget.objects.get_or_create(user=self.user, date=dtdate)
         if not created:
             newmb = MonthlyBudget.objects.create(user=self.user,
