@@ -1,6 +1,6 @@
 from dateutil.relativedelta import relativedelta
 from django.shortcuts import render, HttpResponseRedirect, HttpResponse
-#from django.core.exceptions import BadRequest
+# from django.core.exceptions import BadRequest
 from django.forms import formset_factory
 from django.views.generic import DetailView, TemplateView, FormView, ListView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
@@ -655,7 +655,6 @@ class MonthlyBudgetForUserView(FormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-
         context['month'] = self.month
         context['year'] = self.year
         context['user'] = self.user
@@ -683,22 +682,22 @@ class MonthlyBudgetForUserView(FormView):
     def form_valid(self, form):
         post = self.request.POST
         dtdate = datetime.strptime(f'{self.month}-{self.year}', '%B-%Y')
-        newmb, created = MonthlyBudget.objects.get_or_create(user=self.user, date=dtdate)
+        newmb, created = MonthlyBudget.objects.get_or_create(user=self.user, month=self.month, year=self.year,
+                                                             defaults={'date': dtdate,
+                                                                       'mandatory': post['mandatory'],
+                                                                       'mortgage': post['mortgage'],
+                                                                       'debts_goals_retirement': post[
+                                                                           'debts_goals_retirement'],
+                                                                       'discretionary': post['discretionary']
+                                                                       })
         if not created:
-            newmb = MonthlyBudget.objects.create(user=self.user,
-                                                 date=dtdate,
-                                                 mandatory=post['mandatory'],
-                                                 mortgage=post['mortgage'],
-                                                 debts_goals_retirement=post['debts_goals_retirement'],
-                                                 discretionary=post['discretionary'],
-                                                 )
-        else:
+            newmb.date = dtdate
             newmb.mandatory = post['mandatory']
             newmb.mortgage = post['mortgage']
             newmb.debts_goals_retirement = post['debts_goals_retirement']
             newmb.discretionary = post['discretionary']
-        newmb.save()
-        self.success_url = f'/finances/user/{self.user.pk}'
+            newmb.save()
+        self.success_url = f'/finances/user/{self.user.pk}/{self.month}/{self.year}'  # Redirect to monthly report
         return super().form_valid(form)
 
 
@@ -934,12 +933,12 @@ def add_expense_by_location_user_account(request, user_id: int, account_id: int,
         user = User.objects.get(id=user_id)
     except:
         pass
-        #return BadRequest('User does not exist')
+        # return BadRequest('User does not exist')
     try:
         account = Account.objects.get(id=account_id, user=user)
     except:
         pass
-        #return BadRequest(f'Account is not for {user.name}')
+        # return BadRequest(f'Account is not for {user.name}')
 
     initial_dict = {'user': user, 'account': account}
     initial_dicts = [initial_dict]

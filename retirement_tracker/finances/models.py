@@ -528,7 +528,7 @@ class User(models.Model):
         latest = user_monthly_budgets.latest('date').date
         year_month = {}
         mydate = earliest
-        while mydate < latest:
+        while mydate <= latest:
             year = mydate.year
             month = datetime.strptime(str(mydate.month), '%m').strftime('%B')
             if year not in year_month:
