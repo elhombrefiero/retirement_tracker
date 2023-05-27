@@ -153,8 +153,10 @@ class UserTransferView(FormView):
         day = post['date_day']
         year = post['date_year']
         dtdate = datetime.strptime(f'{month}-{day}-{year}', '%m-%d-%Y')
-        newtransfer = Transfer.objects.create(account_from=int(post['account_from']),
-                                              account_to=int(post['account_to']),
+        acct_from = Account.objects.get(pk=int(post['account_from']))
+        acct_to = Account.objects.get(pk=int(post['account_to']))
+        newtransfer = Transfer.objects.create(account_from=acct_from,
+                                              account_to=acct_to,
                                               date=dtdate,
                                               budget_group=post['budget_group'],
                                               category=post['category'],

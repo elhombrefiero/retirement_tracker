@@ -134,7 +134,7 @@ class ExpenseSpentAndBudgetPlotView(DetailView):
         datasets = list()
         budgeted_info = {
             'label': 'Budgeted',
-            'data': [mb.mandatory, mb.mortgage, mb.statutory, mb.debts_goals_retirement, mb.discretionary],
+            'data': [mb.mandatory, mb.mortgage, stat_exp, mb.debts_goals_retirement, mb.discretionary],
             'borderColor': cjs.get_color('red'),
             'backgroundColor': cjs.get_color('red', 0.5)
         }
