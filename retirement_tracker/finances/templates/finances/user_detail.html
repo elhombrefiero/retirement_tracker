@@ -118,11 +118,7 @@
         </a>
         </div>
         <div class="dropdown-item">
-        {% if month and year %}
-        <a href="/finances/user/{{object.pk}}/{{month}}/{{year}}/add_monthly_budget" class="dropdown-item">
-        {% else %}
         <a href="/finances/user/{{object.pk}}/add_monthly_budget" class="dropdown-item">
-        {% endif %}
           Monthly Budget
         </a>
         </div>

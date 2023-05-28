@@ -919,7 +919,7 @@ class Withdrawal(models.Model):
         super(Withdrawal, self).save(*args, **kwargs)
 
     def get_absolute_url(self):
-        return reverse('finances:withdrawal_overview', args=[self.pk])
+        return reverse('withdrawal_overview', args=[self.pk])
 
 
 class Deposit(models.Model):
@@ -948,7 +948,7 @@ class Deposit(models.Model):
         super(Deposit, self).save(*args, **kwargs)
 
     def get_absolute_url(self):
-        return reverse('finances:deposit_overview', args=[self.pk])
+        return reverse('deposit_overview', args=[self.pk])
 
 
 class Transfer(models.Model):
@@ -1087,7 +1087,7 @@ class TradingAccount(Account):
         return json_return
 
     def get_absolute_url(self):
-        return reverse('finances:taccount_overview', args=[self.pk])
+        return reverse('taccount_overview', args=[self.pk])
 
 
 class RetirementAccount(Account):
@@ -1199,7 +1199,7 @@ class RetirementAccount(Account):
         pass
 
     def get_absolute_url(self):
-        return reverse('finances:raccount_overview', args=[self.pk])
+        return reverse('raccount_overview', args=[self.pk])
 
 
 class MonthlyBudget(models.Model):
