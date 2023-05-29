@@ -50,6 +50,9 @@ class UserView(DetailView):
         context['retirement_balance'] = tot_retirement
         context['trading_balance'] = tot_trading
         context['debt_balance'] = tot_debt
+        context['month'] = None
+        context['year'] = None
+        context['report_type'] = None
         return context
 
 
@@ -644,6 +647,7 @@ class UserWorkRelatedIncomeView(FormView):
 
 
 class MonthlyBudgetForUserView(FormView):
+    """ View an existing Monthly Budget for a User."""
     form_class = MonthlyBudgetForUserForm
     template_name = 'finances/monthlybudget_form_for_user.html'
     success_url = '/finances'
@@ -830,6 +834,48 @@ class StatutoryUpdateView(UpdateView):
 class MonthlyBudgetView(DetailView):
     model = MonthlyBudget
 
+
+class MonthlyBudgetCreateView(FormView):
+    """ Creates a new Monthly Budget for a User."""
+    form_class = MonthlyBudgetForUserForm
+    template_name = 'finances/monthlybudget_form_for_user_new.html'
+    success_url = '/finances'
+
+    fields = ['date', 'mandatory', 'mortgage', 'debts_goals_retirement', 'discretionary']
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = kwargs['pk']
+        self.user = User.objects.get(pk=pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.user
+        return context
+
+    def form_valid(self, form):
+        post = self.request.POST
+        month = post['date_month']
+        day = post['date_day']
+        year = post['date_year']
+        dtdate = datetime.strptime(f'{month}-{day}-{year}', '%m-%d-%Y')
+        month_name = dtdate.strftime('%B')
+        mb_obj, created = MonthlyBudget.objects.get_or_create(user=self.user,
+                                                              month=month_name,
+                                                              year=year,
+                                                              defaults={'date': dtdate,
+                                                                        'mandatory': post['mandatory'],
+                                                                        'mortgage': post['mortgage'],
+                                                                        'debts_goals_retirement': post['debts_goals_retirement'],
+                                                                        'discretionary': post['discretionary']})
+        if not created:
+            mb_obj.mandatory = post['mandatory']
+            mb_obj.mortgage = post['mortgage']
+            mb_obj.debts_goals_retirement = post['debts_goals_retirement']
+            mb_obj.discretionary = post['discretionary']
+            mb_obj.save()
+        self.success_url = f'/finances/user/{self.user.pk}/{month_name}/{year}'
+        return super().form_valid(form)
 
 class MonthlyBudgetDeleteView(DeleteView):
     model = MonthlyBudget

@@ -34,7 +34,7 @@ urlpatterns = [
     # Ex. /finances/user/1/add_statutory
     path('user/<int:pk>/add_statutory', views.StatutoryForUserView.as_view(), name='user_add_statutory'),
     # Ex. /finances/user/1/add_monthly_budget
-    path('user/<int:pk>/add_monthly_budget', views.MonthlyBudgetForUserView.as_view(), name='user_add_monthly_budget'),
+    path('user/<int:pk>/add_monthly_budget', views.MonthlyBudgetCreateView.as_view(), name='user_add_monthly_budget'),
     # Ex. /finances/user/1/accounts
     path('user/<int:pk>/accounts', views.UserAccountsAvailable.as_view(), name='user_available_accounts'),
     # Ex. /finances/user/1/expenses

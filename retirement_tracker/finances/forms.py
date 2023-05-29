@@ -140,6 +140,7 @@ class UserExpenseLookupForm(forms.Form):
 
 class MonthlyBudgetForUserForm(forms.ModelForm):
     """ Add a monthly budget for a given user."""
+    date = forms.DateField(label='Date', initial=now, widget=forms.SelectDateWidget)
 
     class Meta:
         model = MonthlyBudget
@@ -148,7 +149,7 @@ class MonthlyBudgetForUserForm(forms.ModelForm):
 
 class MonthlyBudgetForUserMonthYearForm(forms.ModelForm):
     """ Add a monthly budget for a given user, month and year"""
-    date = forms.DateField(label='Date of paycheck', initial=now, widget=forms.SelectDateWidget)
+    date = forms.DateField(label='Date', initial=now, widget=forms.SelectDateWidget)
 
     class Meta:
         model = MonthlyBudget
