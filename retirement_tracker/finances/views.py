@@ -33,7 +33,8 @@ class IndexView(TemplateView):
 
 class UserView(DetailView):
     model = User
-
+    # TODO: Begin adding some pages where the projected network can be viewed
+    # TODO: Add budgeted vs expense by budget group views.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_tot_debt, ret_net_worth = \
@@ -646,6 +647,7 @@ class MonthlyBudgetForUserView(FormView):
     form_class = MonthlyBudgetForUserForm
     template_name = 'finances/monthlybudget_form_for_user.html'
     success_url = '/finances'
+    # TODO: Figure out how to pre-fill form with existing month/year data
 
     def dispatch(self, request, *args, **kwargs):
         pk = kwargs.get('pk')

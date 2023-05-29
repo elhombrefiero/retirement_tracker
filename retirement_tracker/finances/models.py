@@ -564,14 +564,6 @@ class User(models.Model):
         Optional budget_group argument lets the user filter by budget_group.
         """
         # TODO: Account for the statutory expenses, if desired.
-        # TODO: Consider aggregating all of the expenses here and returning a json of all of the data
-
-        # from django.db.models.functions import TruncMonth
-        # Sales.objects
-        # .annotate(month=TruncMonth('timestamp'))  # Truncate to month and add to select list
-        # .values('month')  # Group By month
-        # .annotate(c=Count('id'))  # Select the count of the grouping
-        # .order_by()
 
         user_checking = CheckingAccount.objects.filter(user=self)
         expenses = Withdrawal.objects.filter(account__in=user_checking,
