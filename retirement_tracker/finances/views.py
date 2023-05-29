@@ -33,7 +33,7 @@ class IndexView(TemplateView):
 
 class UserView(DetailView):
     model = User
-    # TODO: Begin adding some pages where the projected network can be viewed
+    # TODO: Begin adding some pages where the projected net worth can be viewed
     # TODO: Add budgeted vs expense by budget group views.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

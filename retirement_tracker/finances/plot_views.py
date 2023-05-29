@@ -129,7 +129,7 @@ class ExpenseSpentAndBudgetPlotView(DetailView):
         except MonthlyBudget.DoesNotExist:
             return redirect('user_add_monthly_budget_month_year', self.user.pk, self.month, self.year)
 
-        mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp = self.user.return_aggregated_monthly_expenses_by_budgetgroup(self.month, self.year)
+        mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp = self.user.return_tot_expenses_by_budget_month_year(self.month, self.year)
 
         datasets = list()
         budgeted_info = {

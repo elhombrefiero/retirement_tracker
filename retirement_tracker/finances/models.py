@@ -57,7 +57,7 @@ class User(models.Model):
                                                            decimal_places=2, default=4.0, max_digits=5)
 
     # TODO: Determine way to generate input files for sankey diagram and add button to open sankey page with the
-    #  inputs. Or throw monthly budget portions and expenses.
+    #  inputs. Or through monthly budget portions and expenses.
 
     def return_net_worth(self) -> (float, float, float, float, float):
         """ Returns the user net worth and totals for all accounts:
@@ -233,13 +233,11 @@ class User(models.Model):
         mort_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_MORTGAGE)
         dgr_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_DGR)
         disc_exp = expenses.filter(user=self, budget_group__eq=BUDGET_GROUP_DISC)
-        stat_exp = Statutory.filter(user=self, date__lt=beg_of_month_year)
 
         mand_tot = mand_exp.aggregate(total=Sum('amount'))['total']
         mort_tot = mort_exp.aggregate(total=Sum('amount'))['total']
         dgr_tot = dgr_exp.aggregate(total=Sum('amount'))['total']
         disc_tot = disc_exp.aggregate(total=Sum('amount'))['total']
-        stat_tot = stat_exp.aggregate(total=Sum('amount'))['total']
 
         # Get the budget group totals up to current month/year
         mbudgets = MonthlyBudget.objects.filter(user=self, date__lt=beg_of_month_year)
@@ -247,20 +245,17 @@ class User(models.Model):
         budget_mort_tot = mbudgets.aggregate(total=Sum('mortgage'))['total']
         budget_dgr_tot = mbudgets.aggregate(total=Sum('debts_goals_retirement'))['total']
         budget_disc_tot = mbudgets.aggregate(total=Sum('discretionary'))['total']
-        budget_stat_tot = mbudgets.aggregate(total=Sum('statutory'))['total']
 
         # Subtract the expenses from the budgets
         mand_balance = budget_mand_tot - mand_tot
         mort_balance = budget_mort_tot - mort_tot
         dgr_balance = budget_dgr_tot - dgr_tot
         disc_balance = budget_disc_tot - disc_tot
-        stat_balance = budget_stat_tot - stat_tot
 
         balances = {'mandatory': mand_balance,
                     'mortgage': mort_balance,
                     'dgr': dgr_balance,
-                    'discretionary': disc_balance,
-                    'statutory': stat_balance}
+                    'discretionary': disc_balance}
         return balances
 
     def return_checking_accts(self):
@@ -275,67 +270,35 @@ class User(models.Model):
         all_accounts = Account.objects.filter(user=self)
         return all_accounts
 
-    def return_top_category(self, month, year, num_of_entries=5):
-        """ Finds the maximum expenses by category. By default finds the top five for a given month/year"""
+    def return_top_items(self, month, year, expense_filter, num_of_entries=5):
+        """ Returns the top expenses from the checking accounts based on given input parameters. """
         checking_accounts = self.return_checking_accts()
         beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
         expenses = Withdrawal.objects.filter(account__in=checking_accounts,
                                              date__gte=beg_of_month, date__lt=end_of_month)
         expenses = expenses.exclude(budget_group=BUDGET_GROUP_MORTGAGE)
-        category_expenses = expenses.values('category').distinct().annotate(sum=Sum('amount')).order_by('-sum')[
-                            :num_of_entries]
+        filtered_expenses = expenses.values(expense_filter).distinct().annotate(sum=Sum('amount'))
+        filtered_expenses = filtered_expenses.order_by('-sum')[:num_of_entries]
+        return filtered_expenses
+
+    def return_top_category(self, month, year, num_of_entries=5):
+        """ Finds the maximum expenses by category. By default, finds the top five for a given month/year"""
+        category_expenses = self.return_top_items(month, year, 'category', num_of_entries)
+
         return category_expenses
 
     def return_top_description(self, month, year, num_of_entries=5):
         """ Finds the maximum expenses by category. By default finds the top five for a given month/year"""
-        checking_accounts = self.return_checking_accts()
-        beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
-        end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
-        expenses = Withdrawal.objects.filter(account__in=checking_accounts,
-                                             date__gte=beg_of_month, date__lt=end_of_month)
-        expenses = expenses.exclude(budget_group=BUDGET_GROUP_MORTGAGE)
-        description_expenses = expenses.values('description').distinct().annotate(sum=Sum('amount')).order_by('-sum')[
-                               :num_of_entries]
+        description_expenses = self.return_top_items(month, year, 'description', num_of_entries)
+
         return description_expenses
 
     def return_top_location(self, month, year, num_of_entries=5):
-        """ Finds the maximum expenses by category. By default finds the top five for a given month/year"""
-        checking_accounts = self.return_checking_accts()
-        beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
-        end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
-        expenses = Withdrawal.objects.filter(account__in=checking_accounts,
-                                             date__gte=beg_of_month, date__lt=end_of_month)
-        expenses = expenses.exclude(budget_group=BUDGET_GROUP_MORTGAGE)
-        location_expenses = expenses.values('location').distinct().annotate(sum=Sum('amount')).order_by('-sum')[
-                            :num_of_entries]
+        """ Finds the maximum expenses by category. By default, finds the top five for a given month/year"""
+        location_expenses = self.return_top_items(month, year, 'location', num_of_entries)
+
         return location_expenses
-
-    def return_aggregated_monthly_expenses_by_budgetgroup(self, month, year):
-
-        beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
-        end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
-        checking_accts = self.return_checking_accts()
-        expenses = Withdrawal.objects.filter(account__in=checking_accts,
-                                             date__gte=beg_of_month, date__lt=end_of_month)
-        mand_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_MANDATORY).aggregate(total=Sum('amount'))[
-            'total']
-        mand_exp = mand_exp if mand_exp is not None else 0.0
-        mort_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_MORTGAGE).aggregate(total=Sum('amount'))[
-            'total']
-        mort_exp = mort_exp if mort_exp is not None else 0.0
-        dgr_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_DGR).aggregate(total=Sum('amount'))[
-            'total']
-        dgr_exp = dgr_exp if dgr_exp is not None else 0.0
-        disc_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_DISC).aggregate(total=Sum('amount'))[
-            'total']
-        disc_exp = disc_exp if disc_exp is not None else 0.0
-        stat_exp = \
-            Statutory.objects.filter(user=self, date__gte=beg_of_month, date__lt=end_of_month).aggregate(total=Sum('amount'))[
-                'total']
-        stat_exp = stat_exp if stat_exp is not None else 0.0
-
-        return mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp
 
     def return_tot_expenses_by_budget_month_year(self, month, year) -> (float, float, float, float, float):
         """ Returns the checking expenses segregated by budget group.
@@ -345,38 +308,30 @@ class User(models.Model):
         beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
 
-        mandatory_expenses = Withdrawal.objects.filter(account__in=checking_accts,
-                                                       budget_group=BUDGET_GROUP_MANDATORY,
-                                                       date__gte=beg_of_month, date__lt=end_of_month)
-        mandatory_total = mandatory_expenses.aggregate(total=Sum('amount'))['total']
-        mandatory_total = float(mandatory_total) if mandatory_total is not None else 0.0
+        expenses = Withdrawal.objects.filter(account__in=checking_accts,
+                                             date__gte=beg_of_month, date__lt=end_of_month)
 
-        mortgage_expenses = Withdrawal.objects.filter(account__in=checking_accts,
-                                                      budget_group=BUDGET_GROUP_MORTGAGE,
-                                                      date__gte=beg_of_month, date__lt=end_of_month)
-        mortgage_total = mortgage_expenses.aggregate(total=Sum('amount'))['total']
-        mortgage_total = float(mortgage_total) if mortgage_total is not None else 0.0
+        mand_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_MANDATORY).aggregate(total=Sum('amount'))[
+            'total']
+        mand_exp = float(mand_exp) if mand_exp is not None else 0.0
+        mort_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_MORTGAGE).aggregate(total=Sum('amount'))[
+            'total']
+        mort_exp = float(mort_exp) if mort_exp is not None else 0.0
+        dgr_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_DGR).aggregate(total=Sum('amount'))[
+            'total']
+        dgr_exp = float(dgr_exp) if dgr_exp is not None else 0.0
+        disc_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_DISC).aggregate(total=Sum('amount'))[
+            'total']
+        disc_exp = float(disc_exp) if disc_exp is not None else 0.0
+        stat_exp = \
+            Statutory.objects.filter(user=self, date__gte=beg_of_month, date__lt=end_of_month).aggregate(
+                total=Sum('amount'))[
+                'total']
+        stat_exp = float(stat_exp) if stat_exp is not None else 0.0
 
-        dgr_expenses = Withdrawal.objects.filter(account__in=checking_accts,
-                                                 budget_group=BUDGET_GROUP_DGR,
-                                                 date__gte=beg_of_month, date__lt=end_of_month)
-        dgr_total = dgr_expenses.aggregate(total=Sum('amount'))['total']
-        dgr_total = float(dgr_total) if dgr_total is not None else 0.0
-
-        discretionary_expenses = Withdrawal.objects.filter(account__in=checking_accts,
-                                                           budget_group=BUDGET_GROUP_DISC,
-                                                           date__gte=beg_of_month, date__lt=end_of_month)
-        discretionary_total = discretionary_expenses.aggregate(total=Sum('amount'))['total']
-        discretionary_total = float(discretionary_total) if discretionary_total is not None else 0.0
-
-        statutory_expenses = Statutory.objects.filter(user=self,
-                                                      date__gte=beg_of_month, date__lt=end_of_month)
-        statutory_total = statutory_expenses.aggregate(total=Sum('amount'))['total']
-        statutory_total = float(statutory_total) if statutory_total is not None else 0.0
-
-        return round(mandatory_total, 2), round(mortgage_total, 2), \
-            round(dgr_total, 2), round(discretionary_total, 2), \
-            round(statutory_total, 2)
+        return round(mand_exp, 2), round(mort_exp, 2), \
+            round(dgr_exp, 2), round(disc_exp, 2), \
+            round(stat_exp, 2)
 
     def estimate_budget_for_month_year(self, month: str, year: int):
         """ Estimates and sets monthly budget values based on takehome pay and budget expenses."""
