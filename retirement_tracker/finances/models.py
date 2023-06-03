@@ -634,6 +634,8 @@ class Account(models.Model):
     name = models.CharField(max_length=160)
     starting_balance = models.DecimalField(verbose_name='Starting balance in dollars', max_digits=9, decimal_places=2,
                                            default=0.0)
+    monthly_interest_pct = models.DecimalField(verbose_name='Monthly interest in percent',
+                                               max_digits=4, decimal_places=2, default=0.0)
     opening_date = models.DateField(verbose_name='Date where starting balance starts')
     url = models.URLField(verbose_name="Account URL", blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -832,8 +834,6 @@ class Account(models.Model):
 class CheckingAccount(Account):
     """ Checking account for User"""
 
-    monthly_interest_pct = models.DecimalField(verbose_name='Monthly interest in percent',
-                                               max_digits=4, decimal_places=2, default=0.0)
 
 
 class DebtAccount(Account):
@@ -1100,6 +1100,13 @@ class RetirementAccount(Account):
     def return_balance_up_to_month_year(self, month: str, year: int):
         """ Returns the balance up to the end of the given month and year.
 
+        If the request date is less than the latest date, then treat it like normal
+
+        If the request date is greater than the latest date, but less than the retirement date,
+            then account for any interest gained
+
+        If the request date is greater than the retirement date, then account for withdrawals
+
         """
         # Latest account date
         latest_date = self.return_latest_date()
@@ -1110,17 +1117,35 @@ class RetirementAccount(Account):
         # Request date
         req_date = datetime.strptime(f'{month}-01-{year}', '%B-%d-%Y')
 
-        # TODO: Continue to fill this routine.
+        if req_date <= latest_date:  # TODO: This assumes no withdrawals are after retirement
+            return super().return_balance_up_to_month_year(month, year)
 
-        # Get all income/expenses up to latest date
+        total = super().return_balance_up_to_month_year(month, year)
+        current_date = latest_date + relativedelta(months=+1)
 
-        # Iterate over the months/years above the latest date but below the retirement date
+        while current_date <= req_date:
+            # Get all income/expenses up to current date
+            current_income = Deposit.objects.filter(account=self, date__lt=current_date)
+            current_income = current_income.aggregate(total=Sum('amount'))['total']
+            current_income = current_income if current_income is not None else 0.0
 
-        # Account for withdrawals above the retirement date
+            current_expense = Withdrawal.objects.filter(account=self, date__lt=current_date)
+            current_expense = current_expense.aggregate(total=Sum('amount'))['total']
+            current_expense = current_expense if current_expense is not None else 0.0
 
+            balance = round(float(current_income - current_expense), 2)
+            total += balance
+            interest = total * self.monthly_interest_pct / 100
 
-        up_to_datetime = datetime.strptime(f'{year}-{month}-01', '%Y-%B-%d')
-        up_to_datetime = up_to_datetime + relativedelta(seconds=-1)
+            total += interest
+
+            if current_date > ret_date:
+                ret_withdrawal = total * self.yearly_withdrawal_rate/12
+                total -= ret_withdrawal
+
+            current_date += relativedelta(months=+1)
+
+        return total
 
     def return_withdrawal_info(self, retirement_date: datetime,
                                yearly_withdrawal_pct: float,
