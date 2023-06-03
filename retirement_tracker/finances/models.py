@@ -775,11 +775,21 @@ class Account(models.Model):
 
     def return_latest_date(self):
         """ Looks at all entries and determines the latest database date for the account."""
-        latest_withdrawal_date = Withdrawal.objects.filter(account=self).latest('date').date
-        latest_deposit_date = Deposit.objects.filter(account=self).latest('date').date
+        try:
+            latest_withdrawal_date = Withdrawal.objects.filter(account=self).latest('date').date
+        except Withdrawal.DoesNotExist:
+            latest_withdrawal_date = None
+        try:
+            latest_deposit_date = Deposit.objects.filter(account=self).latest('date').date
+        except Deposit.DoesNotExist:
+            latest_deposit_date = None
 
-        latest_date = max(latest_deposit_date, latest_withdrawal_date)
-        return latest_date
+        if latest_withdrawal_date and latest_deposit_date:
+            return max(latest_deposit_date, latest_withdrawal_date)
+        if latest_withdrawal_date is None:
+            return latest_deposit_date
+        else:
+            return latest_withdrawal_date
 
     def return_earliest_date(self):
         """ Looks at all entries and determines the latest database date for the account."""
@@ -1091,7 +1101,8 @@ class RetirementAccount(Account):
         req_date = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         req_date_ord = req_date.toordinal()
 
-        f = self.return_value_vs_time_function(num_of_years, num_of_months, kind=kind, fill_value=fill_value)
+        f = self.return_value_vs_time_function(num_of_years=num_of_years, num_of_months=num_of_months,
+                                               kind=kind, fill_value=fill_value)
 
         y = f(req_date_ord)
 
@@ -1115,7 +1126,7 @@ class RetirementAccount(Account):
         ret_date = self.user.get_latest_retirement_date()
 
         # Request date
-        req_date = datetime.strptime(f'{month}-01-{year}', '%B-%d-%Y')
+        req_date = datetime.strptime(f'{month}-01-{year}', '%B-%d-%Y').date()
 
         if req_date <= latest_date:  # TODO: This assumes no withdrawals are after retirement
             return super().return_balance_up_to_month_year(month, year)
