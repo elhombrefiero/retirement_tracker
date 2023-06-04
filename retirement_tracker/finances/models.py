@@ -5,7 +5,7 @@ from django.utils.timezone import now
 from django.utils.text import slugify
 from django.shortcuts import reverse
 import numpy as np
-import scipy
+import scipy.interpolate
 
 from datetime import date
 from datetime import datetime
@@ -768,6 +768,11 @@ class Account(models.Model):
         balances = np.empty(0)
 
         latest_date = self.return_latest_date()
+        if latest_date is None:  # Not enough data to calculate a trend, so just return a function that always returns zero
+            dates = np.arange(1, 10)
+            balances = dates * 0.0
+            f = scipy.interpolate.interp1d(balances, dates, kind=kind, fill_value=fill_value)
+            return f
         first_date = latest_date + relativedelta(years=-1 * num_of_years, months=-1 * num_of_months)
 
         current_date = first_date
@@ -803,6 +808,12 @@ class Account(models.Model):
         balances = np.empty(0)
 
         latest_date = self.return_latest_date()
+        if latest_date is None:  # Not enough data to calculate a trend, so just return a function that always returns zero
+            dates = np.arange(1, 10)
+            balances = dates * 0.0
+            f = scipy.interpolate.interp1d(dates, balances, kind=kind, fill_value=fill_value)
+            return f
+
         first_date = latest_date + relativedelta(years=-1 * num_of_years, months=-1 * num_of_months)
 
         current_date = first_date
@@ -1212,7 +1223,7 @@ class RetirementAccount(Account):
 
             balance = round(float(current_income - current_expense), 2)
             total += balance
-            interest = total * self.monthly_interest_pct / 100
+            interest = total * float(self.monthly_interest_pct) / 100
 
             total += interest
 
