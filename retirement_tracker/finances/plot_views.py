@@ -11,6 +11,7 @@ from finances.utils import chartjs_utils as cjs
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
+# TODO: Add plot views that take advantage of the value vs time functions. Account balance vs time. User net worth over time. Debt balance vs time
 
 def get_pie_chart_config(name):
     """Returns the configuration for a pie chart minus the data using chart.js"""
@@ -107,7 +108,6 @@ def get_bar_chart_config(name):
     config['type'] = 'bar'
 
     return config
-
 
 class ExpenseSpentAndBudgetPlotView(DetailView):
     model = User

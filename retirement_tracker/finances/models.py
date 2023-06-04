@@ -7,7 +7,6 @@ from django.shortcuts import reverse
 import numpy as np
 import scipy
 
-
 from datetime import date
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -124,6 +123,35 @@ class User(models.Model):
         return round(tot_checking, 2), round(tot_retirement, 2), round(tot_trading, 2), round(tot_debt, 2), round(
             net_worth, 2)
 
+    def estimate_net_worth_month_year(self, month: str, year: int) -> (float, float, float, float):
+        """ Returns the net worth of the user at a given point in time."""
+        tot_checking = 0.0
+        tot_retirement = 0.0
+        tot_trading = 0.0
+        tot_debt = 0.0
+
+        user_checking_accts = self.return_checking_accts()
+        user_ret_accts = [acct for acct in RetirementAccount.objects.filter(user=self)]
+        user_trade_accts = [acct for acct in TradingAccount.objects.filter(user=self)]
+        user_debt_accts = [acct for acct in DebtAccount.objects.filter(user=self)]
+
+        for account in user_checking_accts:
+            tot_checking += account.estimate_balance_month_year(month, year)
+
+        for account in user_ret_accts:
+            tot_retirement += account.estimate_balance_month_year(month, year)
+
+        for account in user_trade_accts:
+            tot_trading += account.estimate_balance_month_year(month, year)
+
+        for account in user_debt_accts:
+            tot_debt += account.estimate_balance_month_year(month, year)
+
+        net_worth = tot_checking + tot_retirement + tot_trading - tot_debt
+
+        return round(tot_checking, 2), round(tot_retirement, 2), round(tot_trading, 2), \
+            round(tot_debt, 2), round(net_worth, 2)
+
     def return_statutory_including_month_year(self, month, year):
         """ Returns the total statutory for the user up to the end of the requested month and year"""
 
@@ -164,6 +192,17 @@ class User(models.Model):
 
         return tot_checking, tot_retirement, tot_trading, tot_debt, net_worth
 
+    def estimate_net_worth_at_retirement(self):
+        ret_date = self.return_retirement_datetime()
+        ret_date = ret_date + relativedelta(months=+1)
+
+        ret_month = ret_date.strftime('%B')
+        ret_year = int(ret_date.strftime('%Y'))
+
+        tot_checking, tot_retirement, tot_trading, tot_debt, net_worth = self.estimate_net_worth_month_year(ret_month,
+                                                                                                            ret_year)
+
+        return tot_checking, tot_retirement, tot_trading, tot_debt, net_worth
     def return_retirement_datetime(self):
         """ Returns the timestamp at retirement age. """
         num_months = int(float(self.retirement_age) * 12.0)
@@ -720,7 +759,36 @@ class Account(models.Model):
 
         return balance
 
-    def return_value_vs_time_function(self, num_of_years=0, num_of_months=6, kind='cubic', fill_value='extrapolate'):
+    def return_time_vs_value_function(self, num_of_years=0, num_of_months=6, kind='slinear', fill_value='extrapolate'):
+        """ Returns a function of time vs cumulative amount for the given account.
+
+        """
+
+        dates = np.empty(0)
+        balances = np.empty(0)
+
+        latest_date = self.return_latest_date()
+        first_date = latest_date + relativedelta(years=-1 * num_of_years, months=-1 * num_of_months)
+
+        current_date = first_date
+
+        # Captures the balance up to the end of the month for the month selected
+        while current_date <= latest_date:
+            month_name = datetime.strptime(str(current_date.month), '%m').strftime('%B')
+            year = current_date.year
+            balance = self.return_balance_up_to_month_year(month_name, year)
+            dtime = datetime.strptime(f'{month_name}-1-{year}', '%B-%d-%Y')
+            dtord = dtime.toordinal()
+            dates = np.append(dates, dtord)
+            balances = np.append(balances, balance)
+            current_date = current_date + relativedelta(months=+1)
+
+        # Once all data is filled, calculate the balance as a function of ordinal
+        f = scipy.interpolate.interp1d(balances, dates, kind=kind, fill_value=fill_value)
+
+        return f
+
+    def return_value_vs_time_function(self, num_of_years=0, num_of_months=6, kind='slinear', fill_value='extrapolate'):
         """ Returns a function of cumulative amount vs time for the given account.
 
             Looks at the final data entry and then traverses back depending on the input arguments.
@@ -755,9 +823,8 @@ class Account(models.Model):
 
         return f
 
-
-    def estimate_balance_month_year(self, month: str, year: int, num_of_years=0, num_of_months=6,
-                                    kind='slinear', fill_value='extrapolate'):
+    def estimate_balance_month_year(self, month: str, year: int, num_of_years=0, num_of_months=6, kind='slinear',
+                                    fill_value='extrapolate'):
         """ Performs an interpolation of balance vs time using the data of the last entries in the account
 
         By default, uses data from six months before the requested month/year for the extrapolation.
@@ -843,7 +910,6 @@ class Account(models.Model):
 
 class CheckingAccount(Account):
     """ Checking account for User"""
-
 
 
 class DebtAccount(Account):
@@ -1151,7 +1217,7 @@ class RetirementAccount(Account):
             total += interest
 
             if current_date > ret_date:
-                ret_withdrawal = total * self.yearly_withdrawal_rate/12
+                ret_withdrawal = total * self.yearly_withdrawal_rate / 12
                 total -= ret_withdrawal
 
             current_date += relativedelta(months=+1)

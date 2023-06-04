@@ -38,7 +38,7 @@ class UserView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_tot_debt, ret_net_worth = \
-            self.object.return_net_worth_at_retirement()
+            self.object.estimate_net_worth_at_retirement()
         context['projected_net_worth'] = ret_net_worth
         context['earliest_ret_date'] = self.object.get_earliest_retirement_date()
         context['retirement_date'] = self.object.return_retirement_datetime()
@@ -78,7 +78,7 @@ class UserYearView(DetailView):
         context['net_worth'] = net_worth
         context['year'] = self.year
         ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_tot_debt, ret_net_worth = \
-            self.object.return_net_worth_at_retirement()
+            self.object.estimate_net_worth_at_retirement()
         context['projected_net_worth'] = ret_net_worth
         return context
 
@@ -106,7 +106,7 @@ class UserMonthYearView(DetailView):
         context['year'] = self.year
         context['needs_monthly_budget'] = self.object.needs_monthly_budget(self.month, self.year)
         ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_tot_debt, ret_net_worth = \
-            self.object.return_net_worth_at_retirement()
+            self.object.estimate_net_worth_at_retirement()
         context['projected_net_worth'] = ret_net_worth
         date = datetime.strptime(f'{self.year}-{self.month}-01', '%Y-%B-%d')
         try:
