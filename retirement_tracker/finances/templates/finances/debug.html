@@ -1,16 +1,16 @@
 {% extends 'finances/master_template.html' %}
 
 {% block header_extra %}
-    <Title>Debugging Plots</Title>
     <!-- Chart.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment-with-locales.min.js" integrity="sha512-42PE0rd+wZ2hNXftlM78BSehIGzezNeQuzihiBCvUEB3CVxHvsShF86wBWwQORNxNINlBPuq7rG4WWhNiTVHFg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" integrity="sha512-ElRFoEQdI5Ht6kZvyzXhYG9NqjtkmlkfYk0wr6wHxU9JEHakS7UJZNeml5ALk+8IKlU6jDgMabC3vkumRokgJA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <Title>Debugging Plots</Title>
 {% endblock %}
 
 {% block mymessage %}
 <div>
-  <canvas id="piechart"></canvas>
+  <canvas id="testchart"></canvas>
 </div>
 <button class="button" id="id_username">Click me</button>
 {% endblock %}
@@ -18,22 +18,37 @@
 {% block jsstuff %}
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script>
-const ctx = document.getElementById('piechart');
+const ctx = document.getElementById('testchart');
 var chartmb = new Chart(ctx, {
     type: 'line',
+    options: {
+        scales: {
+            x: {
+                type: 'time',
+                display: true,
+                title : {
+                    display:true,
+                    text: 'Date'
+                }
+            }
+        }
+    }
   });
 
 $(document).ready(function () {
     // create an AJAX JSON request
-    url = "{% url 'plot_expenses_cumulative_month_year' userpk month year %}";
-    console.log(url);
+    url = "{% url 'data_projected_account_balance' accountpk %}";
+    // console.log(url);
     $.getJSON(url, function(result) {
-        console.log(url);
+        // console.log(url);
         console.log(result);
+        chartmb.config = result.config;
         chartmb.data = result.data;
-        chartmb.options = result.config.options;
+        // chartmb.scales = result.config.scales;
+        // console.log(chartmb.config.options.scales);
         chartmb.update();
         console.log(chartmb);
+        // console.log(chartmb.config.options.scales);
         });
     });
 </script>

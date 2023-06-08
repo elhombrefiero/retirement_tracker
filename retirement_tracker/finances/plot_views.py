@@ -4,12 +4,14 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.views.generic import DetailView, TemplateView
 from django.db.models.functions import Trunc
+from django.utils.timezone import now
 
-from finances.models import User, MonthlyBudget
+from finances.models import User, MonthlyBudget, Account
 from finances.utils import chartjs_utils as cjs
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+
 
 # TODO: Add plot views that take advantage of the value vs time functions. Account balance vs time. User net worth over time. Debt balance vs time
 
@@ -22,7 +24,7 @@ def get_pie_chart_config(name):
             'responsive': True,
             'legend': {
                 'position': 'bottom',
-                },
+            },
             'title': {
                 'display': True,
                 'text': f'{name}'
@@ -35,8 +37,9 @@ def get_pie_chart_config(name):
 
 def get_line_chart_config(name):
     """ Returns the configuration for a line chart"""
-    config = {'type': 'scatter',
+    config = {'type': 'line',
               'options': {
+                  'showLine': False,
                   'responsive': True,
                   'plugins': {
                       'title': {
@@ -51,26 +54,25 @@ def get_line_chart_config(name):
                       'padding': 20
                   },
                   'scales': {
-                      'x': {
-                          'type': 'time',
-                          'time': {
-                              'unit': 'day',
-                          },
-                          'display': True,
-                          'title': {
-                              'display': True,
-                              'text': 'Date'
-                          }
-                      },
-                      'y': {
-                          'display': True,
-                          'title': {
-                              'display': True,
-                              'text': 'Value'
-                          },
-                          # 'suggestedMin': -10,
-                          # 'suggestedMax': 200
-                      }
+                      'bounds': 'ticks',
+                      'x':
+                          {'type': 'time',
+                           'display': True,
+                           'title': {
+                               'display': True,
+                               'text': 'Date'
+                            },
+                           },
+                      'y':
+                          {'display': True,
+                           'title': {
+                               'display': True,
+                               'text': 'Value'
+                           },
+                           # 'suggestedMin': -10,
+                           # 'suggestedMax': 200
+                           }
+                      ,
                   }
               },
               }
@@ -109,6 +111,7 @@ def get_bar_chart_config(name):
 
     return config
 
+
 class ExpenseSpentAndBudgetPlotView(DetailView):
     model = User
 
@@ -129,7 +132,8 @@ class ExpenseSpentAndBudgetPlotView(DetailView):
         except MonthlyBudget.DoesNotExist:
             return redirect('user_add_monthly_budget_month_year', self.user.pk, self.month, self.year)
 
-        mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp = self.user.return_tot_expenses_by_budget_month_year(self.month, self.year)
+        mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp = self.user.return_tot_expenses_by_budget_month_year(self.month,
+                                                                                                             self.year)
 
         datasets = list()
         budgeted_info = {
@@ -141,11 +145,11 @@ class ExpenseSpentAndBudgetPlotView(DetailView):
         datasets.append(budgeted_info)
 
         actual_info = {
-                'label': 'Actual',
-                'data': [mand_exp, mort_exp, stat_exp, dgr_exp, disc_exp],
-                'borderColor': cjs.get_color('blue'),
-                'backgroundColor': cjs.get_color('blue', 0.5)
-            }
+            'label': 'Actual',
+            'data': [mand_exp, mort_exp, stat_exp, dgr_exp, disc_exp],
+            'borderColor': cjs.get_color('blue'),
+            'backgroundColor': cjs.get_color('blue', 0.5)
+        }
         datasets.append(actual_info)
 
         data['datasets'] = datasets
@@ -304,7 +308,6 @@ class IncomeCumulativeMonthYearPlotView(DetailView):
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-
         start_date = datetime.strptime(f'{self.month}-01-{self.year}', '%B-%d-%Y')
         end_date = start_date + relativedelta(months=+1)
         config = get_line_chart_config(f'Cumulative Incomes for {self.month}, {self.year}')
@@ -488,12 +491,79 @@ class ActualExpensesByBudgetGroup(DetailView):
         return JsonResponse(return_dict)
 
 
+class AccountBalanceByTime(DetailView):
+    """ Uses the balance vs time function to return
+        -line plot of
+            balance vs time and,
+            projected value three years into the future, and up to retirement."""
+    model = Account
+
+    def dispatch(self, request, *args, **kwargs):
+        accountpk = kwargs['pk']
+        self.account = Account.objects.get(pk=accountpk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        user = self.account.user
+
+        config = get_line_chart_config('Projected Account Balance vs Time')
+        return_dict = dict()
+        return_dict['config'] = config
+
+        xy_data = []
+        labels = []
+
+        today = now()
+
+        three_years_from_today = today + relativedelta(years=+3)
+
+        ret_date = user.return_retirement_datetime()
+        ret_date_dt = datetime(ret_date.year, ret_date.month, ret_date.day)
+
+        f = self.account.return_value_vs_time_function()
+
+        current_date = today
+
+        while current_date <= three_years_from_today:
+            current_date_ts = datetime.timestamp(current_date)
+            current_balance = float(f(current_date_ts))
+            xy_data.append({'x': current_date_ts, 'y': current_balance})
+            labels.append(f'{current_date.strftime("%B")}, {current_date.strftime("%Y")}')
+
+            current_date = current_date + relativedelta(months=+1)
+
+        current_date = datetime(int(current_date.strftime('%Y')),
+                                int(current_date.strftime('%m')),
+                                int(current_date.strftime('%d')))
+
+        while current_date <= ret_date_dt:
+            current_date_ts = datetime.timestamp(current_date)
+            current_balance = float(f(current_date_ts))
+            xy_data.append({'x': current_date_ts, 'y': current_balance})
+            labels.append(f'{current_date.strftime("%B")}, {current_date.strftime("%Y")}')
+
+            current_date = current_date + relativedelta(years=+5)
+
+        data = {
+            'labels': labels,
+            'datasets': [{
+                'label': 'Account Balance',
+                'backgroundColor': cjs.get_color('red', 0.5),
+                'borderColor': cjs.get_color('red'),
+                'fill': False,
+                'data': xy_data
+            }]
+        }
+
+        return_dict['data'] = data
+
+        return JsonResponse(return_dict)
+
+
 class DebugView(TemplateView):
     template_name = 'finances/debug.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['userpk'] = 2
-        context['month'] = 'February'
-        context['year'] = 2023
+        context['accountpk'] = 1
         return context

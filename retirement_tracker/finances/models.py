@@ -783,8 +783,8 @@ class Account(models.Model):
             year = current_date.year
             balance = self.return_balance_up_to_month_year(month_name, year)
             dtime = datetime.strptime(f'{month_name}-1-{year}', '%B-%d-%Y')
-            dtord = dtime.toordinal()
-            dates = np.append(dates, dtord)
+            dt_ts = datetime.timestamp(dtime)
+            dates = np.append(dates, dt_ts)
             balances = np.append(balances, balance)
             current_date = current_date + relativedelta(months=+1)
 
@@ -824,8 +824,8 @@ class Account(models.Model):
             year = current_date.year
             balance = self.return_balance_up_to_month_year(month_name, year)
             dtime = datetime.strptime(f'{month_name}-1-{year}', '%B-%d-%Y')
-            dtord = dtime.toordinal()
-            dates = np.append(dates, dtord)
+            dt_ts = datetime.timestamp(dtime)
+            dates = np.append(dates, dt_ts)
             balances = np.append(balances, balance)
             current_date = current_date + relativedelta(months=+1)
 
@@ -843,11 +843,11 @@ class Account(models.Model):
         """
 
         req_date = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
-        req_date_ord = req_date.toordinal()
+        req_date_ts = datetime.timestamp(req_date)
 
         f = self.return_value_vs_time_function(num_of_years, num_of_months, kind=kind, fill_value=fill_value)
 
-        y = f(req_date_ord)
+        y = f(req_date_ts)
 
         return y
 
@@ -1176,12 +1176,12 @@ class RetirementAccount(Account):
                                     kind='cubic', fill_value='extrapolate'):
         """ Performs a cubic interpolation of balance vs time given the average of the last entries in the account."""
         req_date = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
-        req_date_ord = req_date.toordinal()
+        req_date_ts = datetime.timestamp(req_date)
 
         f = self.return_value_vs_time_function(num_of_years=num_of_years, num_of_months=num_of_months,
                                                kind=kind, fill_value=fill_value)
 
-        y = f(req_date_ord)
+        y = f(req_date_ts)
 
         return y
 
