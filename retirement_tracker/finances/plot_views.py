@@ -498,8 +498,8 @@ class ActualExpensesByBudgetGroup(DetailView):
 class AccountBalanceByTime(DetailView):
     """ Uses the balance vs time function to return
         -line plot of
-            actual balance vs time (of six months prior to last entry) and,
-            projected value three years into the future, and up to retirement."""
+            actual balance vs time (of six months prior to last entry up to today) and,
+            projected value five years into the future."""
     model = Account
 
     def dispatch(self, request, *args, **kwargs):
@@ -522,13 +522,10 @@ class AccountBalanceByTime(DetailView):
 
         today = now()
 
-        six_months_prior = today + relativedelta(months=-6)
-        three_years_from_today = today + relativedelta(years=+3)
+        one_year_prior = today + relativedelta(years=-1)
+        five_years_from_today = today + relativedelta(years=+5)
 
-        ret_date = user.return_retirement_datetime()
-        ret_date_dt = datetime(ret_date.year, ret_date.month, ret_date.day)
-
-        current_date = six_months_prior
+        current_date = one_year_prior
         while current_date <= today:
             current_date_ts = dt_to_milliseconds_after_epoch(current_date)
             month = current_date.strftime('%B')
@@ -551,25 +548,17 @@ class AccountBalanceByTime(DetailView):
 
         current_date = today
 
-        while current_date <= three_years_from_today:
+        while current_date <= five_years_from_today:
             current_date_ts = dt_to_milliseconds_after_epoch(current_date)
             current_balance = float(f(current_date_ts))
             xy_projected.append({'x': current_date_ts, 'y': current_balance})
             labels_actual.append(current_date_ts)
 
-            current_date = current_date + relativedelta(months=+1)
+            current_date = current_date + relativedelta(years=+1)
 
         current_date = datetime(int(current_date.strftime('%Y')),
                                 int(current_date.strftime('%m')),
                                 int(current_date.strftime('%d')))
-
-        while current_date <= ret_date_dt:
-            current_date_ts = dt_to_milliseconds_after_epoch(current_date)
-            current_balance = float(f(current_date_ts))
-            xy_projected.append({'x': current_date_ts, 'y': current_balance})
-            labels_actual.append(current_date_ts)
-
-            current_date = current_date + relativedelta(years=+5)
 
         datasets.append({
             'label': 'Projected Account Balance',

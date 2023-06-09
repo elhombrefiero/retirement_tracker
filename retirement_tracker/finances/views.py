@@ -20,6 +20,8 @@ from finances.forms import MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, 
 
 
 # Create your views here.
+# TODO: Create a page where the user can input a date and have the user's accounts balance at that time.
+# TODO: Update the Debt Account functions to set the minimum value of 0.0 when the account reaches zero.
 
 
 class IndexView(TemplateView):
@@ -92,6 +94,7 @@ class UserMonthYearView(DetailView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
+
         context = super().get_context_data(**kwargs)
         context['report_type'] = 'month'
         context['accounts'] = Account.objects.filter(user=self.object)
@@ -304,6 +307,7 @@ class AccountView(DetailView):
     model = Account
 
     def get_context_data(self, **kwargs):
+        # TODO: Add projections for 1 year, 5 years and retirement balance
         context = super().get_context_data(**kwargs)
 
         # Get the latest incomes associated with this account
