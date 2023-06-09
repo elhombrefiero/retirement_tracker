@@ -37,9 +37,9 @@ def get_pie_chart_config(name):
 
 def get_line_chart_config(name):
     """ Returns the configuration for a line chart"""
-    config = {'type': 'line',
+    config = {'type': 'scatter',
               'options': {
-                  'showLine': False,
+                  'showLine': True,
                   'responsive': True,
                   'plugins': {
                       'title': {
@@ -54,25 +54,24 @@ def get_line_chart_config(name):
                       'padding': 20
                   },
                   'scales': {
-                      'bounds': 'ticks',
-                      'x':
-                          {'type': 'time',
-                           'display': True,
-                           'title': {
+                      'x': {'type': 'time',
+                            'display': True,
+                            'title': {
                                'display': True,
                                'text': 'Date'
                             },
                            },
+
                       'y':
                           {'display': True,
-                           'title': {
-                               'display': True,
-                               'text': 'Value'
-                           },
-                           # 'suggestedMin': -10,
-                           # 'suggestedMax': 200
-                           }
-                      ,
+                            'title': {
+                                'display': True,
+                                'text': 'Amount'
+                            },
+                            # 'suggestedMin': -10,
+                            # 'suggestedMax': 200
+                            }
+
                   }
               },
               }
@@ -318,10 +317,11 @@ class IncomeCumulativeMonthYearPlotView(DetailView):
         xy_data = []
         labels = []
         for income_day in cumulative_income:
-            # TODO: Try converting the date to timestamp
-            labels.append(income_day)
+            income_day_dt = datetime(income_day.year, income_day.month, income_day.day)
+            income_day_ts = datetime.timestamp(income_day_dt) * 1000
+            labels.append(income_day_ts)
             xy_data.append(
-                {'x': income_day, 'y': float(cumulative_income[income_day])})
+                {'x': income_day_ts, 'y': float(cumulative_income[income_day])})
 
         data = {
             'labels': labels,
@@ -361,9 +361,11 @@ class ExpenseCumulativeMonthYearPlotView(DetailView):
         xy_data = []
         labels = []
         for expensedate in cumulative_expenses:
-            labels.append(expensedate)
+            expensedate_dt = datetime(expensedate.year, expensedate.month,expensedate.day)
+            expensedate_ts = datetime.timestamp(expensedate_dt) * 1000
+            labels.append(expensedate_ts)
             xy_data.append(
-                {'x': expensedate, 'y': float(cumulative_expenses[expensedate])})
+                {'x': expensedate_ts, 'y': float(cumulative_expenses[expensedate])})
 
         data = {
             'labels': labels,
@@ -403,9 +405,11 @@ class TotalCumulativeMonthYearPlotView(DetailView):
         xy_data = []
         labels = []
         for date_key in sorted(cumulative_total.keys()):
-            labels.append(date_key)
+            date_dt = datetime(date_key.year, date_key.month, date_key.day)
+            date_ts = datetime.timestamp(date_dt) * 1000
+            labels.append(date_ts)
             xy_data.append(
-                {'x': date_key, 'y': float(cumulative_total[date_key]['cumulative'])})
+                {'x': date_ts, 'y': float(cumulative_total[date_key]['cumulative'])})
 
         data = {
             'labels': labels,
@@ -494,7 +498,7 @@ class ActualExpensesByBudgetGroup(DetailView):
 class AccountBalanceByTime(DetailView):
     """ Uses the balance vs time function to return
         -line plot of
-            balance vs time and,
+            actual balance vs time (of six months prior to last entry) and,
             projected value three years into the future, and up to retirement."""
     model = Account
 
@@ -506,29 +510,54 @@ class AccountBalanceByTime(DetailView):
     def get(self, request, *args, **kwargs):
         user = self.account.user
 
-        config = get_line_chart_config('Projected Account Balance vs Time')
+        config = get_line_chart_config(f'{self.account.name} Account Balance vs Time')
         return_dict = dict()
         return_dict['config'] = config
 
-        xy_data = []
+        xy_actual = []
+        labels_actual = []
+        xy_projected = []
         labels = []
+        datasets = []
 
         today = now()
 
+        six_months_prior = today + relativedelta(months=-6)
         three_years_from_today = today + relativedelta(years=+3)
 
         ret_date = user.return_retirement_datetime()
         ret_date_dt = datetime(ret_date.year, ret_date.month, ret_date.day)
+
+        current_date = six_months_prior
+        while current_date <= today:
+            current_date_ts = datetime.timestamp(current_date)  # ChartJS uses milliseconds after epoch
+            month = current_date.strftime('%B')
+            year = current_date.strftime('%Y')
+            current_date_ts *= 1000  # Convert seconds to milliseconds for ChartJS display
+            current_balance = self.account.return_balance_up_to_month_year(month, year)
+            xy_actual.append({'x': current_date_ts, 'y': current_balance})
+            labels_actual.append(current_date_ts)
+            current_date += relativedelta(months=+1)
+
+        datasets.append({
+            'label': 'Account Balance',
+            'backgroundColor': cjs.get_color('black', 0.5),
+            'borderColor': cjs.get_color('black'),
+            'fill': False,
+            'data': xy_actual
+            }
+        )
 
         f = self.account.return_value_vs_time_function()
 
         current_date = today
 
         while current_date <= three_years_from_today:
-            current_date_ts = datetime.timestamp(current_date)
+            current_date_ts = datetime.timestamp(current_date) # ChartJS uses milliseconds after epoch
             current_balance = float(f(current_date_ts))
-            xy_data.append({'x': current_date_ts, 'y': current_balance})
-            labels.append(f'{current_date.strftime("%B")}, {current_date.strftime("%Y")}')
+            current_date_ts *= 1000  # Convert seconds to milliseconds for ChartJS display
+            xy_projected.append({'x': current_date_ts, 'y': current_balance})
+            labels_actual.append(current_date_ts)
 
             current_date = current_date + relativedelta(months=+1)
 
@@ -539,20 +568,24 @@ class AccountBalanceByTime(DetailView):
         while current_date <= ret_date_dt:
             current_date_ts = datetime.timestamp(current_date)
             current_balance = float(f(current_date_ts))
-            xy_data.append({'x': current_date_ts, 'y': current_balance})
-            labels.append(f'{current_date.strftime("%B")}, {current_date.strftime("%Y")}')
+            current_date_ts *= 1000  # Convert seconds to milliseconds for ChartJS display
+            xy_projected.append({'x': current_date_ts, 'y': current_balance})
+            labels_actual.append(current_date_ts)
 
             current_date = current_date + relativedelta(years=+5)
 
+        datasets.append({
+            'label': 'Projected Account Balance',
+            'backgroundColor': cjs.get_color('green', 0.5),
+            'borderColor': cjs.get_color('green'),
+            'fill': False,
+            'data': xy_projected
+        }
+        )
+
         data = {
             'labels': labels,
-            'datasets': [{
-                'label': 'Account Balance',
-                'backgroundColor': cjs.get_color('red', 0.5),
-                'borderColor': cjs.get_color('red'),
-                'fill': False,
-                'data': xy_data
-            }]
+            'datasets': datasets
         }
 
         return_dict['data'] = data
@@ -566,4 +599,28 @@ class DebugView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['accountpk'] = 1
+        account = Account.objects.get(pk=1)
+        f = account.return_value_vs_time_function()
+        today = now()
+        six_months_prior = today + relativedelta(months=-6)
+        current_date = six_months_prior
+        data = []
+        labels = []
+        return_data = dict()
+        config = get_line_chart_config('Debug')
+        while current_date <= today:
+            current_date_ts = datetime.timestamp(current_date)
+            data.append({'x': current_date_ts, 'y': float(f(current_date_ts) * 1000)})
+            labels.append(current_date.strftime('%B-%Y'))
+            current_date = current_date + relativedelta(months=+1)
+        return_data['labels'] = labels
+        datasets = list()
+        datasets.append({'label': 'Test Data', 'data': data})
+        return_data['datasets'] = datasets
+        options = dict()
+        options['scales'] = dict()
+        options['scales']['x'] = {'type': 'time', 'title': {'display': True, 'text': 'Date'}}
+        context['data'] = data
+        context['options'] = options
+        context['labels'] = labels
         return context

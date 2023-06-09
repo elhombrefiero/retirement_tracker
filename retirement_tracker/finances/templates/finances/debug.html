@@ -13,64 +13,34 @@
 <div>
   <canvas id="testchart"></canvas>
 </div>
-<button class="button" onclick="update_chart();">Click Me</button>
+<!--<button class="button" onclick="update_chart();">Click Me</button>-->
 {% endblock %}
 
 {% block jsstuff %}
 <script>
-function update_chart() {
     const ctx = document.getElementById('testchart');
     var chartmb = new Chart(ctx,
         {
-    type: 'scatter',
-    data: {
-        // labels: [1686280622454.095, 1712632622454.095, 2414732400000],
-        datasets: [
-                {
-                label: 'Dataset 1',
-                data: [{x: 1686280622454, y: 34527.96548966786},
-                       {x: 1712632622454, y: 61682.90258644207},
-                       {x: 2414732400000, y: 785175.4380645156}]
-                }
-            ]
-        },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: {
-                position: 'top',
-                },
-            title: {
-                display: true,
-                text: 'Debug Chart'
-                },
-            },
-        scales: {
-            x: {
-                type: 'time',
-            }
-        }
-        },
-    }
-    )};
+    type: 'scatter'});
 
 
-// $(document).ready(function () {
-//     // create an AJAX JSON request
-//     url = "{% url 'data_projected_account_balance' accountpk %}";
-//     // console.log(url);
-//     $.getJSON(url, function(result) {
-//         console.log(url);
-//         console.log(result);
-//         console.log(chartmb);
-//         chartmb.config = result.config;
-//         chartmb.data = result.data;
-//         // chartmb.scales = result.config.scales;
-//         // console.log(chartmb.config.options.scales);
-//         chartmb.update();
-//         console.log(chartmb);
-//         // console.log(chartmb.config.options.scales);
-//         });
-//     });
+
+$(document).ready(function () {
+    // create an AJAX JSON request
+    url = "{% url 'data_projected_account_balance' accountpk %}";
+    // console.log(url);
+    $.getJSON(url, function(result) {
+        chartmb.update();
+        console.log(url);
+        console.log(result);
+        console.log(chartmb);
+        chartmb.config.options = result.config.options;
+        chartmb.config.data = result.data;
+        chartmb.update();
+        // chartmb.update();
+        console.log(chartmb);
+
+        });
+    });
 </script>
 {% endblock %}

@@ -3,9 +3,9 @@
 {% block header_extra %}
     <Title>{{object.name}} Overview</Title>
     <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
-    <!-- Moment for the dates-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" integrity="sha512-ElRFoEQdI5Ht6kZvyzXhYG9NqjtkmlkfYk0wr6wHxU9JEHakS7UJZNeml5ALk+8IKlU6jDgMabC3vkumRokgJA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
     <!-- JQuery-->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 {% endblock %}
@@ -385,9 +385,10 @@
           exp_cum_chart.update();
           });
       url =   "{% url 'plot_incomes_cumulative_month_year' object.pk month year %}";
+      console.log(url);
       $.getJSON(url, function(result) {
-          income_cum_chart.data = result.data;
-          income_cum_chart.options = result.config.options;
+          income_cum_chart.config.data = result.data;
+          income_cum_chart.config.options = result.config.options;
           income_cum_chart.update();
           });
       url =   "{% url 'plot_totals_cumulative_month_year' object.pk month year %}";
