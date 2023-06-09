@@ -1,13 +1,13 @@
 from django.db import models
 from django.db.models import Sum, Max, F, Window
 from django.db.models.functions import TruncDay
-from django.utils.timezone import now
+from django.utils.timezone import now, get_current_timezone
 from django.utils.text import slugify
 from django.shortcuts import reverse
 import numpy as np
 import scipy.interpolate
 
-from datetime import date
+from datetime import date, timezone
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
@@ -22,6 +22,16 @@ BUDGET_GROUP_MORTGAGE = BUDGET_GROUP_CHOICES[1][0]
 BUDGET_GROUP_DGR = BUDGET_GROUP_CHOICES[2][0]
 BUDGET_GROUP_DISC = BUDGET_GROUP_CHOICES[3][0]
 
+def dt_to_milliseconds_after_epoch(dt):
+    """ Converts a given datetime to milliseconds after epoch.
+    This is used in place of timestamp due to limitations on RPi
+    """
+    # In case dt does not have timezone information
+    cur_tz = get_current_timezone()
+    dt_ = dt.replace(tzinfo=cur_tz)
+    epoch_dt = datetime.fromtimestamp(0, tz=cur_tz)
+    tdelta = dt_ - epoch_dt
+    return tdelta.total_seconds()*1000
 
 class User(models.Model):
     """ User class for the retirement tracker.
@@ -783,7 +793,7 @@ class Account(models.Model):
             year = current_date.year
             balance = self.return_balance_up_to_month_year(month_name, year)
             dtime = datetime.strptime(f'{month_name}-1-{year}', '%B-%d-%Y')
-            dt_ts = datetime.timestamp(dtime)
+            dt_ts = dt_to_milliseconds_after_epoch(dtime)
             dates = np.append(dates, dt_ts)
             balances = np.append(balances, balance)
             current_date = current_date + relativedelta(months=+1)
@@ -824,7 +834,7 @@ class Account(models.Model):
             year = current_date.year
             balance = self.return_balance_up_to_month_year(month_name, year)
             dtime = datetime.strptime(f'{month_name}-1-{year}', '%B-%d-%Y')
-            dt_ts = datetime.timestamp(dtime)
+            dt_ts = dt_to_milliseconds_after_epoch(dtime)
             dates = np.append(dates, dt_ts)
             balances = np.append(balances, balance)
             current_date = current_date + relativedelta(months=+1)
@@ -842,8 +852,8 @@ class Account(models.Model):
 
         """
 
-        req_date = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
-        req_date_ts = datetime.timestamp(req_date)
+        req_date_dt = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
+        req_date_ts = dt_to_milliseconds_after_epoch(req_date_dt)
 
         f = self.return_value_vs_time_function(num_of_years, num_of_months, kind=kind, fill_value=fill_value)
 
@@ -1175,8 +1185,8 @@ class RetirementAccount(Account):
     def estimate_balance_month_year(self, month: str, year: int, num_of_years=0, num_of_months=6,
                                     kind='cubic', fill_value='extrapolate'):
         """ Performs a cubic interpolation of balance vs time given the average of the last entries in the account."""
-        req_date = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
-        req_date_ts = datetime.timestamp(req_date)
+        req_dt = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
+        req_date_ts = dt_to_milliseconds_after_epoch(req_dt)
 
         f = self.return_value_vs_time_function(num_of_years=num_of_years, num_of_months=num_of_months,
                                                kind=kind, fill_value=fill_value)

@@ -6,7 +6,7 @@ from django.views.generic import DetailView, TemplateView
 from django.db.models.functions import Trunc
 from django.utils.timezone import now
 
-from finances.models import User, MonthlyBudget, Account
+from finances.models import User, MonthlyBudget, Account, dt_to_milliseconds_after_epoch
 from finances.utils import chartjs_utils as cjs
 
 from datetime import datetime
@@ -318,7 +318,7 @@ class IncomeCumulativeMonthYearPlotView(DetailView):
         labels = []
         for income_day in cumulative_income:
             income_day_dt = datetime(income_day.year, income_day.month, income_day.day)
-            income_day_ts = datetime.timestamp(income_day_dt) * 1000
+            income_day_ts = dt_to_milliseconds_after_epoch(income_day_dt)
             labels.append(income_day_ts)
             xy_data.append(
                 {'x': income_day_ts, 'y': float(cumulative_income[income_day])})
@@ -362,7 +362,7 @@ class ExpenseCumulativeMonthYearPlotView(DetailView):
         labels = []
         for expensedate in cumulative_expenses:
             expensedate_dt = datetime(expensedate.year, expensedate.month,expensedate.day)
-            expensedate_ts = datetime.timestamp(expensedate_dt) * 1000
+            expensedate_ts = dt_to_milliseconds_after_epoch(expensedate_dt)
             labels.append(expensedate_ts)
             xy_data.append(
                 {'x': expensedate_ts, 'y': float(cumulative_expenses[expensedate])})
@@ -406,7 +406,7 @@ class TotalCumulativeMonthYearPlotView(DetailView):
         labels = []
         for date_key in sorted(cumulative_total.keys()):
             date_dt = datetime(date_key.year, date_key.month, date_key.day)
-            date_ts = datetime.timestamp(date_dt) * 1000
+            date_ts = dt_to_milliseconds_after_epoch(date_dt)
             labels.append(date_ts)
             xy_data.append(
                 {'x': date_ts, 'y': float(cumulative_total[date_key]['cumulative'])})
@@ -530,7 +530,7 @@ class AccountBalanceByTime(DetailView):
 
         current_date = six_months_prior
         while current_date <= today:
-            current_date_ts = datetime.timestamp(current_date)  # ChartJS uses milliseconds after epoch
+            current_date_ts = dt_to_milliseconds_after_epoch(current_date)
             month = current_date.strftime('%B')
             year = current_date.strftime('%Y')
             current_date_ts *= 1000  # Convert seconds to milliseconds for ChartJS display
@@ -553,7 +553,7 @@ class AccountBalanceByTime(DetailView):
         current_date = today
 
         while current_date <= three_years_from_today:
-            current_date_ts = datetime.timestamp(current_date) # ChartJS uses milliseconds after epoch
+            current_date_ts = dt_to_milliseconds_after_epoch(current_date)
             current_balance = float(f(current_date_ts))
             current_date_ts *= 1000  # Convert seconds to milliseconds for ChartJS display
             xy_projected.append({'x': current_date_ts, 'y': current_balance})
@@ -566,7 +566,7 @@ class AccountBalanceByTime(DetailView):
                                 int(current_date.strftime('%d')))
 
         while current_date <= ret_date_dt:
-            current_date_ts = datetime.timestamp(current_date)
+            current_date_ts = dt_to_milliseconds_after_epoch(current_date)
             current_balance = float(f(current_date_ts))
             current_date_ts *= 1000  # Convert seconds to milliseconds for ChartJS display
             xy_projected.append({'x': current_date_ts, 'y': current_balance})
@@ -609,7 +609,7 @@ class DebugView(TemplateView):
         return_data = dict()
         config = get_line_chart_config('Debug')
         while current_date <= today:
-            current_date_ts = datetime.timestamp(current_date)
+            current_date_ts = dt_to_milliseconds_after_epoch(current_date)
             data.append({'x': current_date_ts, 'y': float(f(current_date_ts) * 1000)})
             labels.append(current_date.strftime('%B-%Y'))
             current_date = current_date + relativedelta(months=+1)
