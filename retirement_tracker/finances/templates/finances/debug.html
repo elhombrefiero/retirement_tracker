@@ -2,8 +2,9 @@
 
 {% block header_extra %}
     <!-- Chart.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment-with-locales.min.js" integrity="sha512-42PE0rd+wZ2hNXftlM78BSehIGzezNeQuzihiBCvUEB3CVxHvsShF86wBWwQORNxNINlBPuq7rG4WWhNiTVHFg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" integrity="sha512-ElRFoEQdI5Ht6kZvyzXhYG9NqjtkmlkfYk0wr6wHxU9JEHakS7UJZNeml5ALk+8IKlU6jDgMabC3vkumRokgJA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <Title>Debugging Plots</Title>
 {% endblock %}
@@ -12,44 +13,64 @@
 <div>
   <canvas id="testchart"></canvas>
 </div>
-<button class="button" id="id_username">Click me</button>
+<button class="button" onclick="update_chart();">Click Me</button>
 {% endblock %}
 
 {% block jsstuff %}
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script>
-const ctx = document.getElementById('testchart');
-var chartmb = new Chart(ctx, {
-    type: 'line',
+function update_chart() {
+    const ctx = document.getElementById('testchart');
+    var chartmb = new Chart(ctx,
+        {
+    type: 'scatter',
+    data: {
+        // labels: [1686280622454.095, 1712632622454.095, 2414732400000],
+        datasets: [
+                {
+                label: 'Dataset 1',
+                data: [{x: 1686280622454, y: 34527.96548966786},
+                       {x: 1712632622454, y: 61682.90258644207},
+                       {x: 2414732400000, y: 785175.4380645156}]
+                }
+            ]
+        },
     options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'top',
+                },
+            title: {
+                display: true,
+                text: 'Debug Chart'
+                },
+            },
         scales: {
             x: {
                 type: 'time',
-                display: true,
-                title : {
-                    display:true,
-                    text: 'Date'
-                }
             }
         }
+        },
     }
-  });
+    )};
 
-$(document).ready(function () {
-    // create an AJAX JSON request
-    url = "{% url 'data_projected_account_balance' accountpk %}";
-    // console.log(url);
-    $.getJSON(url, function(result) {
-        // console.log(url);
-        console.log(result);
-        chartmb.config = result.config;
-        chartmb.data = result.data;
-        // chartmb.scales = result.config.scales;
-        // console.log(chartmb.config.options.scales);
-        chartmb.update();
-        console.log(chartmb);
-        // console.log(chartmb.config.options.scales);
-        });
-    });
+
+// $(document).ready(function () {
+//     // create an AJAX JSON request
+//     url = "{% url 'data_projected_account_balance' accountpk %}";
+//     // console.log(url);
+//     $.getJSON(url, function(result) {
+//         console.log(url);
+//         console.log(result);
+//         console.log(chartmb);
+//         chartmb.config = result.config;
+//         chartmb.data = result.data;
+//         // chartmb.scales = result.config.scales;
+//         // console.log(chartmb.config.options.scales);
+//         chartmb.update();
+//         console.log(chartmb);
+//         // console.log(chartmb.config.options.scales);
+//         });
+//     });
 </script>
 {% endblock %}
