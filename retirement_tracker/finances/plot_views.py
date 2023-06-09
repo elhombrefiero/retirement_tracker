@@ -14,6 +14,7 @@ from dateutil.relativedelta import relativedelta
 
 
 # TODO: Add plot views that take advantage of the value vs time functions. Account balance vs time. User net worth over time. Debt balance vs time
+# TODO: Add ability to track monthly budget vs expense over time.
 
 def get_pie_chart_config(name):
     """Returns the configuration for a pie chart minus the data using chart.js"""
@@ -555,10 +556,6 @@ class AccountBalanceByTime(DetailView):
             labels_actual.append(current_date_ts)
 
             current_date = current_date + relativedelta(years=+1)
-
-        current_date = datetime(int(current_date.strftime('%Y')),
-                                int(current_date.strftime('%m')),
-                                int(current_date.strftime('%d')))
 
         datasets.append({
             'label': 'Projected Account Balance',
