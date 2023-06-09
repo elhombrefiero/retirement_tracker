@@ -533,7 +533,6 @@ class AccountBalanceByTime(DetailView):
             current_date_ts = dt_to_milliseconds_after_epoch(current_date)
             month = current_date.strftime('%B')
             year = current_date.strftime('%Y')
-            current_date_ts *= 1000  # Convert seconds to milliseconds for ChartJS display
             current_balance = self.account.return_balance_up_to_month_year(month, year)
             xy_actual.append({'x': current_date_ts, 'y': current_balance})
             labels_actual.append(current_date_ts)
@@ -555,7 +554,6 @@ class AccountBalanceByTime(DetailView):
         while current_date <= three_years_from_today:
             current_date_ts = dt_to_milliseconds_after_epoch(current_date)
             current_balance = float(f(current_date_ts))
-            current_date_ts *= 1000  # Convert seconds to milliseconds for ChartJS display
             xy_projected.append({'x': current_date_ts, 'y': current_balance})
             labels_actual.append(current_date_ts)
 
@@ -568,7 +566,6 @@ class AccountBalanceByTime(DetailView):
         while current_date <= ret_date_dt:
             current_date_ts = dt_to_milliseconds_after_epoch(current_date)
             current_balance = float(f(current_date_ts))
-            current_date_ts *= 1000  # Convert seconds to milliseconds for ChartJS display
             xy_projected.append({'x': current_date_ts, 'y': current_balance})
             labels_actual.append(current_date_ts)
 
