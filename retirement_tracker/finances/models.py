@@ -859,7 +859,7 @@ class Account(models.Model):
 
         f = self.return_value_vs_time_function(num_of_years, num_of_months, kind=kind, fill_value=fill_value)
 
-        y = f(req_date_ts)
+        y = float(f(req_date_ts))
 
         return y
 
