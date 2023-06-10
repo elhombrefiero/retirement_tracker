@@ -720,7 +720,7 @@ class Account(models.Model):
 
         month_expense = self.return_expense_month_year(month, year)
 
-        return round(float(self.starting_balance) + float(month_income) - float(month_expense), 2)
+        return round(float(month_income) - float(month_expense), 2)
 
     def return_income_month_year(self, month: str, year: int):
         start_datetime = datetime.strptime(f'{month}-1-{year}', '%B-%d-%Y')
@@ -743,7 +743,7 @@ class Account(models.Model):
         return float(month_expense)
 
     def return_balance_up_to_month_year(self, month: str, year: int):
-        """ Returns the balance up to the end of the given month and year.
+        """ Returns the balance up to the start of the given month and year.
 
         For example, a lookup of July 2020 will return the balance up to 11:59pm on June, 30, 2020 """
 
@@ -792,10 +792,12 @@ class Account(models.Model):
             month_name = datetime.strptime(str(current_date.month), '%m').strftime('%B')
             year = current_date.year
             balance = self.return_balance_up_to_month_year(month_name, year)
-            dtime = datetime.strptime(f'{month_name}-1-{year}', '%B-%d-%Y')
-            dt_ts = dt_to_milliseconds_after_epoch(dtime)
-            dates = np.append(dates, dt_ts)
-            balances = np.append(balances, balance)
+            # Avoid duplicate x values
+            if balance not in balances:
+                dtime = datetime.strptime(f'{month_name}-1-{year}', '%B-%d-%Y')
+                dt_ts = dt_to_milliseconds_after_epoch(dtime)
+                dates = np.append(dates, dt_ts)
+                balances = np.append(balances, balance)
             current_date = current_date + relativedelta(months=+1)
 
         # Once all data is filled, calculate the balance as a function of ordinal
@@ -887,40 +889,22 @@ class Account(models.Model):
         earliest_date = min(earliest_deposit_date, earliest_withdrawal_date)
         return earliest_date
 
-    def return_time_to_reach_amount(self, amount: float, num_of_months=6):
+    def return_time_to_reach_amount(self, amount: float, num_of_years=0, num_of_months=6):
         """ Calculates the time to reach a certain amount based on the trendline from the previous few months
 
-        For linear interpolation/extrapolation
-
-        Calculate the slope m using:
-            m = (y2-y1)/(x2-x1)
-
-            where:
-                x1: the total amount at a point in time requested, y1 (default 6 months)
-                x2: the total amount at the current point in time, y2
-
-        The times will be converted to ordinal
-
-        Calculate the date using:
-            y = y1 + m * (x - x1)
+        Uses the scipy.interp.interp1d to perform a linear interpolation of time vs account balance
 
         """
-        y2 = self.return_latest_date()
-        y1 = y2 + relativedelta(months=num_of_months)
 
-        x2 = self.return_balance_up_to_month_year(y2.strftime('%B'), y2.year)
-        x1 = self.return_balance_up_to_month_year(y1.strftime('%B'), y1.year)
+        f = self.return_time_vs_value_function(num_of_years=num_of_years, num_of_months=num_of_months)
 
-        y2_ord = y2.toordinal()
-        y1_ord = y1.toordinal()
+        time_to_reach = f(amount)  # This is in milliseconds after epoch
 
-        m = (y2_ord - y1_ord) / (x2 - x1)
+        time_to_reach_secs = time_to_reach / 1000
 
-        time_to_reach_ord = y1_ord + m * (amount - x1)
+        time_to_reach_dt = datetime.fromtimestamp(time_to_reach_secs)
 
-        time_to_reach = date.fromordinal(int(time_to_reach_ord))
-
-        return time_to_reach
+        return time_to_reach_dt
 
     def get_absolute_url(self):
         return reverse('account_overview', args=[self.pk])
@@ -945,8 +929,44 @@ class DebtAccount(Account):
         return self.return_time_to_reach_amount(0.0)
 
     def return_balance(self):
-        deposits_minus_withdrawals = super().return_balance()
-        return round(float(self.starting_balance) - deposits_minus_withdrawals, 2)
+        all_income = Deposit.objects.filter(account=self).aggregate(total=Sum('amount'))['total']
+        all_income = all_income if all_income is not None else 0.0
+        all_expense = Withdrawal.objects.filter(account=self).aggregate(total=Sum('amount'))['total']
+        all_expense = all_expense if all_expense is not None else 0.0
+
+        return max(round(float(self.starting_balance) - float(all_income) + float(all_expense), 2), 0)
+
+    def return_balance_year(self, year: int):
+        start_datetime = datetime(year, 1, 1)
+        end_datetime = datetime(year + 1, 1, 1) + relativedelta(seconds=-1)
+
+        all_income = Deposit.objects.filter(account=self, date__ge=start_datetime, date__lt=end_datetime)
+        all_income = all_income.aggregate(total=Sum('amount'))['total']
+        all_income = all_income if all_income is not None else 0.0
+
+        all_expense = Withdrawal.objects.filter(account=self, date__ge=start_datetime, date__lt=end_datetime)
+        all_expense = all_expense.aggregate(total=Sum('amount'))['total']
+        all_expense = all_expense if all_expense is not None else 0.0
+
+        return max(round(float(self.starting_balance) - float(all_income) + float(all_expense), 2), 0)
+
+    def return_balance_up_to_month_year(self, month: str, year: int):
+        """ Returns the balance up to the end of the given month and year.
+
+        For example, a lookup of July 2020 will return the balance up to 11:59pm on June, 30, 2020 """
+
+        up_to_datetime = datetime.strptime(f'{year}-{month}-01', '%Y-%B-%d')
+        up_to_datetime = up_to_datetime + relativedelta(seconds=-1)
+
+        all_income = Deposit.objects.filter(account=self, date__lt=up_to_datetime)
+        all_income = all_income.aggregate(total=Sum('amount'))['total']
+        all_income = all_income if all_income is not None else 0.0
+
+        all_expense = Withdrawal.objects.filter(account=self, date__lt=up_to_datetime)
+        all_expense = all_expense.aggregate(total=Sum('amount'))['total']
+        all_expense = all_expense if all_expense is not None else 0.0
+
+        return max(round(float(self.starting_balance) - float(all_income) + float(all_expense), 2), 0)
 
 
 class Withdrawal(models.Model):
@@ -1282,8 +1302,8 @@ class RetirementAccount(Account):
 
         return balances_at_date
 
-    def get_time_to_reach_amount(self, amount: float):
-        pass
+    def return_time_to_reach_goal(self):
+        return self.return_time_to_reach_amount(self.target_amount)
 
     def get_absolute_url(self):
         return reverse('raccount_overview', args=[self.pk])

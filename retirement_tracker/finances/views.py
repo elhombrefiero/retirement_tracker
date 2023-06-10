@@ -307,13 +307,25 @@ class AccountView(DetailView):
     model = Account
 
     def get_context_data(self, **kwargs):
-        # TODO: Add projections for 1 year, 5 years and retirement balance
+
         context = super().get_context_data(**kwargs)
 
         # Get the latest incomes associated with this account
+        # TODO: Add page with more deposits and withdrawals for an account(pagination?)
         context['deposits'] = Deposit.objects.filter(account=self.object).order_by('-date')[:25]
         context['withdrawals'] = Withdrawal.objects.filter(account=self.object).order_by('-date')[:25]
         context['balance'] = self.object.return_balance()
+        latest_date = self.object.return_latest_date()
+        one_year_later = latest_date + relativedelta(years=+1)
+        five_years_later = latest_date + relativedelta(years=+1)
+        one_year_balance = self.object.estimate_balance_month_year(one_year_later.strftime('%B'),
+                                                                   int(one_year_later.strftime('%Y')))
+        five_year_balance = self.object.estimate_balance_month_year(five_years_later.strftime('%B'),
+                                                                    int(one_year_later.strftime('%Y')))
+        context['one_year_later'] = one_year_later.strftime('%B-%Y')
+        context['five_years_later'] = five_years_later.strftime('%B-%Y')
+        context['one_year_balance'] = one_year_balance
+        context['five_year_balance'] = five_year_balance
         return context
 
 

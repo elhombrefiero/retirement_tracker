@@ -24,7 +24,20 @@
         </div>
     </div>
 </nav>
-<!-- TODO: Table of account balances -->
+<table class="table">
+    <thead>
+    <tr>
+        <th>One Year Balance {{ one_year_later }}</th>
+        <th>Five Year Balance {{ five_years_later }}</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>{{ one_year_balance }}</td>
+        <td>{{ five_year_balance }}</td>
+    </tr>
+    </tbody>
+</table>
 
 <!-- Chart of balance over time-->
 <div>
