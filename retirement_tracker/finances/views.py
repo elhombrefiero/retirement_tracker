@@ -317,11 +317,13 @@ class AccountView(DetailView):
         context['balance'] = self.object.return_balance()
         latest_date = self.object.return_latest_date()
         one_year_later = latest_date + relativedelta(years=+1)
-        five_years_later = latest_date + relativedelta(years=+1)
+        five_years_later = latest_date + relativedelta(years=+5)
         one_year_balance = self.object.estimate_balance_month_year(one_year_later.strftime('%B'),
                                                                    int(one_year_later.strftime('%Y')))
+        one_year_balance = round(one_year_balance, 2)
         five_year_balance = self.object.estimate_balance_month_year(five_years_later.strftime('%B'),
                                                                     int(one_year_later.strftime('%Y')))
+        five_year_balance = round(five_year_balance, 2)
         context['one_year_later'] = one_year_later.strftime('%B-%Y')
         context['five_years_later'] = five_years_later.strftime('%B-%Y')
         context['one_year_balance'] = one_year_balance
