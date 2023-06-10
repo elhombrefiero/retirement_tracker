@@ -1191,7 +1191,7 @@ class RetirementAccount(Account):
         f = self.return_value_vs_time_function(num_of_years=num_of_years, num_of_months=num_of_months,
                                                kind=kind, fill_value=fill_value)
 
-        y = f(req_date_ts)
+        y = float(f(req_date_ts))
 
         return y
 
@@ -1208,6 +1208,8 @@ class RetirementAccount(Account):
         """
         # Latest account date
         latest_date = self.return_latest_date()
+        if latest_date is None:
+            return 0.0
 
         # Retirement date
         ret_date = self.user.get_latest_retirement_date()
