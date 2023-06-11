@@ -1,0 +1,26 @@
+{% extends 'finances/account_detail.html' %}
+
+        {% block account_info %}
+        <p class="heading">Retirement Account</p>
+        <p class="title"><a href="/finances/update_checkingaccount/{{object.pk}}">{{object.name}}</a></p>
+        {% endblock %}
+
+{% block jsstuff %}
+<script>
+    const ctx = document.getElementById('balanceovertime');
+    var chartmb = new Chart(ctx,
+        {
+    type: 'scatter'});
+
+$(document).ready(function () {
+    // create an AJAX JSON request
+    let url = "{% url 'data_projected_checkingaccount_balance' object.pk %}";
+    // console.log(url);
+    $.getJSON(url, function(result) {
+        chartmb.config.options = result.config.options;
+        chartmb.config.data = result.data;
+        chartmb.update();
+        });
+    });
+</script>
+{% endblock %}

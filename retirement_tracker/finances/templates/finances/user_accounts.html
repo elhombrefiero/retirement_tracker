@@ -6,20 +6,71 @@
 
 {% block mymessage %}
 <!--Table of accounts and balances-->
-<table class="table">
-    <thead>
-        <tr>
-            <th>Account</th>
-            <th>Balance</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for account in account_list %}
-        <tr>
-            <td><a href="/finances/account_overview/{{account.pk}}">{{account.name}}</a></td>
-            <td>{{account.return_balance}}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="columns">
+    <div class="column">
+        <p class="title">Checking Accounts</p>
+    </div>
+    <div class="column">
+        <p class="title">Retirement Accounts</p>
+    </div>
+        <div class="column">
+        <p class="title">Debt Accounts</p>
+    </div>
+</div>
+<div class="columns">
+    <div class="column">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Account</th>
+                <th>Balance</th>
+            </tr>
+            </thead>
+            <tbody>
+                {% for checking in user_checking %}
+                <tr>
+                    <td><a href="/finances/checkingaccount_overview/{{checking.pk}}/">{{checking.name}}</a></td>
+                    <td>{{checking.return_balance}}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="column">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Retirement Account</th>
+                <th>Balance</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for retirement in user_retirement %}
+            <tr>
+                <td><a href="/finances/retirementaccount_overview/{{retirement.pk}}/">{{retirement.name}}</a></td>
+                <td>{{retirement.return_balance}}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="column">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Debt Account</th>
+                <th>Balance</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for debt in user_debt %}
+            <tr>
+                <td><a href="/finances/debtaccount_overview/{{debt.pk}}/">{{debt.name}}</a></td>
+                <td>{{debt.return_balance}}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

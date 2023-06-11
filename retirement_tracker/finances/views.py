@@ -177,17 +177,21 @@ class UserTransferView(FormView):
         return super().form_valid(form)
 
 
-class UserAccountsAvailable(ListView):
-    model = Account
+class UserAccountsAvailable(DetailView):
+    model = User
     template_name = 'finances/user_accounts.html'
 
-    def dispatch(self, request, *args, **kwargs):
-        self.userpk = kwargs['pk']
-        return super().dispatch(request, *args, **kwargs)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-    def get_queryset(self):
-        userobj = User.objects.get(pk=self.userpk)
-        return Account.objects.filter(user=userobj)
+        user_checking_accts = CheckingAccount.objects.filter(user=context['user'])
+        user_retirement_accts = RetirementAccount.objects.filter(user=context['user'])
+        user_debt_accts = DebtAccount.objects.filter(user=context['user'])
+        context['user_checking'] = user_checking_accts
+        context['user_retirement'] = user_retirement_accts
+        context['user_debt'] = user_debt_accts
+
+        return context
 
 
 class UserExpensesAvailable(ListView):
@@ -322,7 +326,108 @@ class AccountView(DetailView):
                                                                    int(one_year_later.strftime('%Y')))
         one_year_balance = round(one_year_balance, 2)
         five_year_balance = self.object.estimate_balance_month_year(five_years_later.strftime('%B'),
-                                                                    int(one_year_later.strftime('%Y')))
+                                                                    int(five_years_later.strftime('%Y')))
+        five_year_balance = round(five_year_balance, 2)
+        context['one_year_later'] = one_year_later.strftime('%B-%Y')
+        context['five_years_later'] = five_years_later.strftime('%B-%Y')
+        context['one_year_balance'] = one_year_balance
+        context['five_year_balance'] = five_year_balance
+        return context
+
+class CheckingAccountView(DetailView):
+    """ View the deposits and withdrawals associated with this account.
+
+    The template will have a redirect to see all withdrawals and deposits"""
+    model = CheckingAccount
+    template_name = 'finances/checkingaccount_detail.html'
+
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        # Get the latest incomes associated with this account
+        context['deposits'] = Deposit.objects.filter(account=self.object).order_by('-date')[:25]
+        context['withdrawals'] = Withdrawal.objects.filter(account=self.object).order_by('-date')[:25]
+        context['balance'] = self.object.return_balance()
+        latest_date = self.object.return_latest_date()
+        if latest_date is None:
+            one_year_later = timezone.now() + relativedelta(years=+1)
+            five_years_later = timezone.now() + relativedelta(years=+5)
+            context['one_year_later'] = one_year_later.strftime('%B-%Y')
+            context['five_years_later'] = five_years_later.strftime('%B-%Y')
+            context['one_year_balance'] = self.object.return_balance()
+            context['five_year_balance'] = self.object.return_balance()
+            return context
+        one_year_later = latest_date + relativedelta(years=+1)
+        five_years_later = latest_date + relativedelta(years=+5)
+        one_year_balance = self.object.estimate_balance_month_year(one_year_later.strftime('%B'),
+                                                                   int(one_year_later.strftime('%Y')))
+        one_year_balance = round(one_year_balance, 2)
+        five_year_balance = self.object.estimate_balance_month_year(five_years_later.strftime('%B'),
+                                                                    int(five_years_later.strftime('%Y')))
+        five_year_balance = round(five_year_balance, 2)
+        context['one_year_later'] = one_year_later.strftime('%B-%Y')
+        context['five_years_later'] = five_years_later.strftime('%B-%Y')
+        context['one_year_balance'] = one_year_balance
+        context['five_year_balance'] = five_year_balance
+        return context
+
+
+class RetirementAccountView(DetailView):
+    """ View the deposits and withdrawals associated with this account.
+
+    The template will have a redirect to see all withdrawals and deposits"""
+    template_name = 'finances/retirementaccount_detail.html'
+    model = RetirementAccount
+
+
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        # Get the latest incomes associated with this account
+        context['deposits'] = Deposit.objects.filter(account=self.object).order_by('-date')[:25]
+        context['withdrawals'] = Withdrawal.objects.filter(account=self.object).order_by('-date')[:25]
+        context['balance'] = self.object.return_balance()
+        latest_date = self.object.return_latest_date()
+        one_year_later = latest_date + relativedelta(years=+1)
+        five_years_later = latest_date + relativedelta(years=+5)
+        one_year_balance = self.object.estimate_balance_month_year(one_year_later.strftime('%B'),
+                                                                   int(one_year_later.strftime('%Y')))
+        one_year_balance = round(one_year_balance, 2)
+        five_year_balance = self.object.estimate_balance_month_year(five_years_later.strftime('%B'),
+                                                                    int(five_years_later.strftime('%Y')))
+        five_year_balance = round(five_year_balance, 2)
+        context['one_year_later'] = one_year_later.strftime('%B-%Y')
+        context['five_years_later'] = five_years_later.strftime('%B-%Y')
+        context['one_year_balance'] = one_year_balance
+        context['five_year_balance'] = five_year_balance
+        return context
+
+
+class DebtAccountView(DetailView):
+    """ View the deposits and withdrawals associated with this account.
+
+    The template will have a redirect to see all withdrawals and deposits"""
+    model = DebtAccount
+    template_name = 'finances/debtaccount_detail.html'
+
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        # Get the latest incomes associated with this account
+        context['deposits'] = Deposit.objects.filter(account=self.object).order_by('-date')[:25]
+        context['withdrawals'] = Withdrawal.objects.filter(account=self.object).order_by('-date')[:25]
+        context['balance'] = self.object.return_balance()
+        latest_date = self.object.return_latest_date()
+        one_year_later = latest_date + relativedelta(years=+1)
+        five_years_later = latest_date + relativedelta(years=+5)
+        one_year_balance = self.object.estimate_balance_month_year(one_year_later.strftime('%B'),
+                                                                   int(one_year_later.strftime('%Y')))
+        one_year_balance = round(one_year_balance, 2)
+        five_year_balance = self.object.estimate_balance_month_year(five_years_later.strftime('%B'),
+                                                                    int(five_years_later.strftime('%Y')))
         five_year_balance = round(five_year_balance, 2)
         context['one_year_later'] = one_year_later.strftime('%B-%Y')
         context['five_years_later'] = five_years_later.strftime('%B-%Y')
@@ -960,19 +1065,6 @@ class TradingAccountUpdateView(UpdateView):
     fields = '__all__'
 
 
-class RetirementAccountView(DetailView):
-    model = RetirementAccount
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        # Get the latest incomes associated with this account
-        context['incomes'] = Deposit.objects.filter(account=self.object).order_by('-date')[:10]
-        context['expenses'] = Withdrawal.objects.filter(account=self.object).order_by('-date')[:10]
-        context['balance'] = self.object.return_balance()
-        return context
-
-
 class RetirementAccountCreateView(CreateView):
     model = RetirementAccount
     fields = '__all__'
@@ -987,6 +1079,19 @@ class RetirementAccountDeleteView(DeleteView):
 class RetirementAccountUpdateView(UpdateView):
     model = RetirementAccount
     fields = '__all__'
+    success_url = f'/finances/'
+
+
+class CheckingAccountUpdateView(UpdateView):
+    model = CheckingAccount
+    fields = '__all__'
+    success_url = f'/finances/'
+
+
+class DebtAccountUpdateView(UpdateView):
+    model = DebtAccount
+    fields = '__all__'
+    success_url = f'/finances/'
 
 
 # class MultipleWithdrawalsForUser(FormView):

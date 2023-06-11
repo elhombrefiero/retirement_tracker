@@ -13,8 +13,10 @@
 <nav class="level is-mobile">
     <div class="level-item has-text-centered">
         <div>
+            {% block account_info %}
             <p class="heading">Account</p>
             <p class="title"><a href="/finances/update_account/{{object.pk}}">{{object.name}}</a></p>
+            {% endblock %}
         </div>
     </div>
     <div class="level-item has-text-centered">

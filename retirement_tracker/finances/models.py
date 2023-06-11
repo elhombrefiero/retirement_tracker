@@ -140,7 +140,7 @@ class User(models.Model):
         tot_trading = 0.0
         tot_debt = 0.0
 
-        user_checking_accts = self.return_checking_accts()
+        user_checking_accts = [acct for acct in CheckingAccount.objects.filter(user=self)]
         user_ret_accts = [acct for acct in RetirementAccount.objects.filter(user=self)]
         user_trade_accts = [acct for acct in TradingAccount.objects.filter(user=self)]
         user_debt_accts = [acct for acct in DebtAccount.objects.filter(user=self)]
@@ -805,7 +805,8 @@ class Account(models.Model):
 
         return f
 
-    def return_value_vs_time_function(self, num_of_years=0, num_of_months=6, kind='slinear', fill_value='extrapolate'):
+    def return_value_vs_time_function(self, num_of_years=0, num_of_months=6, kind='slinear', fill_value='extrapolate',
+                                      months_into_future=None):
         """ Returns a function of cumulative amount vs time for the given account.
 
             Looks at the final data entry and then traverses back depending on the input arguments.
@@ -827,6 +828,9 @@ class Account(models.Model):
             return f
 
         first_date = latest_date + relativedelta(years=-1 * num_of_years, months=-1 * num_of_months)
+
+        if months_into_future:
+            latest_date += relativedelta(months=months_into_future)
 
         current_date = first_date
 
@@ -1202,14 +1206,14 @@ class RetirementAccount(Account):
 
         return roi
 
-    def estimate_balance_month_year(self, month: str, year: int, num_of_years=0, num_of_months=6,
-                                    kind='cubic', fill_value='extrapolate'):
+    def estimate_balance_month_year(self, month: str, year: int, num_of_years=1, num_of_months=0,
+                                    kind='cubic', fill_value='extrapolate', months_into_future=12):
         """ Performs a cubic interpolation of balance vs time given the average of the last entries in the account."""
         req_dt = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         req_date_ts = dt_to_milliseconds_after_epoch(req_dt)
 
         f = self.return_value_vs_time_function(num_of_years=num_of_years, num_of_months=num_of_months,
-                                               kind=kind, fill_value=fill_value)
+                                               kind=kind, fill_value=fill_value, months_into_future=months_into_future)
 
         y = float(f(req_date_ts))
 
@@ -1237,19 +1241,28 @@ class RetirementAccount(Account):
         # Request date
         req_date = datetime.strptime(f'{month}-01-{year}', '%B-%d-%Y').date()
 
-        if req_date <= latest_date:  # TODO: This assumes no withdrawals are after retirement
+        today_date = now().date()
+        if req_date <= today_date:  # Assume interest occurs any time after today.
             return super().return_balance_up_to_month_year(month, year)
 
-        total = super().return_balance_up_to_month_year(month, year)
-        current_date = latest_date + relativedelta(months=+1)
+        today_dt = datetime.strptime(f'{today_date.year}-{today_date.month}', '%Y-%m')
+        today_month = today_dt.strftime('%B')
+        today_year = today_dt.strftime('%Y')
+        total = super().return_balance_up_to_month_year(today_month, today_year)
+        current_date = today_date + relativedelta(months=+1)
 
         while current_date <= req_date:
-            # Get all income/expenses up to current date
-            current_income = Deposit.objects.filter(account=self, date__lt=current_date)
+            # Capture the incomes and withdrawals for the given month
+            current_date_start_of_month = datetime.strptime(f'{current_date.strftime("%Y")}-{current_date.strftime("%B")}-1', '%Y-%B-%d')
+            current_date_end_of_month = current_date_start_of_month + relativedelta(months=+1) + relativedelta(seconds=-1)
+            # Use the previous total to calculate the compound interest
+            current_income = Deposit.objects.filter(account=self, date__gte=current_date_start_of_month,
+                                                    date__lt=current_date_end_of_month)
             current_income = current_income.aggregate(total=Sum('amount'))['total']
             current_income = current_income if current_income is not None else 0.0
 
-            current_expense = Withdrawal.objects.filter(account=self, date__lt=current_date)
+            current_expense = Withdrawal.objects.filter(account=self, date__gte=current_date_start_of_month,
+                                                        date__lt=current_date_end_of_month)
             current_expense = current_expense.aggregate(total=Sum('amount'))['total']
             current_expense = current_expense if current_expense is not None else 0.0
 

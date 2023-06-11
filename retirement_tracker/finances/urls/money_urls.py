@@ -62,6 +62,13 @@ urlpatterns = [
     path('user/<int:pk>/add_work_income', views.UserWorkRelatedIncomeView.as_view(), name='user_work_income'),
     # Ex. /finances/account_overview/pk
     path('account_overview/<int:pk>/', views.AccountView.as_view(), name='account_overview'),
+    # Ex. /finances/checkingaccount_overview/pk
+    path('checkingaccount_overview/<int:pk>/', views.CheckingAccountView.as_view(), name='checking_account_overview'),
+    # Ex. /finances/retirementaccount_overview/pk
+    path('retirementaccount_overview/<int:pk>/', views.RetirementAccountView.as_view(),
+         name='retirement_account_overview'),
+    # Ex. /finances/debtaccount_overview/pk
+    path('debtaccount_overview/<int:pk>/', views.DebtAccountView.as_view(), name='debt_account_overview'),
     # Ex. /finances/retirementaccount_overview/pk
     path('retirementaccount_overview/<int:pk>/', views.RetirementAccountView.as_view(), name='raccount_overview'),
     # Ex. /finances/tradingaccount_overview/pk
@@ -84,8 +91,10 @@ urlpatterns = [
     path('add_trading_account/', views.TradingAccountCreateView.as_view(), name='taccount-add'),
     # Ex. /finances/update_user/1
     path('update_user/<int:pk>', views.UserUpdateView.as_view(), name='user-update'),
-    # Ex. /finances/update_account/1
-    path('update_account/<int:pk>', views.AccountUpdateView.as_view(), name='account-update'),
+    # Ex. /finances/update_checkingaccount/1
+    path('update_checkingaccount/<int:pk>', views.CheckingAccountUpdateView.as_view(), name='caccount-update'),
+    # Ex. /finances/update_debtaccount/1
+    path('update_debtaccount/<int:pk>', views.DebtAccountUpdateView.as_view(), name='daccount-update'),
     # Ex. /finances/update_retirement_account/1
     path('update_retirement_account/<int:pk>', views.RetirementAccountUpdateView.as_view(), name='raccount-update'),
     # Ex. /finances/update_trading_account/1

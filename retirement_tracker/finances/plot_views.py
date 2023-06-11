@@ -6,7 +6,7 @@ from django.views.generic import DetailView, TemplateView
 from django.db.models.functions import Trunc
 from django.utils.timezone import now
 
-from finances.models import User, MonthlyBudget, Account, dt_to_milliseconds_after_epoch
+from finances.models import User, MonthlyBudget, CheckingAccount, RetirementAccount, DebtAccount, dt_to_milliseconds_after_epoch
 from finances.utils import chartjs_utils as cjs
 
 from datetime import datetime
@@ -495,21 +495,179 @@ class ActualExpensesByBudgetGroup(DetailView):
 
         return JsonResponse(return_dict)
 
-
-class AccountBalanceByTime(DetailView):
+# TODO: Update to use Retirement, Checking, and Debt Accounts
+class CheckingAccountBalanceByTime(DetailView):
     """ Uses the balance vs time function to return
         -line plot of
             actual balance vs time (of six months prior to last entry up to today) and,
             projected value five years into the future."""
-    model = Account
+    model = CheckingAccount
 
     def dispatch(self, request, *args, **kwargs):
         accountpk = kwargs['pk']
-        self.account = Account.objects.get(pk=accountpk)
+        self.account = CheckingAccount.objects.get(pk=accountpk)
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
         user = self.account.user
+
+        config = get_line_chart_config(f'{self.account.name} Account Balance vs Time')
+        return_dict = dict()
+        return_dict['config'] = config
+
+        xy_actual = []
+        labels_actual = []
+        xy_projected = []
+        labels = []
+        datasets = []
+
+        today = now()
+
+        one_year_prior = today + relativedelta(years=-1)
+        five_years_from_today = today + relativedelta(years=+5)
+
+        current_date = one_year_prior
+        while current_date <= today:
+            current_date_ts = dt_to_milliseconds_after_epoch(current_date)
+            month = current_date.strftime('%B')
+            year = current_date.strftime('%Y')
+            current_balance = self.account.return_balance_up_to_month_year(month, year)
+            xy_actual.append({'x': current_date_ts, 'y': current_balance})
+            labels_actual.append(current_date_ts)
+            current_date += relativedelta(months=+1)
+
+        datasets.append({
+            'label': 'Account Balance',
+            'backgroundColor': cjs.get_color('black', 0.5),
+            'borderColor': cjs.get_color('black'),
+            'fill': False,
+            'data': xy_actual
+            }
+        )
+
+        f = self.account.return_value_vs_time_function()
+
+        current_date = today
+
+        while current_date <= five_years_from_today:
+            current_date_ts = dt_to_milliseconds_after_epoch(current_date)
+            current_balance = float(f(current_date_ts))
+            xy_projected.append({'x': current_date_ts, 'y': current_balance})
+            labels_actual.append(current_date_ts)
+
+            current_date = current_date + relativedelta(years=+1)
+
+        datasets.append({
+            'label': 'Projected Account Balance',
+            'backgroundColor': cjs.get_color('green', 0.5),
+            'borderColor': cjs.get_color('green'),
+            'fill': False,
+            'data': xy_projected
+        }
+        )
+
+        data = {
+            'labels': labels,
+            'datasets': datasets
+        }
+
+        return_dict['data'] = data
+
+        return JsonResponse(return_dict)
+
+
+class RetirementAccountBalanceByTime(DetailView):
+    """ Uses the balance vs time function to return
+        -line plot of
+            actual balance vs time (of six months prior to last entry up to today) and,
+            projected value five years into the future."""
+    model = RetirementAccount
+
+    def dispatch(self, request, *args, **kwargs):
+        accountpk = kwargs['pk']
+        self.account = RetirementAccount.objects.get(pk=accountpk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+
+        config = get_line_chart_config(f'{self.account.name} Account Balance vs Time')
+        return_dict = dict()
+        return_dict['config'] = config
+
+        xy_actual = []
+        labels_actual = []
+        xy_projected = []
+        labels = []
+        datasets = []
+
+        today = now()
+
+        one_year_prior = today + relativedelta(years=-1)
+        five_years_from_today = today + relativedelta(years=+5)
+
+        current_date = one_year_prior
+        while current_date <= today:
+            current_date_ts = dt_to_milliseconds_after_epoch(current_date)
+            month = current_date.strftime('%B')
+            year = current_date.strftime('%Y')
+            current_balance = self.account.return_balance_up_to_month_year(month, year)
+            xy_actual.append({'x': current_date_ts, 'y': current_balance})
+            labels_actual.append(current_date_ts)
+            current_date += relativedelta(months=+1)
+
+        datasets.append({
+            'label': 'Account Balance',
+            'backgroundColor': cjs.get_color('black', 0.5),
+            'borderColor': cjs.get_color('black'),
+            'fill': False,
+            'data': xy_actual
+            }
+        )
+
+        f = self.account.return_value_vs_time_function(num_of_years=1, num_of_months=0,
+                                                       kind='cubic', fill_value='extrapolate', months_into_future=12)
+
+        current_date = today
+
+        while current_date <= five_years_from_today:
+            current_date_ts = dt_to_milliseconds_after_epoch(current_date)
+            current_balance = float(f(current_date_ts))
+            xy_projected.append({'x': current_date_ts, 'y': current_balance})
+            labels_actual.append(current_date_ts)
+
+            current_date = current_date + relativedelta(years=+1)
+
+        datasets.append({
+            'label': 'Projected Account Balance',
+            'backgroundColor': cjs.get_color('green', 0.5),
+            'borderColor': cjs.get_color('green'),
+            'fill': False,
+            'data': xy_projected
+        }
+        )
+
+        data = {
+            'labels': labels,
+            'datasets': datasets
+        }
+
+        return_dict['data'] = data
+
+        return JsonResponse(return_dict)
+
+class DebtAccountBalanceByTime(DetailView):
+    """ Uses the balance vs time function to return
+        -line plot of
+            actual balance vs time (of six months prior to last entry up to today) and,
+            projected value five years into the future."""
+    model = DebtAccount
+
+    def dispatch(self, request, *args, **kwargs):
+        accountpk = kwargs['pk']
+        self.account = DebtAccount.objects.get(pk=accountpk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
 
         config = get_line_chart_config(f'{self.account.name} Account Balance vs Time')
         return_dict = dict()
