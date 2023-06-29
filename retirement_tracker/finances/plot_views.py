@@ -6,7 +6,7 @@ from django.views.generic import DetailView, TemplateView
 from django.db.models.functions import Trunc
 from django.utils.timezone import now
 
-from finances.models import User, MonthlyBudget, CheckingAccount, RetirementAccount, DebtAccount, dt_to_milliseconds_after_epoch
+from finances.models import User, Withdrawal, Deposit, MonthlyBudget, CheckingAccount, RetirementAccount, DebtAccount, dt_to_milliseconds_after_epoch
 from finances.utils import chartjs_utils as cjs
 
 from datetime import datetime
@@ -734,13 +734,104 @@ class DebtAccountBalanceByTime(DetailView):
         return JsonResponse(return_dict)
 
 
+class UserLookupExpenses(DetailView):
+    model = User
+
+    def get(self, request, *args, **kwargs):
+        user = User.objects.get(pk=int(kwargs['pk']))
+        config = get_line_chart_config(f'Expense Balance vs Time')
+
+        return_dict = dict()
+        return_dict['config'] = config
+
+        # Filter accounts
+        user_accts = user.return_all_accounts()
+
+        if 'checking_account_name' in request.GET:
+            acct_name = request.GET['checking_account_name']
+            cacct = CheckingAccount.objects.get(name=acct_name)
+            withdrawals = Withdrawal.objects.filter(account=cacct)
+        else:
+            withdrawals = Withdrawal.objects.filter(account__in=user_accts)
+
+        # Filter for withdrawals
+        if 'start_date' in request.GET:
+            start_dt = datetime.strptime(request.GET['start_date'], '%Y-%m-%d')
+            withdrawals.filter(date__gte=start_dt)
+        if 'end_date' in request.GET:
+            end_dt = datetime.strptime(request.GET['end_date'], '%Y-%m-%d')
+            withdrawals.filter(date__lt=end_dt)
+        if 'category' in request.GET:
+            category = request.GET['category']
+            withdrawals.filter(category=category)
+        if 'budget_group' in request.GET:
+            budget_group = request.GET['budget_group']
+            withdrawals.filter(category=budget_group)
+
+        print(request.GET)
+
+        return JsonResponse(return_dict)
+
+    # TODO: Update to fill json data from the get information
+    # def get_expense_line_data(request):
+    #     if request.method == 'GET':
+    #         title = 'Expenses'
+    #         expenses = Expense.objects.all()
+    #         if 'year' in request.GET:
+    #             year = int(request.GET['year'])
+    #             title += '- year {}'.format(year)
+    #             expenses = expenses.filter(expense_date__year=year)
+    #         if 'month' in request.GET:
+    #             monthstr = request.GET['month']
+    #             title += f'- month {monthstr}'
+    #             month_num = monthstr.strftime('%m')
+    #             expenses = expenses.filter(expense_date__month=int(month_num))
+    #         if 'budget_group' in request.GET:
+    #             bgroup = request.GET['budget_group']
+    #             title += f'- budget group {bgroup}'
+    #             expenses = expenses.filter(budget_group=bgroup)
+    #         if 'category' in request.GET:
+    #             category = request.GET['category']
+    #             title += f'- category {category}'
+    #             expenses = expenses.filter(category=category)
+    #         if 'where_bought' in request.GET:
+    #             location = request.GET['where_bought']
+    #             title += f'- location {location}'
+    #             expenses = expenses.filter(where_bought=location)
+    #         if 'description' in request.GET:
+    #             description = request.GET['description']
+    #             title += f'- description {description}'
+    #             expenses = expenses.filter(description=description)
+    #         if 'group' in request.GET:
+    #             group = request.GET['group']
+    #             title += f'- group {group}'
+    #             expenses = expenses.filter(group=group)
+    #
+    #         expense_dates = [expense.expense_date for expense in expenses]
+    #         expense_amounts = [expense.amount for expense in expenses]
+    #         return JsonResponse({
+    #             'title': title,
+    #             'data': {
+    #                 'labels': expense_dates,
+    #                 'datasets': [{
+    #                     'label': 'Amount ($)',
+    #                     'backgroundColor': COLOR_PRIMARY,
+    #                     'borderColor': COLOR_PRIMARY,
+    #                     'data': expense_amounts,
+    #                 }]
+    #             }
+    #         })
+
+    # def get
+
+
 class DebugView(TemplateView):
     template_name = 'finances/debug.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['accountpk'] = 1
-        account = Account.objects.get(pk=1)
+        account = CheckingAccount.objects.get(pk=1)
         f = account.return_value_vs_time_function()
         today = now()
         six_months_prior = today + relativedelta(months=-6)

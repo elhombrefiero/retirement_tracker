@@ -125,6 +125,9 @@ urlpatterns = [
     path('delete_withdrawal/<int:pk>', views.WithdrawalDeleteView.as_view(), name='withdrawal-delete'),
     # Ex. finances/delete_withdrawal/1
     path('delete_statutory/<int:pk>', views.StatutoryDeleteView.as_view(), name='statutory-delete'),
+# Ex. /finances/data/user/1/<month>/<year>/<budget_group>/<category>/<description>/<where_bought>
+    path('data/user/<int:pk>/<str:month>/<int:year>/<str:budget_group>/<str:category>/<str:description>/<where_bought>',
+         views.ExpenseViewSuccessLookup, name='expense_lookup_success'),
     # Ex. /finances/user=1/enter_expense_by_location/extra=0
     path('user=<int:user_id>/enter_withdrawal_by_location/extra=<int:extrarows>',
          views.add_expense_by_location_user_account, name='add_withdrawal_by_loc'),

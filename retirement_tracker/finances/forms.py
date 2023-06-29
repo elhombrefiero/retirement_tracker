@@ -2,7 +2,8 @@ from django import forms
 from django.utils.timezone import now
 from django.forms import modelformset_factory
 
-from finances.models import User, Withdrawal, Transfer, Deposit, Statutory, DebtAccount, TradingAccount, RetirementAccount, \
+from finances.models import User, Withdrawal, Transfer, Deposit, Statutory, DebtAccount, TradingAccount, \
+    RetirementAccount, \
     MonthlyBudget, CheckingAccount, BUDGET_GROUP_MANDATORY, BUDGET_GROUP_MORTGAGE, BUDGET_GROUP_DGR, BUDGET_GROUP_DISC
 
 FORM_BUDGET_GROUP_CHOICES = (
@@ -97,7 +98,7 @@ class UserExpenseLookupForm(forms.Form):
                      ('October', 'October'), ('November', 'November'), ('December', 'December'))
     budget_choices = (None, None)
     month = forms.CharField(label='Month',
-                            widget=forms.Select(choices=MONTH_CHOICES))
+                            widget=forms.Select(choices=MONTH_CHOICES), required=False)
     year = forms.ChoiceField()
     budget_group = forms.CharField(label='Budget Group',
                                    widget=forms.Select(choices=FORM_BUDGET_GROUP_CHOICES))
@@ -115,7 +116,7 @@ class UserExpenseLookupForm(forms.Form):
         year_choices = [(None, None)]
         for year in range(earliest, latest + 1):
             year_choices.append((year, year))
-        self.fields['year'] = forms.ChoiceField(choices=year_choices)
+        self.fields['year'] = forms.ChoiceField(choices=year_choices, required=False)
         user_accounts = user.return_all_accounts()
         user_withdrawals = Withdrawal.objects.filter(account__in=user_accounts)
         # Fill in choices for category
@@ -123,7 +124,7 @@ class UserExpenseLookupForm(forms.Form):
         user_categories = list(user_withdrawals.values_list('category', flat=True).distinct())
         for cat in user_categories:
             category_choices.append((cat, cat))
-        self.fields['category'] = forms.ChoiceField(choices=category_choices)
+        self.fields['category'] = forms.ChoiceField(choices=category_choices, required=False)
         # Fill in choices for description
         description_choices = [(None, None)]
         user_description = list(user_withdrawals.values_list('description', flat=True).distinct())
@@ -135,7 +136,7 @@ class UserExpenseLookupForm(forms.Form):
         location = list(user_withdrawals.values_list('location', flat=True).distinct())
         for loc in location:
             location_choices.append((loc, loc))
-        self.fields['location'] = forms.ChoiceField(choices=location_choices)
+        self.fields['where_bought'] = forms.ChoiceField(choices=location_choices, required=False)
 
 
 class MonthlyBudgetForUserForm(forms.ModelForm):
@@ -157,28 +158,24 @@ class MonthlyBudgetForUserMonthYearForm(forms.ModelForm):
 
 
 class AddCheckingAccountForm(forms.ModelForm):
-
     class Meta:
         model = CheckingAccount
         exclude = ['user']
 
 
 class AddDebtAccountForm(forms.ModelForm):
-
     class Meta:
         model = DebtAccount
         exclude = ['user']
 
 
 class AddTradingAccountForm(forms.ModelForm):
-
     class Meta:
         model = TradingAccount
         exclude = ['user']
 
 
 class AddRetirementAccountForm(forms.ModelForm):
-
     class Meta:
         model = RetirementAccount
         exclude = ['user']
@@ -190,6 +187,5 @@ class TransferBetweenAccountsForm(forms.ModelForm):
     class Meta:
         model = Transfer
         fields = '__all__'
-
 
 # WithdrawalFormSet = formset_factory()

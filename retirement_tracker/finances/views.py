@@ -607,6 +607,7 @@ class ExpenseLookupForUserView(FormView):
     form_class = UserExpenseLookupForm
     template_name = 'finances/expense_lookup_form_for_user.html'
 
+
     def dispatch(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
         self.user = User.objects.get(pk=pk)
@@ -616,6 +617,17 @@ class ExpenseLookupForUserView(FormView):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.user
         return kwargs
+
+    def form_valid(self, form):
+        self.success_url = f'/finances/user/{self.user.pk}'
+        print(form)
+
+        return super().form_valid(form)
+
+
+class ExpenseViewSuccessLookup(TemplateView):
+    template_name = 'finances/expense_lookup_complete'
+
 
 
 class UserWorkRelatedIncomeView(FormView):
@@ -999,6 +1011,7 @@ class MonthlyBudgetCreateView(FormView):
             mb_obj.save()
         self.success_url = f'/finances/user/{self.user.pk}/{month_name}/{year}'
         return super().form_valid(form)
+
 
 class MonthlyBudgetDeleteView(DeleteView):
     model = MonthlyBudget

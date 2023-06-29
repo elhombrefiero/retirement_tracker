@@ -213,6 +213,7 @@ class User(models.Model):
                                                                                                             ret_year)
 
         return tot_checking, tot_retirement, tot_trading, tot_debt, net_worth
+
     def return_retirement_datetime(self):
         """ Returns the timestamp at retirement age. """
         num_months = int(float(self.retirement_age) * 12.0)
