@@ -500,6 +500,19 @@ class User(models.Model):
 
         return user_earliest, user_latest
 
+    def return_years_list(self):
+        earliest, latest = self.get_earliest_latest_dates()
+        years_list = list()
+
+        current = earliest + relativedelta(years=-1)
+        latest = latest + relativedelta(years=+1)
+        while current <= latest:
+            if current.year not in years_list:
+                years_list.append(current.year)
+            current = current + relativedelta(months=+1)
+
+        return years_list
+
     def return_year_month_for_reports(self):
         """ Returns a dictionary of months and years for the user reports
 

@@ -92,14 +92,10 @@ class UserWorkIncomeExpenseForm(forms.Form):
 
 class UserExpenseLookupForm(forms.Form):
     """ Used to lookup expenses for a given user."""
-    MONTH_CHOICES = ((None, None), ('January', 'January'), ('February', 'February'), ('March', 'March'),
-                     ('April', 'April'), ('May', 'May'), ('June', 'June'),
-                     ('July', 'July'), ('August', 'August'), ('September', 'September'),
-                     ('October', 'October'), ('November', 'November'), ('December', 'December'))
+
     budget_choices = (None, None)
-    month = forms.CharField(label='Month',
-                            widget=forms.Select(choices=MONTH_CHOICES), required=False)
-    year = forms.ChoiceField()
+    start_date = forms.DateField(label='Start Date', required=False, widget=forms.SelectDateWidget)
+    end_date = forms.DateField(label='End Date', required=False, widget=forms.SelectDateWidget)
     budget_group = forms.CharField(label='Budget Group',
                                    widget=forms.Select(choices=FORM_BUDGET_GROUP_CHOICES))
     category = forms.CharField(label='Category')
@@ -109,14 +105,13 @@ class UserExpenseLookupForm(forms.Form):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user')
         super().__init__(*args, **kwargs)
-        # Fill in choices for year
-        earliest, latest = user.get_earliest_latest_dates()
-        earliest = earliest.year
-        latest = latest.year
-        year_choices = [(None, None)]
-        for year in range(earliest, latest + 1):
-            year_choices.append((year, year))
-        self.fields['year'] = forms.ChoiceField(choices=year_choices, required=False)
+        # Fill in choices for dates
+        years_list = user.return_years_list()
+
+        self.fields['start_date'] = forms.DateField(label='Start Date', initial=None,
+                                                    widget=forms.SelectDateWidget(years=years_list), required=False)
+        self.fields['end_date'] = forms.DateField(label='End Date', initial=None,
+                                                  widget=forms.SelectDateWidget(years=years_list), required=False)
         user_accounts = user.return_all_accounts()
         user_withdrawals = Withdrawal.objects.filter(account__in=user_accounts)
         # Fill in choices for category
