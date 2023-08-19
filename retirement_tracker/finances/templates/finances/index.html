@@ -1,10 +1,19 @@
 {% extends 'finances/master_template.html' %}
 
 {% block mymessage %}
-<h1>Welcome to the Retirement Tracker !</h1>
-<h1>Users</h1>
-{% for user in users %}
-<h2 class="user"><a href="/finances/user/{{user.id}}">{{user.name}}</a></h2>
-{% endfor %}
-<button class="button"><a href="/finances/add_user">Add User</a></button>
+<h1 class="title has-text-centered">Welcome to the Retirement Tracker</h1>
+<div class="container">
+    <h2 class="subtitle has-text-centered">Users</h2>
+    {% if users %}
+        <div class="box has-text-centered">
+        {% for user in users %}
+            <button class="button"><a href="/finances/user/{{user.id}}">{{user.name}}</a></button>
+        {% endfor %}
+        </div>
+    {% endif %}
+    <div class="box has-text-centered">
+        <button class="button"><a href="/finances/add_user">Add User</a></button>
+    </div>
+</div>
+
 {% endblock %}
