@@ -13,7 +13,7 @@ urlpatterns = [
     # Ex. /finances/
     path('', views.IndexView.as_view(), name='index'),
     # Ex. /finances/user_overview/pk
-    path('user/<int:pk>/', views.UserView.as_view(), name='user_overview'),
+    path('user/<int:pk>/', views.UserOverviewView.as_view(), name='user_overview'),
     # Ex. /finances/user/1/add_checking_account
     path('user/<int:pk>/add_checking_account', views.CheckingAccountForUserView.as_view(),
          name='user_add_checking_account'),

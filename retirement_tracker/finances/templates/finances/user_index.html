@@ -1,0 +1,159 @@
+{% extends 'finances/master_template.html' %}
+
+{% block header_extra %}
+    <Title>{{object.name}} Overview</Title>
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" integrity="sha512-ElRFoEQdI5Ht6kZvyzXhYG9NqjtkmlkfYk0wr6wHxU9JEHakS7UJZNeml5ALk+8IKlU6jDgMabC3vkumRokgJA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+    <!-- JQuery-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+{% endblock %}
+
+{% block mymessage %}
+<nav class="level is-mobile">
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading">User</p>
+      <p class="title"><a href="/finances/update_user/{{object.pk}}">{{object.name}}</a></p>
+    </div>
+  </div>
+    <div class="level-item has-text-centered">
+    <div>
+      <p class="heading">Date of birth</p>
+      <p class="title">{{object.date_of_birth}}</p>
+    </div>
+  </div>
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading">Estimated Retirement Date</p>
+      <p class="title">{{estimated_retirement_date}}</p>
+    </div>
+  </div>
+<div class="level-item has-text-centered">
+    <div>
+      <p class="heading">Withdrawal Rate at Retirement</p>
+      <p class="title">{{percent_withdrawal_at_retirement}}</p>
+    </div>
+  </div>
+</nav>
+
+<!--Buttons to add and update the user stuff-->
+<nav class="navbar" role="navigation" aria-label="main navigation">
+  <div class="dropdown is-hoverable">
+    <div class="dropdown-trigger">
+      <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
+        <span>Add</span>
+        <span class="icon is-small">
+          <i class="fas fa-angle-down" aria-hidden="true"></i>
+        </span>
+      </button>
+    </div>
+    <div class="dropdown-menu" role="menu">
+      <div class="dropdown-content">
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/add_checking_account" class="dropdown-item">
+          Checking Account
+        </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/add_debt_account" class="dropdown-item">
+          Debt Account
+        </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/add_retirement_account" class="dropdown-item">
+          Retirement Account
+        </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/add_retirement_account" class="dropdown-item">
+          Trading Account
+        </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/add_deposit" class="dropdown-item">
+          Deposit
+        </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/add_withdrawal" class="dropdown-item">
+          Withdrawal
+        </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/add_statutory" class="dropdown-item">
+          Statutory
+        </a>
+        </div>
+        <div class="dropdown-item">
+          <a href="/finances/user/{{object.pk}}/transfer_money" class="dropdown-item">
+          Transfer
+        </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/add_monthly_budget" class="dropdown-item">
+          Monthly Budget
+        </a>
+        </div>
+        <div class="dropdown-item">
+          <a href="/finances/user/{{object.pk}}/add_work_income" class="dropdown-item">
+            Work Income
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="dropdown is-hoverable">
+    <div class="dropdown-trigger">
+      <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
+        <span>View Existing Items</span>
+        <span class="icon is-small">
+          <i class="fas fa-angle-down" aria-hidden="true"></i>
+        </span>
+      </button>
+    </div>
+    <div class="dropdown-menu" role="menu">
+      <div class="dropdown-content">
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/reports" class="dropdown-item">
+          Reports
+        </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/monthly_budgets" class="dropdown-item">
+          Monthly Budgets
+        </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/accounts" class="dropdown-item">
+          Accounts
+        </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/incomes" class="dropdown-item">
+          Incomes
+        </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/expenses" class="dropdown-item">
+          Expenses
+        </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/statutory_entries" class="dropdown-item">
+          Statutory
+        </a>
+        </div>
+        <div class="dropdown-item">
+        <a href="/finances/user/{{object.pk}}/transfers" class="dropdown-item">
+          Transfers
+        </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+
+{% endblock %}

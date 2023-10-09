@@ -33,6 +33,17 @@ class IndexView(TemplateView):
         return context
 
 
+class UserOverviewView(DetailView):
+    model = User
+    template_name = 'finances/user_index.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['estimated_retirement_date'] = self.object.return_retirement_datetime()
+        context['percent_withdrawal_at_retirement'] = round(float(self.object.percent_withdrawal_at_retirement), 2)
+        return context
+
+
 class UserView(DetailView):
     model = User
     # TODO: Begin adding some pages where the projected net worth can be viewed
