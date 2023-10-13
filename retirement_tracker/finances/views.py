@@ -1,4 +1,12 @@
+#!/usr/bin/env python3
+
+# Python Library Imports
 from dateutil.relativedelta import relativedelta
+import json
+
+# Other Imports
+from django.db.models.functions import TruncDay
+from django.db.models import Sum
 from django.shortcuts import render, HttpResponseRedirect, HttpResponse
 # from django.core.exceptions import BadRequest
 from django.forms import formset_factory
@@ -12,11 +20,13 @@ from datetime import datetime
 
 from finances.models import User, Account, CheckingAccount, DebtAccount, TradingAccount, \
     RetirementAccount, MonthlyBudget, BUDGET_GROUP_MANDATORY, BUDGET_GROUP_MORTGAGE, BUDGET_GROUP_DGR, \
-    BUDGET_GROUP_DISC, Transfer, Deposit, Withdrawal, Statutory
+    BUDGET_GROUP_DISC, Transfer, Deposit, Withdrawal, Statutory, dt_to_milliseconds_after_epoch
 from finances.forms import MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, \
     UserExpenseLookupForm, MonthlyBudgetForUserMonthYearForm, AddDebtAccountForm, \
     AddCheckingAccountForm, AddRetirementAccountForm, AddTradingAccountForm, TransferBetweenAccountsForm, \
     WithdrawalForUserForm, DepositForUserForm, StatutoryForUserForm
+from finances.plot_views import get_line_chart_config
+from finances.utils import chartjs_utils as cjs
 
 
 # Create your views here.
@@ -627,6 +637,63 @@ class ExpenseLookupForUserView(FormView):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.user
         return kwargs
+
+    def form_valid(self, form, **kwargs):
+        context = self.get_context_data(**kwargs)
+        user_accts = self.user.return_all_accounts()
+        withdrawals = Withdrawal.objects.filter(account__in=user_accts).order_by('date')
+        if form.cleaned_data['start_year']:
+            if form.cleaned_data['start_month']:
+                start_dt = datetime.strptime(f'{form.cleaned_data["start_month"]} 1, {form.cleaned_data["start_year"]}', '%B %d, %Y')
+            else:
+                start_dt = datetime.strptime(f'January 1, {form.cleaned_data["start_year"]}', '%B %d, %Y')
+            withdrawals = withdrawals.filter(date__gte=start_dt)
+        if form.cleaned_data['end_year']:
+            if form.cleaned_data['end_month']:
+                end_dt = datetime.strptime(f'{form.cleaned_data["end_month"]} 1, {form.cleaned_data["end_year"]}', '%B %d, %Y')
+            else:
+                end_dt = datetime.strptime(f'December 31, {form.cleaned_data["end_year"]}', '%B %d, %Y')
+            withdrawals = withdrawals.filter(date__lte=end_dt)
+
+        if form.cleaned_data['category']:
+            withdrawals = withdrawals.filter(category=form.cleaned_data['category'])
+
+        if form.cleaned_data['budget_group']:
+            withdrawals = withdrawals.filter(budget_group=form.cleaned_data['budget_group'])
+
+        if form.cleaned_data['description']:
+            withdrawals = withdrawals.filter(discription=form.cleaned_data['description'])
+
+        if form.cleaned_data['where_bought']:
+            withdrawals = withdrawals.filter(location=form.cleaned_data['where_bought'])
+
+        if len(withdrawals) > 2:
+            context['chart_data'] = True
+            datasets = list()
+            xydata = list()
+            summed_withdrawals = withdrawals.annotate(day=TruncDay('date')).values('day').annotate(cumsum=Sum('amount'))
+            total = 0.0
+            for withdrawal in summed_withdrawals:
+                total += withdrawal['cumsum']
+                withdrawal_dt = datetime.combine(withdrawal['day'], datetime.min.time())
+                wdate = dt_to_milliseconds_after_epoch(withdrawal_dt)
+                xydata.append({'x': wdate, 'y': total})
+            datasets.append({
+                'data': xydata,
+                'backgroundColor': cjs.get_color('red', 0.5),
+                'borderColor': cjs.get_color('red'),
+                'fill': False,
+            })
+            data = {
+                'datasets': datasets
+            }
+            context['data'] = json.dumps(data)
+            config = get_line_chart_config('Filtered data')
+            context['options'] = json.dumps(config['options'])
+        else:
+            context['chart_data'] = False
+
+        return self.render_to_response(context)
 
 
 class UserWorkRelatedIncomeView(FormView):

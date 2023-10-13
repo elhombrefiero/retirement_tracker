@@ -1,5 +1,14 @@
 {% extends 'finances/master_template.html' %}
 
+{% block header_extra %}
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" integrity="sha512-ElRFoEQdI5Ht6kZvyzXhYG9NqjtkmlkfYk0wr6wHxU9JEHakS7UJZNeml5ALk+8IKlU6jDgMabC3vkumRokgJA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <Title>{{object.name}} Look up Expenses</Title>
+{% endblock %}
+
 {% block mymessage %}
 <form method="POST" enctype="multipart/form-data">
     {{ form.non_field_errors }}
@@ -7,4 +16,30 @@
     {{form.as_p}}
     <input type="submit" value="Submit">
 </form>
+
+{% if chart_data %}
+<!-- Chart of balance over time-->
+<div>
+    <canvas id="expenses_over_time"></canvas>
+</div>
+{%  endif %}
 {% endblock %}
+
+{% block jsstuff %}
+{% if chart_data %}
+<script>
+    const ctx = document.getElementById('expenses_over_time');
+    let chartmb = new Chart(ctx,
+        {
+    type: 'scatter'});
+
+$(document).ready(function () {
+    // create an AJAX JSON request
+    chartmb.config.options = {{ options|safe }};
+    chartmb.config.data = {{ data|safe }};
+    chartmb.update();
+    });
+</script>
+{%  endif %}
+{% endblock %}
+

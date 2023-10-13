@@ -96,14 +96,17 @@ class UserExpenseLookupForm(forms.Form):
                      ('July', 'July'), ('August', 'August'), ('September', 'September'),
                      ('October', 'October'), ('November', 'November'), ('December', 'December'))
     budget_choices = (None, None)
-    month = forms.CharField(label='Month',
-                            widget=forms.Select(choices=MONTH_CHOICES))
-    year = forms.ChoiceField()
-    budget_group = forms.CharField(label='Budget Group',
+    start_month = forms.CharField(label='Start Month',
+                                  widget=forms.Select(choices=MONTH_CHOICES), required=False)
+    start_year = forms.ChoiceField(label='Start Year')
+    end_month = forms.CharField(label='End Month',
+                                widget=forms.Select(choices=MONTH_CHOICES), required=False)
+    end_year = forms.ChoiceField(label='End Year')
+    budget_group = forms.CharField(label='Budget Group', required=False,
                                    widget=forms.Select(choices=FORM_BUDGET_GROUP_CHOICES))
-    category = forms.CharField(label='Category')
-    description = forms.CharField(label='Description')
-    where_bought = forms.CharField(label='Location')
+    category = forms.CharField(label='Category', required=False)
+    description = forms.CharField(label='Description', required=False)
+    where_bought = forms.CharField(label='Location', required=False)
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user')
@@ -115,7 +118,8 @@ class UserExpenseLookupForm(forms.Form):
         year_choices = [(None, None)]
         for year in range(earliest, latest + 1):
             year_choices.append((year, year))
-        self.fields['year'] = forms.ChoiceField(choices=year_choices)
+        self.fields['start_year'] = forms.ChoiceField(choices=year_choices, required=False)
+        self.fields['end_year'] = forms.ChoiceField(choices=year_choices, required=False)
         user_accounts = user.return_all_accounts()
         user_withdrawals = Withdrawal.objects.filter(account__in=user_accounts)
         # Fill in choices for category
@@ -123,19 +127,19 @@ class UserExpenseLookupForm(forms.Form):
         user_categories = list(user_withdrawals.values_list('category', flat=True).distinct())
         for cat in user_categories:
             category_choices.append((cat, cat))
-        self.fields['category'] = forms.ChoiceField(choices=category_choices)
+        self.fields['category'] = forms.ChoiceField(choices=category_choices, required=False)
         # Fill in choices for description
         description_choices = [(None, None)]
         user_description = list(user_withdrawals.values_list('description', flat=True).distinct())
         for desc in user_description:
             description_choices.append((desc, desc))
-        self.fields['description'] = forms.ChoiceField(choices=description_choices)
+        self.fields['description'] = forms.ChoiceField(choices=description_choices, required=False)
         # Fill in choices for location
         location_choices = [(None, None)]
         location = list(user_withdrawals.values_list('location', flat=True).distinct())
         for loc in location:
             location_choices.append((loc, loc))
-        self.fields['location'] = forms.ChoiceField(choices=location_choices)
+        self.fields['where_bought'] = forms.ChoiceField(choices=location_choices, required=False)
 
 
 class MonthlyBudgetForUserForm(forms.ModelForm):
