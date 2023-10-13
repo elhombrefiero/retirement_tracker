@@ -662,7 +662,7 @@ class ExpenseLookupForUserView(FormView):
             withdrawals = withdrawals.filter(budget_group=form.cleaned_data['budget_group'])
 
         if form.cleaned_data['description']:
-            withdrawals = withdrawals.filter(discription=form.cleaned_data['description'])
+            withdrawals = withdrawals.filter(description=form.cleaned_data['description'])
 
         if form.cleaned_data['where_bought']:
             withdrawals = withdrawals.filter(location=form.cleaned_data['where_bought'])
