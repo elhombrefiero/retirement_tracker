@@ -852,7 +852,6 @@ class MonthlyBudgetForUserView(FormView):
     form_class = MonthlyBudgetForUserForm
     template_name = 'finances/monthlybudget_form_for_user.html'
     success_url = '/finances'
-    # TODO: Figure out how to pre-fill form with existing month/year data
 
     def dispatch(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
@@ -887,6 +886,12 @@ class MonthlyBudgetForUserView(FormView):
         context['actual_statutory'] = actual_statutory
         context['current_total'] = actual_mand + actual_mort + actual_dgr + actual_disc + actual_statutory
         return context
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        init_date = datetime.strptime(f'{self.month}, {self.year}', '%B, %Y').date()
+        form.initial.update({'date': init_date})
+        return form
 
     def form_valid(self, form):
         post = self.request.POST
