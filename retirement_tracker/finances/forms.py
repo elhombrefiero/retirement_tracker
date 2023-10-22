@@ -13,7 +13,10 @@ FORM_BUDGET_GROUP_CHOICES = (
     (BUDGET_GROUP_DISC, BUDGET_GROUP_DISC),
 )
 
-
+MONTH_CHOICES = ((None, None), ('January', 'January'), ('February', 'February'), ('March', 'March'),
+                     ('April', 'April'), ('May', 'May'), ('June', 'June'),
+                     ('July', 'July'), ('August', 'August'), ('September', 'September'),
+                     ('October', 'October'), ('November', 'November'), ('December', 'December'))
 
 class UserForm(forms.ModelForm):
     """ Add a new user to the database"""
@@ -96,10 +99,7 @@ class UserWorkIncomeExpenseForm(forms.Form):
 
 class UserExpenseLookupForm(forms.Form):
     """ Used to lookup expenses for a given user."""
-    MONTH_CHOICES = ((None, None), ('January', 'January'), ('February', 'February'), ('March', 'March'),
-                     ('April', 'April'), ('May', 'May'), ('June', 'June'),
-                     ('July', 'July'), ('August', 'August'), ('September', 'September'),
-                     ('October', 'October'), ('November', 'November'), ('December', 'December'))
+
     budget_choices = (None, None)
     start_month = forms.CharField(label='Start Month',
                                   widget=forms.Select(choices=MONTH_CHOICES), required=False)
@@ -210,3 +210,10 @@ WithdrawalByLocationFormset = modelformset_factory(Withdrawal, form=WithdrawalFo
                                                    fields=('account', 'budget_group', 'category',
                                                            'description', 'amount', 'slug_field', 'group'))
 
+class UserReportForm(forms.Form):
+    start_month = forms.CharField(label='Start Month',
+                                  widget=forms.Select(choices=MONTH_CHOICES), required=False)
+    start_year = forms.ChoiceField(label='Start Year', required=False)
+    end_month = forms.CharField(label='End Month',
+                                widget=forms.Select(choices=MONTH_CHOICES), required=False)
+    end_year = forms.ChoiceField(label='End Year', required=False)
