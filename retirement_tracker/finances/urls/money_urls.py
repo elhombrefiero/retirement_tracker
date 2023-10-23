@@ -125,7 +125,10 @@ urlpatterns = [
     path('delete_withdrawal/<int:pk>', views.WithdrawalDeleteView.as_view(), name='withdrawal-delete'),
     # Ex. finances/delete_withdrawal/1
     path('delete_statutory/<int:pk>', views.StatutoryDeleteView.as_view(), name='statutory-delete'),
-    # Ex. /finances/user=1/enter_expense_by_location/extra=0
-    path('user=<int:user_id>/enter_withdrawal_by_location/extra=<int:extrarows>',
-         views.add_expense_by_location_user_account, name='add_withdrawal_by_loc'),
+    # # Ex. /finances/user=1/enter_expense_by_location/extra=0
+    # path('user=<int:user_id>/enter_withdrawal_by_location/extra=<int:extrarows>',
+    #      views.add_expense_by_location_user_account, name='add_withdrawal_by_loc'),
+    # Ex. /finances/user/<int:pk>/add_withdrawals_by_loc
+    path('user/<int:pk>/add_withdrawals_by_loc', views.WithdrawalForUserByLocation.as_view(),
+         name='add_withdrawals_by_loc')
 ]

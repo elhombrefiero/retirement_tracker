@@ -24,7 +24,8 @@ from finances.models import User, Account, CheckingAccount, DebtAccount, Trading
 from finances.forms import MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, \
     UserExpenseLookupForm, MonthlyBudgetForUserMonthYearForm, AddDebtAccountForm, \
     AddCheckingAccountForm, AddRetirementAccountForm, AddTradingAccountForm, TransferBetweenAccountsForm, \
-    WithdrawalForUserForm, DepositForUserForm, StatutoryForUserForm
+    WithdrawalForUserForm, DepositForUserForm, StatutoryForUserForm, \
+    DateLocationForm, WithdrawalByLocationFormset
 from finances.plot_views import get_line_chart_config
 from finances.utils import chartjs_utils as cjs
 
@@ -1022,11 +1023,6 @@ class StatutoryForUserView(FormView):
         return super().form_valid(form)
 
 
-class DepositUpdateView(UpdateView):
-    model = Deposit
-    fields = '__all__'
-
-
 class WithdrawalUpdateView(UpdateView):
     model = Withdrawal
     fields = '__all__'
@@ -1182,47 +1178,52 @@ class DebtAccountUpdateView(UpdateView):
 #     form_class =
 
 
-def add_expense_by_location_user_account(request, user_id: int, account_id: int, extrarows: int = 0):
-    """ For a given user and associated account, add one or more expenses to add to the database."""
+class WithdrawalForUserByLocation(CreateView):
+    model = User
+    success_url = '/finances'
+    form_class = WithdrawalForUserForm
+    template_name = 'finances/user_withdrawal_by_location_form.html'
+    extra = 1
 
-    try:
-        user = User.objects.get(id=user_id)
-    except:
-        pass
-        # return BadRequest('User does not exist')
-    try:
-        account = Account.objects.get(id=account_id, user=user)
-    except:
-        pass
-        # return BadRequest(f'Account is not for {user.name}')
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        mywithdrawalbylocationformset = WithdrawalByLocationFormset(queryset=Withdrawal.objects.none())
+        mywithdrawalbylocationformset.extra = self.extra
+        context['formset'] = mywithdrawalbylocationformset
+        context['date_location_form'] = DateLocationForm()
+        context['extra'] = self.extra
+        context['user'] = self.user
+        return context
 
-    initial_dict = {'user': user, 'account': account}
-    initial_dicts = [initial_dict]
-    if extrarows > 0:
-        for i in range(0, extrarows):
-            initial_dicts.append(initial_dict)
-    ExpenseFormSet = formset_factory(ExpenseByLocForm, extra=0)
-    formset = ExpenseFormSet(initial=initial_dicts)
+    def get(self, request, *args, **kwargs):
+        self.user = User.objects.get(pk=kwargs['pk'])
+        self.success_url = f'/finances/user/{self.user.pk}'
+        if 'extra' in request.GET:
+            try:
+                self.extra = int(request.GET['extra'])
+            except:
+                self.extra = 1
+        return super().get(request, *args, **kwargs)
 
-    if request.method == 'POST':
-        formset = ExpenseFormSet(request.POST)
-        if formset.is_valid():
-            for form in formset:
-                new_expense = Withdrawal.objects.create(user=user, account=account,
-                                                        date=form.cleaned_data['date'],
-                                                        budget_group=form.cleaned_data['budget_group'],
-                                                        category=form.cleaned_data['category'],
-                                                        location=form.cleaned_data['location'],
-                                                        description=form.cleaned_data['description'],
-                                                        amount=form.cleaned_data['amount'],
-                                                        slug_field=form.cleaned_data['slug_field'],
-                                                        group=form.cleaned_data['group']
-                                                        )
-                new_expense.save()
-            return HttpResponseRedirect(f'/finances/user={user.id}/account={account.id}/enter_expense_by_location'
-                                        f'/extra=0')
-        else:
-            return render(request, 'finances/add_exp_loc_user_acct.html',
-                          {'user': user, 'account': account, 'formset': formset, 'extra': extrarows})
-    return render(request, 'finances/add_exp_loc_user_acct.html',
-                  {'user': user, 'account': account, 'formset': formset, 'extra': extrarows})
+    def post(self, request, *args, **kwargs):
+        formset = WithdrawalByLocationFormset(request.POST)
+        date_location_form = DateLocationForm(data=request.POST)
+        if formset.is_valid() and date_location_form.is_valid():
+            return self.form_valid(formset, date_location_form)
+        self.object = User.objects.get(pk=kwargs['pk'])
+        context = super().get_context_data(**kwargs)
+        context['formset'] = formset
+        context['date_location_form'] = date_location_form
+        return self.render_to_response(context)
+
+    def form_valid(self, formset, date_location_form):
+        # TODO: Send to user's page
+        dt = datetime.combine(date_location_form.cleaned_data['date'], datetime.min.time())
+        location = date_location_form.cleaned_data['where_bought']
+        instances = formset.save(commit=False)
+        for instance in instances:
+            instance.date = dt
+            instance.where_bought = location
+            instance.save()
+        return HttpResponseRedirect(self.success_url)
+

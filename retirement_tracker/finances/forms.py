@@ -14,6 +14,7 @@ FORM_BUDGET_GROUP_CHOICES = (
 )
 
 
+
 class UserForm(forms.ModelForm):
     """ Add a new user to the database"""
 
@@ -40,6 +41,10 @@ class WithdrawalForUserForm(forms.ModelForm):
     class Meta:
         model = Withdrawal
         fields = '__all__'
+
+    def __init__(self, *arg, **kwarg):
+        super().__init__(*arg, **kwarg)
+        self.empty_permitted = False
 
 
 class StatutoryForUserForm(forms.ModelForm):
@@ -196,4 +201,12 @@ class TransferBetweenAccountsForm(forms.ModelForm):
         fields = '__all__'
 
 
-# WithdrawalFormSet = formset_factory()
+class DateLocationForm(forms.Form):
+    date = forms.DateField(label='Date', initial=now, widget=forms.SelectDateWidget, required=True)
+    where_bought = forms.CharField(label='Location', required=True)
+
+
+WithdrawalByLocationFormset = modelformset_factory(Withdrawal, form=WithdrawalForUserForm,
+                                                   fields=('account', 'budget_group', 'category',
+                                                           'description', 'amount', 'slug_field', 'group'))
+

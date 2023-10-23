@@ -1,0 +1,35 @@
+{% extends 'finances/master_template.html' %}
+
+{% block mymessage %}
+    <form method="POST" enctype="multipart/form-data>
+    {% csrf_token %}
+    {{ date_location_form.non_field_errors }}
+    {{ date_location_form.errors }}
+    {{ date_location_form }} <br><br>
+
+    {{ formset.management_form }}
+
+    {%  for form in formset %}
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+{#        {{ form.errors }}#}
+        {{ form }}<br><br>
+    {% endfor %}
+    <input type="submit" value="Submit">
+    </form>
+    <input class="button" type="submit" onclick="add_row()" value="Add Row">
+    <input class="button" type="submit" onclick="delete_row()" value="Delete Row">
+{% endblock %}
+
+{%  block jsstuff %}
+<script>
+function add_row() {
+  let num_extra_row = {{extra}} + 1
+  window.location.replace("/finances/user/{{ user.pk }}/add_withdrawals_by_loc?extra="+num_extra_row)
+}
+function delete_row() {
+  let num_extra_row = Math.max({{extra}} - 1, 0)
+  window.location.replace("/finances/user/{{ user.pk }}/add_withdrawals_by_loc?extra="+num_extra_row)
+}
+</script>
+{% endblock %}
