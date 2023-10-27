@@ -49,6 +49,17 @@ urlpatterns = [
     # Ex. /finances/data/account/1/projected_debtbalance
     path('data/account/<int:pk>/projected_debtbalance', pv.DebtAccountBalanceByTime.as_view(),
          name='data_projected_debtaccount_balance'),
+    # Ex. /finances/data/user/1/report/all
+    path('data/user/<int:pk>/report/<str:all>', pv.UserDataCustom.as_view(), name='data_user_all'),
+    # Ex. /finances/data/user/1/report/2022/2023
+    path('data/user/<int:pk>/report/<int:start_year>/<int:end_year>', pv.UserDataCustom.as_view(),
+         name='data_user_year_to_year'),
+    # Ex. /finances/data/user/1/report/2022/March/2023
+    path('data/user/<int:pk>/report/<int:start_year>/<str:start_month>/<int:end_year>', pv.UserDataCustom.as_view(),
+         name='data_user_yearmonth_to_year'),
+    # Ex. /finances/data/user/1/report/2022/March/2023/March
+    path('/data/user/<int:pk>/report/int:start_year>/<str:start_month>/<int:end_year>/<str:end_month>',
+         pv.UserReportDataCustom.as_view(), name='data_user_yearmonth_to_yearmonth'),
     # Ex. /finances/plot/debug
     path('plot/debug', pv.DebugView.as_view(), name='plot_debug')
 ]

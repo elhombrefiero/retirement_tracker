@@ -655,6 +655,7 @@ class RetirementAccountBalanceByTime(DetailView):
 
         return JsonResponse(return_dict)
 
+
 class DebtAccountBalanceByTime(DetailView):
     """ Uses the balance vs time function to return
         -line plot of
@@ -732,6 +733,12 @@ class DebtAccountBalanceByTime(DetailView):
         return_dict['data'] = data
 
         return JsonResponse(return_dict)
+
+
+class UserReportDataCustom(DetailView):
+    model = User
+
+
 
 
 class DebugView(TemplateView):

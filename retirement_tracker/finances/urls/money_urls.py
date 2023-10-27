@@ -50,9 +50,9 @@ urlpatterns = [
     # Ex. /finances/user/1/monthly_budgets
     path('user/<int:pk>/monthly_budgets', views.UserMonthlyBudgetsAvailable.as_view(), name='user_available_monthly_budgets'),
     # Ex. /finances/user/1/2022
-    path('user/<int:pk>/<int:year>', views.UserYearView.as_view(), name='user_year'),
+    path('user/<int:pk>/<int:year>', views.UserReportYearView.as_view(), name='user_year'),
     # Ex. /finances/usr/1/January/2022
-    path('user/<int:pk>/<str:month>/<int:year>/', views.UserMonthYearView.as_view(), name='user_month_year'),
+    path('user/<int:pk>/<str:month>/<int:year>/', views.UserReportMonthYearView.as_view(), name='user_month_year'),
     # Ex. /finances/user/1/January/2022/view_monthly_budget
     path('user/<int:pk>/<str:month>/<int:year>/view_monthly_budget', views.MonthlyBudgetForUserView.as_view(),
          name='user_monthly_budget'),

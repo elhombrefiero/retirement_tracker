@@ -25,7 +25,7 @@ from finances.forms import MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, 
     UserExpenseLookupForm, MonthlyBudgetForUserMonthYearForm, AddDebtAccountForm, \
     AddCheckingAccountForm, AddRetirementAccountForm, AddTradingAccountForm, TransferBetweenAccountsForm, \
     WithdrawalForUserForm, DepositForUserForm, StatutoryForUserForm, \
-    DateLocationForm, WithdrawalByLocationFormset
+    DateLocationForm, WithdrawalByLocationFormset, UserReportSelectForm
 from finances.plot_views import get_line_chart_config
 from finances.utils import chartjs_utils as cjs
 
@@ -55,8 +55,37 @@ class UserOverviewView(DetailView):
         return context
 
 
-class UserView(DetailView):
+class UserCustomReportView(FormView):
+    """ User will use a form to select a date range for the user report data.
+
+    Relevant information:
+        Total Checking Account Balance
+        Total Retirement Account Balance
+        Total Debt Balance
+        Total Net Worth
+
+
+    """
+    form_class = UserReportSelectForm
+    template_name = 'finances/user_report.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        userpk = context['pk']
+        self.user = User.objects.get(pk=userpk)
+        context['user'] = self.user
+        return context
+
+    def form_valid(self, form):
+        post = self.request.POST
+        return super().form_valid(form)
+
+
+
+class UserReportAllView(DetailView):
+    """The user reports views will have all of the data for a given time span."""
     model = User
+    template_name = 'finances/user_report.html'
     # TODO: Begin adding some pages where the projected net worth can be viewed
     # TODO: Add budgeted vs expense by budget group views.
     def get_context_data(self, **kwargs):
@@ -80,8 +109,9 @@ class UserView(DetailView):
         return context
 
 
-class UserYearView(DetailView):
+class UserReportYearView(DetailView):
     model = User
+    template_name = 'finances/user_report.html'
 
     # TODO: Figure out any useful metrics for year view
 
@@ -107,8 +137,9 @@ class UserYearView(DetailView):
         return context
 
 
-class UserMonthYearView(DetailView):
+class UserReportMonthYearView(DetailView):
     model = User
+    template_name = 'finances/user_report.html'
 
     def dispatch(self, request, *args, **kwargs):
         self.month = kwargs['month']
@@ -1171,11 +1202,6 @@ class DebtAccountUpdateView(UpdateView):
     model = DebtAccount
     fields = '__all__'
     success_url = f'/finances/'
-
-
-# class MultipleWithdrawalsForUser(FormView):
-#     template_name = 'mult_withdrawal.html'
-#     form_class =
 
 
 class WithdrawalForUserByLocation(CreateView):

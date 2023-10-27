@@ -210,7 +210,8 @@ WithdrawalByLocationFormset = modelformset_factory(Withdrawal, form=WithdrawalFo
                                                    fields=('account', 'budget_group', 'category',
                                                            'description', 'amount', 'slug_field', 'group'))
 
-class UserReportForm(forms.Form):
+
+class UserReportSelectForm(forms.Form):
     start_month = forms.CharField(label='Start Month',
                                   widget=forms.Select(choices=MONTH_CHOICES), required=False)
     start_year = forms.ChoiceField(label='Start Year', required=False)

@@ -11,6 +11,9 @@
 {% endblock %}
 
 {% block mymessage %}
+{% if report_message %}
+    <h1>{{ report_message }}</h1>
+{% endif %}
 <nav class="level is-mobile">
   <div class="level-item has-text-centered">
     <div>
