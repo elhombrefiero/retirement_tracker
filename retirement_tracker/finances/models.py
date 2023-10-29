@@ -71,6 +71,86 @@ class User(models.Model):
     # TODO: Determine way to generate input files for sankey diagram and add button to open sankey page with the
     #  inputs. Or through monthly budget portions and expenses.
 
+    def return_report_info_acct_balance(self, start_dt=None, end_dt=None):
+        """
+            Function used to sum account balance information for a user report.
+
+            For each type of account, this function will return
+                the starting balance at time start_dt (or for all time if not entered)
+                the balance at time end_dt (or the end of the user's entered data if not entered)
+                the difference between end_dt and start_dt
+
+            Additionally, this function will return the net difference
+                (account balances at end time - account balances at start time)
+                where account balance is the checking + retirement + trading - debts
+        """
+
+        tot_checking_start = 0.0
+        tot_checking_end = 0.0
+        tot_checking_diff = 0.0
+        tot_retirement_start = 0.0
+        tot_retirement_end = 0.0
+        tot_retirement_diff = 0.0
+        tot_trading_start = 0.0
+        tot_trading_end = 0.0
+        tot_trading_diff = 0.0
+        tot_debt_start = 0.0
+        tot_debt_end = 0.0
+        tot_debt_diff = 0.0
+
+        user_checking_accts = self.return_checking_accts()
+        user_ret_accts = [acct for acct in RetirementAccount.objects.filter(user=self)]
+        user_trade_accts = [acct for acct in TradingAccount.objects.filter(user=self)]
+        user_debt_accts = [acct for acct in DebtAccount.objects.filter(user=self)]
+
+        if not start_dt:
+            start_date, dummy_end_date = self.get_earliest_latest_dates()
+            start_dt = datetime.combine(start_date, datetime.time().min)
+
+        if not end_dt:
+            dummy_start_date, end_date = self.get_earliest_latest_dates()
+            end_dt = datetime.combine(end_date, datetime.time().min)
+
+        for account in user_checking_accts:
+            tot_checking_start += account.return_balance_up_to_dt(start_dt)
+            tot_checking_end += account.return_balance_up_to_dt(end_dt)
+            tot_checking_diff = tot_checking_end - tot_checking_start
+
+        for account in user_ret_accts:
+            tot_retirement_start += account.return_balance_up_to_dt(start_dt)
+            tot_retirement_end += account.return_balance_up_to_dt(end_dt)
+            tot_retirement_diff = tot_retirement_end - tot_retirement_start
+
+        for account in user_trade_accts:
+            tot_trading_start += account.return_balance_up_to_dt(start_dt)
+            tot_trading_end += account.return_balance_up_to_dt(end_dt)
+            tot_trading_diff = tot_trading_end - tot_trading_start
+
+        for account in user_debt_accts:
+            tot_debt_start += account.return_balance_up_to_dt(start_dt)
+            tot_debt_end += account.return_balance_up_to_dt(end_dt)
+            tot_debt_diff = tot_debt_end - tot_debt_start
+
+        net_diff = tot_checking_diff + tot_retirement_diff + tot_trading_diff - tot_debt_diff
+
+        return_info = {
+            'tot_checking_start': round(tot_checking_start, 2),
+            'tot_checking_end': round(tot_checking_end, 2),
+            'tot_checking_diff': round(tot_checking_diff, 2),
+            'tot_retirement_start': round(tot_retirement_start, 2),
+            'tot_retirement_end': round(tot_retirement_end, 2),
+            'tot_retirement_diff': round(tot_retirement_diff, 2),
+            'tot_trading_start': round(tot_trading_start, 2),
+            'tot_trading_end': round(tot_trading_end, 2),
+            'tot_trading_diff': round(tot_trading_diff, 2),
+            'tot_debt_start': round(tot_debt_start, 2),
+            'tot_debt_end': round(tot_debt_end, 2),
+            'tot_debt_diff': round(tot_debt_diff, 2),
+            'net_diff': round(net_diff, 2)
+        }
+
+        return return_info
+
     def return_net_worth(self) -> (float, float, float, float, float):
         """ Returns the user net worth and totals for all accounts:
             -checking,
@@ -742,6 +822,19 @@ class Account(models.Model):
 
         return float(month_expense)
 
+    def return_balance_up_to_dt(self, dt):
+        """ Returns the balance up to the time specified"""
+
+        all_income = Deposit.objects.filter(account=self, date__lt=dt)
+        all_income = all_income.aggregate(total=Sum('amount'))['total']
+        all_income = all_income if all_income is not None else 0.0
+
+        all_expense = Withdrawal.objects.filter(account=self, date__lt=dt)
+        all_expense = all_expense.aggregate(total=Sum('amount'))['total']
+        all_expense = all_expense if all_expense is not None else 0.0
+
+        return round(float(self.starting_balance) + float(all_income) - float(all_expense), 2)
+
     def return_balance_up_to_month_year(self, month: str, year: int):
         """ Returns the balance up to the start of the given month and year.
 
@@ -750,15 +843,7 @@ class Account(models.Model):
         up_to_datetime = datetime.strptime(f'{year}-{month}-01', '%Y-%B-%d')
         up_to_datetime = up_to_datetime + relativedelta(seconds=-1)
 
-        all_income = Deposit.objects.filter(account=self, date__lt=up_to_datetime)
-        all_income = all_income.aggregate(total=Sum('amount'))['total']
-        all_income = all_income if all_income is not None else 0.0
-
-        all_expense = Withdrawal.objects.filter(account=self, date__lt=up_to_datetime)
-        all_expense = all_expense.aggregate(total=Sum('amount'))['total']
-        all_expense = all_expense if all_expense is not None else 0.0
-
-        return round(float(self.starting_balance) + float(all_income) - float(all_expense), 2)
+        return self.return_balance_up_to_dt(up_to_datetime)
 
     def return_balance_including_month_year(self, month: str, year: int):
         """ Returns the balance up to the end of the requested month/year"""
@@ -962,11 +1047,14 @@ class DebtAccount(Account):
         up_to_datetime = datetime.strptime(f'{year}-{month}-01', '%Y-%B-%d')
         up_to_datetime = up_to_datetime + relativedelta(seconds=-1)
 
-        all_income = Deposit.objects.filter(account=self, date__lt=up_to_datetime)
+        return self.return_balance_up_to_dt(up_to_datetime)
+
+    def return_balance_up_to_dt(self, dt):
+        all_income = Deposit.objects.filter(account=self, date__lt=dt)
         all_income = all_income.aggregate(total=Sum('amount'))['total']
         all_income = all_income if all_income is not None else 0.0
 
-        all_expense = Withdrawal.objects.filter(account=self, date__lt=up_to_datetime)
+        all_expense = Withdrawal.objects.filter(account=self, date__lt=dt)
         all_expense = all_expense.aggregate(total=Sum('amount'))['total']
         all_expense = all_expense if all_expense is not None else 0.0
 
@@ -1219,42 +1307,38 @@ class RetirementAccount(Account):
 
         return y
 
-    def return_balance_up_to_month_year(self, month: str, year: int):
-        """ Returns the balance up to the end of the given month and year.
-
+    def return_balance_up_to_dt(self, dt):
+        """ Returns the balance up to the end of the given datetime.
         If the request date is less than the latest date, then treat it like normal
 
         If the request date is greater than the latest date, but less than the retirement date,
             then account for any interest gained
 
         If the request date is greater than the retirement date, then account for withdrawals
-
         """
-        # Latest account date
+
         latest_date = self.return_latest_date()
         if latest_date is None:
             return 0.0
 
         # Retirement date
         ret_date = self.user.get_latest_retirement_date()
+        ret_dt = datetime.combine(ret_date, datetime.time().min)
 
-        # Request date
-        req_date = datetime.strptime(f'{month}-01-{year}', '%B-%d-%Y').date()
+        today_dt = now()
+        if dt <= today_dt:
+            return super().return_balance_up_to_dt(dt)
 
-        today_date = now().date()
-        if req_date <= today_date:  # Assume interest occurs any time after today.
-            return super().return_balance_up_to_month_year(month, year)
+        total = super().return_balance_up_to_dt(dt)
+        current_dt = today_dt + relativedelta(months=+1)
 
-        today_dt = datetime.strptime(f'{today_date.year}-{today_date.month}', '%Y-%m')
-        today_month = today_dt.strftime('%B')
-        today_year = today_dt.strftime('%Y')
-        total = super().return_balance_up_to_month_year(today_month, today_year)
-        current_date = today_date + relativedelta(months=+1)
-
-        while current_date <= req_date:
+        while current_dt <= dt:
+            current_date = current_dt.date()
             # Capture the incomes and withdrawals for the given month
-            current_date_start_of_month = datetime.strptime(f'{current_date.strftime("%Y")}-{current_date.strftime("%B")}-1', '%Y-%B-%d')
-            current_date_end_of_month = current_date_start_of_month + relativedelta(months=+1) + relativedelta(seconds=-1)
+            current_date_start_of_month = datetime.strptime(
+                f'{current_date.strftime("%Y")}-{current_date.strftime("%B")}-1', '%Y-%B-%d')
+            current_date_end_of_month = current_date_start_of_month + relativedelta(months=+1) + relativedelta(
+                seconds=-1)
             # Use the previous total to calculate the compound interest
             current_income = Deposit.objects.filter(account=self, date__gte=current_date_start_of_month,
                                                     date__lt=current_date_end_of_month)
@@ -1271,14 +1355,31 @@ class RetirementAccount(Account):
             interest = total * float(self.monthly_interest_pct) / 100
 
             total += interest
-
-            if current_date > ret_date:
-                ret_withdrawal = total * self.yearly_withdrawal_rate / 12
+            if current_dt > ret_dt:
+                ret_withdrawal = total * float(self.yearly_withdrawal_rate) / 12
                 total -= ret_withdrawal
-
-            current_date += relativedelta(months=+1)
+            current_dt = current_dt + relativedelta(months=+1)
 
         return total
+
+    def return_balance_up_to_month_year(self, month: str, year: int):
+        """ Returns the balance up to the end of the given month and year.
+
+        If the request date is less than the latest date, then treat it like normal
+
+        If the request date is greater than the latest date, but less than the retirement date,
+            then account for any interest gained
+
+        If the request date is greater than the retirement date, then account for withdrawals
+
+        """
+        # Latest account date
+        latest_date = self.return_latest_date()
+        if latest_date is None:
+            return 0.0
+
+        req_dt = datetime.strptime(f'{month}-01-{year}', '%B-%d-%Y')
+        return self.return_balance_up_to_dt(req_dt)
 
     def return_withdrawal_info(self, retirement_date: datetime,
                                yearly_withdrawal_pct: float,
