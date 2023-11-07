@@ -1,4 +1,4 @@
-{% extends 'finances/master_template.html' %}
+{% extends 'finances/user_general_template.html' %}
 
 {% block header_extra %}
     <Title>Reports for {{object.name}}</Title>
@@ -20,6 +20,9 @@
             <td><a href="/finances/user/{{object.pk}}/{{month}}/{{year}}">{{month}}</a></td>
             {% endfor %}
         {% endfor %}
+        </tr>
+        <tr>
+            <td><a href="/finances/user/{{ object.pk }}/CustomReport">Custom Report</a></td>
         </tr>
     </tbody>
 </table>

@@ -71,15 +71,18 @@ class UserCustomReportView(FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        userpk = context['pk']
-        self.user = User.objects.get(pk=userpk)
+        self.user = User.objects.get(pk=self.kwargs['pk'])
         context['user'] = self.user
+        context['form'] = UserReportSelectForm(user=self.user)
+        context['report_message'] = 'Custom Report'
         return context
 
-    def form_valid(self, form):
-        post = self.request.POST
-        return super().form_valid(form)
+    def form_valid(self, form, **kwargs):
+        context = self.get_context_data(**kwargs)
+        # self.user.
 
+        context['report_message'] = 'Report from start_date to end_date'
+        return self.render_to_response(context)
 
 
 class UserReportAllView(DetailView):
@@ -147,7 +150,6 @@ class UserReportMonthYearView(DetailView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
-
         context = super().get_context_data(**kwargs)
         context['report_type'] = 'month'
         context['accounts'] = Account.objects.filter(user=self.object)
@@ -1216,7 +1218,7 @@ class WithdrawalForUserByLocation(CreateView):
         mywithdrawalbylocationformset = WithdrawalByLocationFormset(queryset=Withdrawal.objects.none())
         mywithdrawalbylocationformset.extra = self.extra
         context['formset'] = mywithdrawalbylocationformset
-        context['date_location_form'] = DateLocationForm()
+        context['date_location_form'] = DateLocationForm(user=self.user)
         context['extra'] = self.extra
         context['user'] = self.user
         return context
@@ -1242,8 +1244,10 @@ class WithdrawalForUserByLocation(CreateView):
         context['date_location_form'] = date_location_form
         return self.render_to_response(context)
 
-    def form_valid(self, formset, date_location_form):
-        # TODO: Send to user's page
+    def form_valid(self, formset, date_location_form, **kwargs):
+        userpk = self.kwargs['pk']
+        user = User.objects.get(pk=userpk)
+        self.success_url = f'/finances/user/{user.pk}/add_withdrawals_by_loc'
         dt = datetime.combine(date_location_form.cleaned_data['date'], datetime.min.time())
         location = date_location_form.cleaned_data['where_bought']
         instances = formset.save(commit=False)

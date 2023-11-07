@@ -2,6 +2,8 @@ from django import forms
 from django.utils.timezone import now
 from django.forms import modelformset_factory
 
+from datetime import datetime
+
 from finances.models import User, Withdrawal, Transfer, Deposit, Statutory, DebtAccount, TradingAccount, RetirementAccount, \
     MonthlyBudget, CheckingAccount, BUDGET_GROUP_MANDATORY, BUDGET_GROUP_MORTGAGE, BUDGET_GROUP_DGR, BUDGET_GROUP_DISC
 
@@ -202,8 +204,19 @@ class TransferBetweenAccountsForm(forms.ModelForm):
 
 
 class DateLocationForm(forms.Form):
-    date = forms.DateField(label='Date', initial=now, widget=forms.SelectDateWidget, required=True)
+
     where_bought = forms.CharField(label='Location', required=True)
+    date = forms.DateField(label='Date', initial=now, widget=forms.SelectDateWidget(), required=True)
+
+    def __init__(self, *args, user=None, **kwargs):
+        """ Modify the datefield form to include a span of years"""
+        super().__init__(*args, **kwargs)
+        if user:
+            earliest, _ = user.get_earliest_latest_dates()
+            latest = user.get_latest_retirement_date()
+            span = list(range(earliest.year, latest.year+1, 1))
+            self.fields['date'] = forms.DateField(label='Date', initial=now,
+                                                 widget=forms.SelectDateWidget(years=span), required=True)
 
 
 WithdrawalByLocationFormset = modelformset_factory(Withdrawal, form=WithdrawalForUserForm,
@@ -212,9 +225,19 @@ WithdrawalByLocationFormset = modelformset_factory(Withdrawal, form=WithdrawalFo
 
 
 class UserReportSelectForm(forms.Form):
-    start_month = forms.CharField(label='Start Month',
-                                  widget=forms.Select(choices=MONTH_CHOICES), required=False)
-    start_year = forms.ChoiceField(label='Start Year', required=False)
-    end_month = forms.CharField(label='End Month',
-                                widget=forms.Select(choices=MONTH_CHOICES), required=False)
-    end_year = forms.ChoiceField(label='End Year', required=False)
+
+    start_date = forms.DateField(label='Start Date', initial=now, widget=forms.SelectDateWidget(), required=False)
+    end_date = forms.DateField(label='End Date', initial=now, widget=forms.SelectDateWidget(), required=False)
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user:
+            earliest, _ = user.get_earliest_latest_dates()
+            earliest_dt = datetime.combine(earliest, datetime.min.time())
+            latest = user.get_latest_retirement_date()
+            latest_dt = datetime.combine(latest, datetime.min.time())
+            span = list(range(earliest.year, latest.year+1, 1))
+            self.fields['start_date'] = forms.DateField(label='Start Date', initial=earliest_dt,
+                                                        widget=forms.SelectDateWidget(years=span), required=False)
+            self.fields['end_date'] = forms.DateField(label='Start Date', initial=latest_dt,
+                                                      widget=forms.SelectDateWidget(years=span), required=False)

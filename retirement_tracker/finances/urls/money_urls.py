@@ -53,6 +53,8 @@ urlpatterns = [
     path('user/<int:pk>/<int:year>', views.UserReportYearView.as_view(), name='user_year'),
     # Ex. /finances/usr/1/January/2022
     path('user/<int:pk>/<str:month>/<int:year>/', views.UserReportMonthYearView.as_view(), name='user_month_year'),
+    # Ex. /finances/user/1/CustomReport
+    path('user/<int:pk>/CustomReport', views.UserCustomReportView.as_view(), name='user_report_custom'),
     # Ex. /finances/user/1/January/2022/view_monthly_budget
     path('user/<int:pk>/<str:month>/<int:year>/view_monthly_budget', views.MonthlyBudgetForUserView.as_view(),
          name='user_monthly_budget'),
