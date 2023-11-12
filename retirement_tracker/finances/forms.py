@@ -239,5 +239,5 @@ class UserReportSelectForm(forms.Form):
             span = list(range(earliest.year, latest.year+1, 1))
             self.fields['start_date'] = forms.DateField(label='Start Date', initial=earliest_dt,
                                                         widget=forms.SelectDateWidget(years=span), required=False)
-            self.fields['end_date'] = forms.DateField(label='Start Date', initial=latest_dt,
+            self.fields['end_date'] = forms.DateField(label='End Date', initial=latest_dt,
                                                       widget=forms.SelectDateWidget(years=span), required=False)

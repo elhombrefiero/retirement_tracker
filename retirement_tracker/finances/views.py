@@ -79,9 +79,47 @@ class UserCustomReportView(FormView):
 
     def form_valid(self, form, **kwargs):
         context = self.get_context_data(**kwargs)
-        # self.user.
+        user = context['user']
+        form_data = form.cleaned_data
+        start_date = form_data['start_date']
+        tzinfo = timezone.get_current_timezone()
+        start_dt = datetime.combine(start_date, datetime.min.time(), tzinfo=tzinfo)
+        end_date = form_data['end_date']
+        end_dt = datetime.combine(end_date, datetime.min.time(), tzinfo=tzinfo)
 
-        context['report_message'] = 'Report from start_date to end_date'
+        time_span = end_date - start_date
+
+        # TODO: Change the report_message based on the time span.
+        # If time span is less than 31 days, then redirect to Month and Year page
+
+        # Otherwise, print Month/year to month/year
+
+        context['report_message'] = f'{start_date} to {end_date}'
+
+
+
+        stat_tot, mand_tot, mort_tot, dgr_tot, disc_tot = user.return_monthly_budgets(start_date, end_date)
+        context['stat_total'] = stat_tot
+        context['mand_total'] = mand_tot
+        context['mort_total'] = mort_tot
+        context['dgr_total'] = dgr_tot
+        context['disc_total'] = disc_tot
+
+        account_balances = user.return_report_info_acct_balance(start_dt, end_dt)
+
+        starting_balance = account_balances['tot_checking_start'] + \
+                           account_balances['tot_retirement_start'] + \
+                           account_balances['tot_trading_start'] - \
+                           account_balances['tot_debt_start']
+
+        end_balance = starting_balance + account_balances['net_diff']
+
+        context['start_balance'] = round(starting_balance,2 )
+        context['end_balance'] = round(end_balance, 2)
+
+        user_income_tot = user.return_income_total(start_date, end_date)
+        context['income'] = user_income_tot
+
         return self.render_to_response(context)
 
 

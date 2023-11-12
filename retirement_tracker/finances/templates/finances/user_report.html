@@ -11,59 +11,76 @@
 {% endblock %}
 
 {% block mymessage %}
-{% if report_message %}
-    <h1>{{ report_message }}</h1>
-{% endif %}
 
 <nav class="level is-mobile">
   <div class="level-item has-text-centered">
     <div>
       <p class="heading">User</p>
-      <p class="title"><a href="/finances/update_user/{{object.pk}}">{{object.name}}</a></p>
+      <p class="title"><a href="/finances/update_user/{{user.pk}}">{{user.name}}</a></p>
     </div>
   </div>
   <div class="level-item has-text-centered">
     <div>
       <p class="heading">Estimated Retirement Date</p>
-      <p class="title">{{object.return_retirement_datetime}}</p>
+      <p class="title">{{user.return_retirement_datetime}}</p>
     </div>
   </div>
   <div class="level-item has-text-centered">
     <div>
-      <p class="heading">Current Net Worth</p>
-      <p class="title">{{net_worth}}</p>
+      <p class="heading">Report Timeline</p>
+      <p class="title">{{ report_message }}</p>
     </div>
   </div>
   <div class="level-item has-text-centered">
     <div>
-      <p class="heading">Projected Net Worth at Retirement</p>
-      <p class="title">{{projected_net_worth}}</p>
+      <p class="heading">Starting Balance</p>
+      <p class="title">{{start_balance}}</p>
+    </div>
+  </div>
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading">Ending Balance</p>
+      <p class="title">{{end_balance}}</p>
     </div>
   </div>
 </nav>
 <nav class="level is-mobile">
   <div class="level-item has-text-centered">
     <div>
-      <p class="heading">Checking Account Balance</p>
-      <p class="title">{{checking_balance}}</p>
+      <p class="heading">Gross Income</p>
+      <p class="title">{{income}}</p>
     </div>
   </div>
   <div class="level-item has-text-centered">
     <div>
-      <p class="heading">Retirement Account Balance</p>
-      <p class="title">{{retirement_balance}}</p>
+      <p class="heading">Statutory</p>
+      <p class="title">{{stat_total}}</p>
+    </div>
+  </div>
+</nav>
+<nav class="level is-mobile">
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading">Mandatory</p>
+      <p class="title">{{mand_total}}</p>
     </div>
   </div>
   <div class="level-item has-text-centered">
     <div>
-      <p class="heading">Trading Account Balance</p>
-      <p class="title">{{trading_balance}}</p>
+      <p class="heading">Mortgage</p>
+      <p class="title">{{mort_total}}</p>
     </div>
   </div>
   <div class="level-item has-text-centered">
     <div>
-      <p class="heading">Debt Account Balance</p>
-      <p class="title">{{debt_balance}}</p>
+      <p class="heading">Debts, Goals, Retiremente</p>
+      <p class="title">{{dgr_total}}</p>
+    </div>
+  </div>
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading">Discretionary</p>
+      <p class="title">{{disc_total}}</p>
     </div>
   </div>
 </nav>

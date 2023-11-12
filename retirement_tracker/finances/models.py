@@ -1,13 +1,14 @@
 from django.db import models
 from django.db.models import Sum, Max, F, Window
 from django.db.models.functions import TruncDay
+from django.utils import timezone
 from django.utils.timezone import now, get_current_timezone
 from django.utils.text import slugify
 from django.shortcuts import reverse
 import numpy as np
 import scipy.interpolate
 
-from datetime import date, timezone
+from datetime import date
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
@@ -293,11 +294,36 @@ class User(models.Model):
                                                                                                             ret_year)
 
         return tot_checking, tot_retirement, tot_trading, tot_debt, net_worth
+
     def return_retirement_datetime(self):
         """ Returns the timestamp at retirement age. """
         num_months = int(float(self.retirement_age) * 12.0)
         ret_datetime = self.date_of_birth + relativedelta(months=num_months)
         return ret_datetime
+
+    def return_monthly_budgets(self, start_date, end_date):
+
+        """ Gets the balances of the statutory and the budget balances over a time span."""
+
+        stat_total = 0.0
+        mand_total = 0.0
+        mort_total = 0.0
+        dgr_total = 0.0
+        disc_total = 0.0
+
+        stats = Statutory.objects.filter(user=self, date__gt=start_date, date__lte=end_date)
+        mbudgets = MonthlyBudget.objects.filter(user=self, date__gt=start_date, date__lte=end_date)
+
+        for stat in stats:
+            stat_total += stat.amount
+
+        for mbudget in mbudgets:
+            mand_total += mbudget.mandatory
+            mort_total += mbudget.mortgage
+            dgr_total += mbudget.debts_goals_retirement
+            disc_total += mbudget.discretionary
+
+        return round(stat_total,2), mand_total, mort_total, dgr_total, disc_total
 
     def return_checking_acct_total(self):
         tot_checking_amt = 0.0
@@ -668,6 +694,24 @@ class User(models.Model):
 
         return cumulative_balance
 
+    def return_income_total(self, start_date, end_date):
+        """ Returns the total income of all checking accounts within a date range."""
+
+        user_checking = CheckingAccount.objects.filter(user=self)
+        incomes = Deposit.objects.filter(account__in=user_checking,
+                                         date__gte=start_date, date__lt=end_date)
+
+        if incomes is None:
+            return 0.0
+
+        income_tot = 0.0
+
+        for income in incomes:
+            income_tot += income.amount
+
+        return income_tot
+
+
     def return_cumulative_incomes(self, start_date, end_date):
         """ Returns the cumulative incomes of all the checking accounts within a date range.
 
@@ -698,6 +742,7 @@ class User(models.Model):
         Return structure will be in the form of:
             cumulative[datetime]['cumulative'] = cumulative_amount
         """
+        # TODO: Account for statutory
         user_checking = CheckingAccount.objects.filter(user=self)
         incomes = Deposit.objects.filter(account__in=user_checking,
                                          date__gte=start_date, date__lt=end_date).order_by('date')
@@ -1317,15 +1362,16 @@ class RetirementAccount(Account):
         If the request date is greater than the retirement date, then account for withdrawals
         """
 
+        tzinfo = get_current_timezone()
         latest_date = self.return_latest_date()
         if latest_date is None:
             return 0.0
 
         # Retirement date
         ret_date = self.user.get_latest_retirement_date()
-        ret_dt = datetime.combine(ret_date, datetime.time().min)
+        ret_dt = datetime.combine(ret_date, datetime.min.time(), tzinfo=tzinfo)
 
-        today_dt = now()
+        today_dt = timezone.localtime(now())
         if dt <= today_dt:
             return super().return_balance_up_to_dt(dt)
 
