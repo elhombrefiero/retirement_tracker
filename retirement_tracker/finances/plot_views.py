@@ -6,7 +6,8 @@ from django.views.generic import DetailView, TemplateView
 from django.db.models.functions import Trunc
 from django.utils.timezone import now
 
-from finances.models import User, MonthlyBudget, CheckingAccount, RetirementAccount, DebtAccount, dt_to_milliseconds_after_epoch
+from finances.models import User, MonthlyBudget, CheckingAccount, RetirementAccount, DebtAccount, \
+    dt_to_milliseconds_after_epoch, Statutory
 from finances.utils import chartjs_utils as cjs
 
 from datetime import datetime
@@ -739,6 +740,51 @@ class UserReportDataCustom(DetailView):
     model = User
 
 
+class MonthlyBudgetCustomPlotView(DetailView):
+    model = User
+
+    def get(self, request, *args, **kwargs):
+        user = User.objects.get(pk=kwargs['pk'])
+        start_date = kwargs['start_date']
+        end_date = kwargs['end_date']
+
+        config = get_pie_chart_config(f'Monthly Budgets from {start_date.strftime("%B, %Y")} to {end_date.strftime("%B, %Y")}')
+
+        stat_tot = 0.0
+        mand_tot = 0.0
+        mort_tot = 0.0
+        dgr_tot = 0.0
+        disc_tot = 0.0
+
+        mbs = MonthlyBudget.objects.filter(user=user, date__gte=start_date, date__lte=end_date)
+        stats = Statutory.objects.filter(user=user, date__gte=start_date, date__lte=end_date)
+
+        for stat in stats:
+            stat_tot += stat.amount
+
+        for mb in mbs:
+            mand_tot += mb.mandatory
+            mort_tot += mb.mortgage
+            dgr_tot += mb.debts_goals_retirement
+            disc_tot += mb.discretionary
+
+        data = {
+            'labels': ['Mandatory', 'Statutory', 'Mortgage', 'Debts, Goals, Retirement', 'Discretionary'],
+            'datasets': [
+                {
+                    'label': 'Budgeted',
+                    'data': [mand_tot, stat_tot, mort_tot, dgr_tot, disc_tot],
+                    'backgroundColor': [cjs.get_color('red'), cjs.get_color('orange'), cjs.get_color('yellow'),
+                                        cjs.get_color('green'), cjs.get_color('blue')],
+                }
+            ]
+        }
+
+        return_dict = dict()
+        return_dict['config'] = config
+        return_dict['data'] = data
+
+        return JsonResponse(return_dict)
 
 
 class DebugView(TemplateView):

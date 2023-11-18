@@ -80,12 +80,16 @@ class UserCustomReportView(FormView):
     def form_valid(self, form, **kwargs):
         context = self.get_context_data(**kwargs)
         user = context['user']
+        context['user_pk'] = user.pk
         form_data = form.cleaned_data
         start_date = form_data['start_date']
         tzinfo = timezone.get_current_timezone()
         start_dt = datetime.combine(start_date, datetime.min.time(), tzinfo=tzinfo)
         end_date = form_data['end_date']
         end_dt = datetime.combine(end_date, datetime.min.time(), tzinfo=tzinfo)
+
+        context['start_date'] = start_date.strftime('%Y-%m-%d')
+        context['end_date'] = end_date.strftime('%Y-%m-%d')
 
         time_span = end_date - start_date
 

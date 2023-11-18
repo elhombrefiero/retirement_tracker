@@ -3,11 +3,23 @@
 # Python Library Imports
 
 # Other Imports
-from django.urls import path
+from django.urls import path, register_converter
+from datetime import datetime
 
 from finances import plot_views as pv
 
 app_name = 'finances'
+
+class DateConverter:
+    regex = '\d{4}-\d{2}-\d{2}'
+
+    def to_python(self, value):
+        return datetime.strptime(value, '%Y-%m-%d')
+
+    def to_url(self, value):
+        return value
+
+register_converter(DateConverter, 'yyyy')
 
 urlpatterns = [
     # Ex. /finances/plot/user/1/monthly_budget/January/2022/budgeted
@@ -60,6 +72,9 @@ urlpatterns = [
     # Ex. /finances/data/user/1/report/2022/March/2023/March
     path('data/user/<int:pk>/report/<int:start_year>/<str:start_month>/<int:end_year>/<str:end_month>',
          pv.UserReportDataCustom.as_view(), name='data_user_yearmonth_to_yearmonth'),
+    # Ex. /finances/data/user/1/monthly_budget/2022-01-01/2023-01-31
+    path('plot/user/<int:pk>/monthly_budget/<yyyy:start_date>/<yyyy:end_date>',
+         pv.MonthlyBudgetCustomPlotView.as_view(), name='plot_user_month_startdate_enddate'),
     # Ex. /finances/plot/debug
     path('plot/debug', pv.DebugView.as_view(), name='plot_debug')
 ]
