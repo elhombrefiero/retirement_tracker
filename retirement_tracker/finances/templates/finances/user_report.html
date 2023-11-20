@@ -252,63 +252,65 @@
     type: 'line',
     });
 
-  $(document).ready(function () {
-      // create an AJAX JSON request for monthly budget and actual
-      url = "{% url 'plot_user_month_startdate_enddate' user_pk start_date end_date %}";
-      $.getJSON(url, function(result) {
-        budget_pie_chart.data = result.data;
-        budget_pie_chart.options = result.config.options;
-        budget_pie_chart.update();
-        });
-      {#url = "{% url 'plot_expenses_by_budget_group' object.pk month year %}";#}
-      {#$.getJSON(url, function(result) {#}
-      {#  actual_pie_chart.data = result.data;#}
-      {#  actual_pie_chart.options = result.config.options;#}
-      {#  actual_pie_chart.update();#}
-      {#  });#}
-      {#url = "{% url 'plot_bar_budget_vs_spent_month_year' object.pk month year %}";#}
-      {#$.getJSON(url, function(result) {#}
-      {#  budget_vs_spent_chart.options = result.options;#}
-      {#  budget_vs_spent_chart.data = result.data;#}
-      {#  budget_vs_spent_chart.update();#}
-      {#  });#}
-      {#url = "{% url 'plot_top5_by_category' object.pk month year %}";#}
-      {#$.getJSON(url, function(result) {#}
-      {#    top_category_chart.options = result.options;#}
-      {#    top_category_chart.data = result.data;#}
-      {#    top_category_chart.update();#}
-      {#    });#}
-      {#url = "{% url 'plot_top5_by_description' object.pk month year %}";#}
-      {#$.getJSON(url, function(result) {#}
-      {#    top_description_chart.options = result.options;#}
-      {#    top_description_chart.data = result.data;#}
-      {#    top_description_chart.update();#}
-      {#    });#}
-      {#url = "{% url 'plot_top5_by_location' object.pk month year %}";#}
-      {#$.getJSON(url, function(result) {#}
-      {#    top_location_chart.options = result.options;#}
-      {#    top_location_chart.data = result.data;#}
-      {#    top_location_chart.update();#}
-      {#    });#}
-      {#url = "{% url 'plot_expenses_cumulative_month_year' object.pk month year %}";#}
-      {#$.getJSON(url, function(result) {#}
-      {#    exp_cum_chart.data = result.data;#}
-      {#    exp_cum_chart.options = result.config.options;#}
-      {#    exp_cum_chart.update();#}
-      {#    });#}
-      {#url =   "{% url 'plot_incomes_cumulative_month_year' object.pk month year %}";#}
-      {#console.log(url);#}
-      {#$.getJSON(url, function(result) {#}
-      {#    income_cum_chart.config.data = result.data;#}
-      {#    income_cum_chart.config.options = result.config.options;#}
-      {#    income_cum_chart.update();#}
-      {#    });#}
-      {#url =   "{% url 'plot_totals_cumulative_month_year' object.pk month year %}";#}
-      {#$.getJSON(url, function(result) {#}
-      {#    total_cum_chart.data = result.data;#}
-      {#    total_cum_chart.options = result.config.options;#}
-      {#    total_cum_chart.update();#}
-      {#    });#}
-      });
-  </script>
+  {% if create_plots %}
+      $(document).ready(function () {
+          // create an AJAX JSON request for monthly budget and actual
+          url = "{% url 'plot_user_monthlybudget_startdate_enddate' user_pk start_date end_date %}";
+          $.getJSON(url, function(result) {
+            budget_pie_chart.data = result.data;
+            budget_pie_chart.options = result.config.options;
+            budget_pie_chart.update();
+            });
+          url = "{% url 'plot_user_expenses_by_mb_startdate_enddate' user_pk start_date end_date %}";
+          $.getJSON(url, function(result) {
+            actual_pie_chart.data = result.data;
+            actual_pie_chart.options = result.config.options;
+            actual_pie_chart.update();
+            });
+          {#url = "{% url 'plot_bar_budget_vs_spent_month_year' object.pk month year %}";#}
+          {#$.getJSON(url, function(result) {#}
+          {#  budget_vs_spent_chart.options = result.options;#}
+          {#  budget_vs_spent_chart.data = result.data;#}
+          {#  budget_vs_spent_chart.update();#}
+          {#  });#}
+          {#url = "{% url 'plot_top5_by_category' object.pk month year %}";#}
+          {#$.getJSON(url, function(result) {#}
+          {#    top_category_chart.options = result.options;#}
+          {#    top_category_chart.data = result.data;#}
+          {#    top_category_chart.update();#}
+          {#    });#}
+          {#url = "{% url 'plot_top5_by_description' object.pk month year %}";#}
+          {#$.getJSON(url, function(result) {#}
+          {#    top_description_chart.options = result.options;#}
+          {#    top_description_chart.data = result.data;#}
+          {#    top_description_chart.update();#}
+          {#    });#}
+          {#url = "{% url 'plot_top5_by_location' object.pk month year %}";#}
+          {#$.getJSON(url, function(result) {#}
+          {#    top_location_chart.options = result.options;#}
+          {#    top_location_chart.data = result.data;#}
+          {#    top_location_chart.update();#}
+          {#    });#}
+          {#url = "{% url 'plot_expenses_cumulative_month_year' object.pk month year %}";#}
+          {#$.getJSON(url, function(result) {#}
+          {#    exp_cum_chart.data = result.data;#}
+          {#    exp_cum_chart.options = result.config.options;#}
+          {#    exp_cum_chart.update();#}
+          {#    });#}
+          {#url =   "{% url 'plot_incomes_cumulative_month_year' object.pk month year %}";#}
+          {#console.log(url);#}
+          {#$.getJSON(url, function(result) {#}
+          {#    income_cum_chart.config.data = result.data;#}
+          {#    income_cum_chart.config.options = result.config.options;#}
+          {#    income_cum_chart.update();#}
+          {#    });#}
+          {#url =   "{% url 'plot_totals_cumulative_month_year' object.pk month year %}";#}
+          {#$.getJSON(url, function(result) {#}
+          {#    total_cum_chart.data = result.data;#}
+          {#    total_cum_chart.options = result.config.options;#}
+          {#    total_cum_chart.update();#}
+          {#    });#}
+          });
+      </script>
+    {% endif %}
 {% endblock %}

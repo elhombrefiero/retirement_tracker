@@ -496,7 +496,7 @@ class ActualExpensesByBudgetGroup(DetailView):
 
         return JsonResponse(return_dict)
 
-# TODO: Update to use Retirement, Checking, and Debt Accounts
+
 class CheckingAccountBalanceByTime(DetailView):
     """ Uses the balance vs time function to return
         -line plot of
@@ -786,6 +786,34 @@ class MonthlyBudgetCustomPlotView(DetailView):
 
         return JsonResponse(return_dict)
 
+class ActualExpenseByBudgetGroupCustomDates(DetailView):
+    model = User
+
+    def get(self, request, *args, **kwargs):
+        user = User.objects.get(pk=kwargs['pk'])
+        start_date = kwargs['start_date']
+        end_date = kwargs['end_date']
+
+        mand_act, mort_act, dgr_act, disc_act, stat_act = user.return_tot_expenses_by_budget_startdt_to_enddt(start_date, end_date)
+
+        config = get_pie_chart_config(f'Actual Expenses by Monthly Budget from {start_date.strftime("%B, %Y")} to {end_date.strftime("%B, %Y")}')
+
+        data = {
+            'labels': ['Mandatory', 'Statutory', 'Mortgage', 'Debts, Goals, Retirement', 'Discretionary'],
+            'datasets': [
+                {
+                    'label': 'Actual',
+                    'data': [mand_act, stat_act, mort_act, dgr_act, disc_act],
+                    'backgroundColor': [cjs.get_color('red'), cjs.get_color('orange'), cjs.get_color('yellow'),
+                                        cjs.get_color('green'), cjs.get_color('blue')],
+                }
+            ]
+        }
+        return_dict = dict()
+        return_dict['data'] = data
+        return_dict['config'] = config
+
+        return JsonResponse(return_dict)
 
 class DebugView(TemplateView):
     template_name = 'finances/debug.html'

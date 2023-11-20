@@ -459,15 +459,22 @@ class User(models.Model):
         return location_expenses
 
     def return_tot_expenses_by_budget_month_year(self, month, year) -> (float, float, float, float, float):
-        """ Returns the checking expenses segregated by budget group.
+        """ Returns the checking expenses for a given month/year segregated by budget group.
 
         """
-        checking_accts = self.return_checking_accts()
         beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
 
+        mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp = self.return_tot_expenses_by_budget_startdt_to_enddt(beg_of_month, end_of_month)
+
+        return mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp
+
+    def return_tot_expenses_by_budget_startdt_to_enddt(self, start_dt, end_dt) -> (float, float, float, float, float):
+        """ Returns the user expenses filtered by monthly budget types. """
+
+        checking_accts = self.return_checking_accts()
         expenses = Withdrawal.objects.filter(account__in=checking_accts,
-                                             date__gte=beg_of_month, date__lt=end_of_month)
+                                             date__gte=start_dt, date__lt=end_dt)
 
         mand_exp = expenses.filter(budget_group__contains=BUDGET_GROUP_MANDATORY).aggregate(total=Sum('amount'))[
             'total']
@@ -482,7 +489,7 @@ class User(models.Model):
             'total']
         disc_exp = float(disc_exp) if disc_exp is not None else 0.0
         stat_exp = \
-            Statutory.objects.filter(user=self, date__gte=beg_of_month, date__lt=end_of_month).aggregate(
+            Statutory.objects.filter(user=self, date__gte=start_dt, date__lt=end_dt).aggregate(
                 total=Sum('amount'))[
                 'total']
         stat_exp = float(stat_exp) if stat_exp is not None else 0.0

@@ -87,6 +87,7 @@ class UserCustomReportView(FormView):
         start_dt = datetime.combine(start_date, datetime.min.time(), tzinfo=tzinfo)
         end_date = form_data['end_date']
         end_dt = datetime.combine(end_date, datetime.min.time(), tzinfo=tzinfo)
+        context['create_plots'] = True
 
         context['start_date'] = start_date.strftime('%Y-%m-%d')
         context['end_date'] = end_date.strftime('%Y-%m-%d')
