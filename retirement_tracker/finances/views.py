@@ -79,6 +79,7 @@ class UserCustomReportView(FormView):
 
     def form_valid(self, form, **kwargs):
         context = self.get_context_data(**kwargs)
+        context['report_data'] = True
         user = context['user']
         context['user_pk'] = user.pk
         form_data = form.cleaned_data
@@ -101,14 +102,26 @@ class UserCustomReportView(FormView):
 
         context['report_message'] = f'{start_date} to {end_date}'
 
-
-
         stat_tot, mand_tot, mort_tot, dgr_tot, disc_tot = user.return_monthly_budgets(start_date, end_date)
         context['stat_total'] = stat_tot
         context['mand_total'] = mand_tot
         context['mort_total'] = mort_tot
         context['dgr_total'] = dgr_tot
         context['disc_total'] = disc_tot
+
+        mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp = user.return_tot_expenses_by_budget_startdt_to_enddt(
+            start_date, end_date)
+        context['stat_exp'] = stat_exp
+        context['mand_exp'] = mand_exp
+        context['mort_exp'] = mort_exp
+        context['dgr_exp'] = dgr_exp
+        context['disc_exp'] = disc_exp
+
+        context['leftover_statutory'] = round(stat_tot - stat_exp, 2)
+        context['leftover_mand'] = round(mand_tot - mand_exp, 2)
+        context['leftover_mort'] = round(mort_tot - mort_exp, 2)
+        context['leftover_dgr'] = round(dgr_tot - dgr_exp, 2)
+        context['leftover_disc'] = round(disc_tot - disc_exp, 2)
 
         account_balances = user.return_report_info_acct_balance(start_dt, end_dt)
 
@@ -119,11 +132,12 @@ class UserCustomReportView(FormView):
 
         end_balance = starting_balance + account_balances['net_diff']
 
-        context['start_balance'] = round(starting_balance,2 )
+        context['start_balance'] = round(starting_balance, 2)
         context['end_balance'] = round(end_balance, 2)
 
         user_income_tot = user.return_income_total(start_date, end_date)
         context['income'] = user_income_tot
+        context['takehome_pay'] = round(user_income_tot - stat_exp, 2)
 
         return self.render_to_response(context)
 
@@ -132,6 +146,7 @@ class UserReportAllView(DetailView):
     """The user reports views will have all of the data for a given time span."""
     model = User
     template_name = 'finances/user_report.html'
+
     # TODO: Begin adding some pages where the projected net worth can be viewed
     # TODO: Add budgeted vs expense by budget group views.
     def get_context_data(self, **kwargs):
@@ -409,7 +424,6 @@ class AccountView(DetailView):
     model = Account
 
     def get_context_data(self, **kwargs):
-
         context = super().get_context_data(**kwargs)
 
         # Get the latest incomes associated with this account
@@ -432,6 +446,7 @@ class AccountView(DetailView):
         context['five_year_balance'] = five_year_balance
         return context
 
+
 class CheckingAccountView(DetailView):
     """ View the deposits and withdrawals associated with this account.
 
@@ -440,7 +455,6 @@ class CheckingAccountView(DetailView):
     template_name = 'finances/checkingaccount_detail.html'
 
     def get_context_data(self, **kwargs):
-
         context = super().get_context_data(**kwargs)
 
         # Get the latest incomes associated with this account
@@ -478,9 +492,7 @@ class RetirementAccountView(DetailView):
     template_name = 'finances/retirementaccount_detail.html'
     model = RetirementAccount
 
-
     def get_context_data(self, **kwargs):
-
         context = super().get_context_data(**kwargs)
 
         # Get the latest incomes associated with this account
@@ -511,7 +523,6 @@ class DebtAccountView(DetailView):
     template_name = 'finances/debtaccount_detail.html'
 
     def get_context_data(self, **kwargs):
-
         context = super().get_context_data(**kwargs)
 
         # Get the latest incomes associated with this account
@@ -721,13 +732,15 @@ class ExpenseLookupForUserView(FormView):
         withdrawals = Withdrawal.objects.filter(account__in=user_accts).order_by('date')
         if form.cleaned_data['start_year']:
             if form.cleaned_data['start_month']:
-                start_dt = datetime.strptime(f'{form.cleaned_data["start_month"]} 1, {form.cleaned_data["start_year"]}', '%B %d, %Y')
+                start_dt = datetime.strptime(f'{form.cleaned_data["start_month"]} 1, {form.cleaned_data["start_year"]}',
+                                             '%B %d, %Y')
             else:
                 start_dt = datetime.strptime(f'January 1, {form.cleaned_data["start_year"]}', '%B %d, %Y')
             withdrawals = withdrawals.filter(date__gte=start_dt)
         if form.cleaned_data['end_year']:
             if form.cleaned_data['end_month']:
-                end_dt = datetime.strptime(f'{form.cleaned_data["end_month"]} 1, {form.cleaned_data["end_year"]}', '%B %d, %Y')
+                end_dt = datetime.strptime(f'{form.cleaned_data["end_month"]} 1, {form.cleaned_data["end_year"]}',
+                                           '%B %d, %Y')
             else:
                 end_dt = datetime.strptime(f'December 31, {form.cleaned_data["end_year"]}', '%B %d, %Y')
             withdrawals = withdrawals.filter(date__lte=end_dt)
@@ -1144,7 +1157,8 @@ class MonthlyBudgetCreateView(FormView):
                                                               defaults={'date': dtdate,
                                                                         'mandatory': post['mandatory'],
                                                                         'mortgage': post['mortgage'],
-                                                                        'debts_goals_retirement': post['debts_goals_retirement'],
+                                                                        'debts_goals_retirement': post[
+                                                                            'debts_goals_retirement'],
                                                                         'discretionary': post['discretionary']})
         if not created:
             mb_obj.mandatory = post['mandatory']
@@ -1154,6 +1168,7 @@ class MonthlyBudgetCreateView(FormView):
             mb_obj.save()
         self.success_url = f'/finances/user/{self.user.pk}/{month_name}/{year}'
         return super().form_valid(form)
+
 
 class MonthlyBudgetDeleteView(DeleteView):
     model = MonthlyBudget
@@ -1299,4 +1314,3 @@ class WithdrawalForUserByLocation(CreateView):
             instance.where_bought = location
             instance.save()
         return HttpResponseRedirect(self.success_url)
-

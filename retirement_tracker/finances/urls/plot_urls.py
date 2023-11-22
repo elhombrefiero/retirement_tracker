@@ -78,7 +78,9 @@ urlpatterns = [
     # Ex. /finances/plot/user/1/expenses_by_mb/2022-01-01/2023-01-31
     path('plot/user/<int:pk>/expenses_by_mb/<yyyy:start_date>/<yyyy:end_date>',
          pv.ActualExpenseByBudgetGroupCustomDates.as_view(), name='plot_user_expenses_by_mb_startdate_enddate'),
-
+    # Ex. /finances/plot/user/1/budget_exp_by_date/2022-01-01/2023-01-01
+    path('plot/user/<int:pk>/budget_exp_by_date/<yyyy:start_date>/<yyyy:end_date>',
+         pv.ExpenseSpentAndBudgetPlotViewCustomDates.as_view(), name='plot_bar_budget_vs_spent_startdate_enddate'),
     # Ex. /finances/plot/debug
     path('plot/debug', pv.DebugView.as_view(), name='plot_debug')
 ]

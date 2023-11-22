@@ -323,7 +323,7 @@ class User(models.Model):
             dgr_total += mbudget.debts_goals_retirement
             disc_total += mbudget.discretionary
 
-        return round(stat_total,2), mand_total, mort_total, dgr_total, disc_total
+        return round(stat_total,2), round(mand_total,2), round(mort_total,2), round(dgr_total,2), round(disc_total,2)
 
     def return_checking_acct_total(self):
         tot_checking_amt = 0.0

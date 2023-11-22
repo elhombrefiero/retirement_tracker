@@ -53,67 +53,12 @@
   </div>
   <div class="level-item has-text-centered">
     <div>
-      <p class="heading">Statutory</p>
-      <p class="title">{{stat_total}}</p>
+      <p class="heading">Take Home</p>
+      <p class="title">{{takehome_pay}}</p>
     </div>
   </div>
 </nav>
-<nav class="level is-mobile">
-  <div class="level-item has-text-centered">
-    <div>
-      <p class="heading">Mandatory</p>
-      <p class="title">{{mand_total}}</p>
-    </div>
-  </div>
-  <div class="level-item has-text-centered">
-    <div>
-      <p class="heading">Mortgage</p>
-      <p class="title">{{mort_total}}</p>
-    </div>
-  </div>
-  <div class="level-item has-text-centered">
-    <div>
-      <p class="heading">Debts, Goals, Retiremente</p>
-      <p class="title">{{dgr_total}}</p>
-    </div>
-  </div>
-  <div class="level-item has-text-centered">
-    <div>
-      <p class="heading">Discretionary</p>
-      <p class="title">{{disc_total}}</p>
-    </div>
-  </div>
-</nav>
-
-
-{% if report_type == 'month' %}
-  {% if needs_monthly_budget %}
-  <div class="header">
-    <a href="/finances/user/{{object.pk}}/{{month}}/{{year}}/view_monthly_budget">Update monthly budget for {{month}}, {{year}}</a>
-  </div>
-  {% endif %}
-<nav class="level">
-  <div class="level-item has-text-centered">
-    <p class="title"> {{object.name}}'s Report for {{month}}, {{year}}</p>
-  </div>
-</nav>
-{% endif %}
-{% if report_type == 'year' %}
-<nav class="level">
-  <div class="level-item has-text-centered">
-    <p class="title"> {{object.name}}'s Report for {{year}}</p>
-  </div>
-</nav>
-{% endif %}
-
-<form method="POST" enctype="multipart/form-data">
-    {{ form.non_field_errors }}
-    {% csrf_token %}
-    {{form.as_p}}
-    <input type="submit" value="Submit">
-</form>
-
-{% if report_type == 'month' %}
+{% if report_data %}
 <nav class="level">
   <div class="tile is-ancestor">
     <div class="tile">
@@ -129,32 +74,32 @@
         <tbody>
         <tr>
           <td>Statutory</td>
-          <td>{{statutory}}</td>
-          <td>{{tot_statutory_expenses}}</td>
+          <td>{{stat_total}}</td>
+          <td>{{stat_exp}}</td>
           <td>{{leftover_statutory}}</td>
         </tr>
         <tr>
           <td>Mandatory</td>
-          <td>{{monthly_budget.mandatory}}</td>
-          <td>{{tot_mandatory_expenses}}</td>
-          <td>{{leftover_mandatory}}</td>
+          <td>{{mand_total}}</td>
+          <td>{{mand_exp}}</td>
+          <td>{{leftover_mand}}</td>
         </tr>
         <tr>
           <td>Mortgage</td>
-          <td>{{monthly_budget.mortgage}}</td>
-          <td>{{tot_mortgage_expenses}}</td>
-          <td>{{leftover_mortgage}}</td>
+          <td>{{mort_total}}</td>
+          <td>{{mort_exp}}</td>
+          <td>{{leftover_mort}}</td>
         </tr>
         <tr>
           <td>Debts, Goals, Retirement</td>
-          <td>{{monthly_budget.debts_goals_retirement}}</td>
-          <td>{{tot_debts_goals_retirement_expenses}}</td>
+          <td>{{dgr_total}}</td>
+          <td>{{dgr_exp}}</td>
           <td>{{leftover_dgr}}</td>
         </tr>
         <tr>
           <td>Discretionary</td>
-          <td>{{monthly_budget.discretionary}}</td>
-          <td>{{tot_discretionary_expenses}}</td>
+          <td>{{disc_total}}</td>
+          <td>{{disc_exp}}</td>
           <td>{{leftover_disc}}</td>
         </tr>
         </tbody>
@@ -165,7 +110,15 @@
     </div>
   </div>
 </nav>
+{% endif %}
 
+{% if not report_data %}
+<form method="POST" enctype="multipart/form-data">
+    {{ form.non_field_errors }}
+    {% csrf_token %}
+    {{form.as_p}}
+    <input type="submit" value="Submit">
+</form>
 {% endif %}
 
 <nav class="level">
@@ -267,12 +220,12 @@
             actual_pie_chart.options = result.config.options;
             actual_pie_chart.update();
             });
-          {#url = "{% url 'plot_bar_budget_vs_spent_month_year' object.pk month year %}";#}
-          {#$.getJSON(url, function(result) {#}
-          {#  budget_vs_spent_chart.options = result.options;#}
-          {#  budget_vs_spent_chart.data = result.data;#}
-          {#  budget_vs_spent_chart.update();#}
-          {#  });#}
+          url = "{% url 'plot_bar_budget_vs_spent_startdate_enddate' user_pk start_date end_date %}";
+          $.getJSON(url, function(result) {
+            budget_vs_spent_chart.options = result.options;
+            budget_vs_spent_chart.data = result.data;
+            budget_vs_spent_chart.update();
+            });
           {#url = "{% url 'plot_top5_by_category' object.pk month year %}";#}
           {#$.getJSON(url, function(result) {#}
           {#    top_category_chart.options = result.options;#}

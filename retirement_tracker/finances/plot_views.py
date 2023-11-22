@@ -786,6 +786,7 @@ class MonthlyBudgetCustomPlotView(DetailView):
 
         return JsonResponse(return_dict)
 
+
 class ActualExpenseByBudgetGroupCustomDates(DetailView):
     model = User
 
@@ -814,6 +815,45 @@ class ActualExpenseByBudgetGroupCustomDates(DetailView):
         return_dict['config'] = config
 
         return JsonResponse(return_dict)
+
+
+class ExpenseSpentAndBudgetPlotViewCustomDates(DetailView):
+    model = User
+
+    def get(self, request, *args, **kwargs):
+        user = User.objects.get(pk=kwargs['pk'])
+        start_date = kwargs['start_date']
+        end_date = kwargs['end_date']
+        config = get_bar_chart_config('Budgeted vs. Spent')
+        data = dict()
+        labels = ['Mandatory', 'Mortgage', 'Statutory', 'Debts, Goals, Retirement', 'Discretionary']
+        data['labels'] = labels
+
+        stat_mb, mand_mb, mort_mb, dgr_mb, disc_mb = user.return_monthly_budgets(start_date, end_date)
+
+        mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp = user.return_tot_expenses_by_budget_startdt_to_enddt(start_date, end_date)
+
+        datasets = list()
+        budgeted_info = {
+            'label': 'Budgeted',
+            'data': [mand_mb, mort_mb, stat_mb, dgr_mb, disc_mb],
+            'borderColor': cjs.get_color('red'),
+            'backgroundColor': cjs.get_color('red', 0.5)
+        }
+        datasets.append(budgeted_info)
+
+        actual_info = {
+            'label': 'Actual',
+            'data': [mand_exp, mort_exp, stat_exp, dgr_exp, disc_exp],
+            'borderColor': cjs.get_color('blue'),
+            'backgroundColor': cjs.get_color('blue', 0.5)
+        }
+        datasets.append(actual_info)
+
+        data['datasets'] = datasets
+        config['data'] = data
+
+        return JsonResponse(config)
 
 class DebugView(TemplateView):
     template_name = 'finances/debug.html'
