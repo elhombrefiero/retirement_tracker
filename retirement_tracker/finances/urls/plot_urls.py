@@ -81,6 +81,15 @@ urlpatterns = [
     # Ex. /finances/plot/user/1/budget_exp_by_date/2022-01-01/2023-01-01
     path('plot/user/<int:pk>/budget_exp_by_date/<yyyy:start_date>/<yyyy:end_date>',
          pv.ExpenseSpentAndBudgetPlotViewCustomDates.as_view(), name='plot_bar_budget_vs_spent_startdate_enddate'),
+    # Ex. /finances/plot/user/1/bar_top5_cat_dt_to_dt/2022-01-01/2023-01-01
+    path('plot/user/<int:pk>/bar_top5_cat_dt_to_dt/<yyyy:start_date>/<yyyy:end_date>',
+         pv.ExpenseByCategoryPlotViewCustomDates.as_view(), name='plot_top5_by_category_dt_to_dt'),
+    # Ex. /finances/plot/user/1/bar_top5_desc_dt_to_dt/2022-01-01/2023-01-01
+    path('plot/user/<int:pk>/bar_top5_desc_dt_to_dt/<yyyy:start_date>/<yyyy:end_date>',
+         pv.ExpenseByDescriptionPlotViewCustomDates.as_view(), name='plot_top5_by_description_dt_to_dt'),
+    # Ex. /finances/plot/user/1/bar_top5_location_dt_to_dt/2022-01-01/2023-01-01
+    path('plot/user/<int:pk>/bar_top5_loc_dt_to_dt/<yyyy:start_date>/<yyyy:end_date>',
+         pv.ExpenseByLocationPlotViewCustomDates.as_view(), name='plot_top5_by_location_dt_to_dt'),
     # Ex. /finances/plot/debug
     path('plot/debug', pv.DebugView.as_view(), name='plot_debug')
 ]

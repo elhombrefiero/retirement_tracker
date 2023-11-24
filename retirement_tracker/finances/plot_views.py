@@ -855,6 +855,104 @@ class ExpenseSpentAndBudgetPlotViewCustomDates(DetailView):
 
         return JsonResponse(config)
 
+
+class ExpenseByCategoryPlotViewCustomDates(DetailView):
+    model = User
+
+    def get(self, request, *args, **kwargs):
+        user = User.objects.get(pk=kwargs['pk'])
+        start_date = kwargs['start_date']
+        end_date = kwargs['end_date']
+        config = get_bar_chart_config('Expenses by Category')
+        data = dict()
+        top5_cat = user.return_top_category_dt_to_dt(start_date, end_date, 5)
+
+        labels = list()
+        data_sum = list()
+        for topcat in top5_cat:
+            labels.append(topcat['category'])
+            data_sum.append(topcat['sum'])
+
+        data['labels'] = labels
+        datasets = list()
+        cat_sum = {
+            'label': 'Total',
+            'data': data_sum,
+            'borderColor': cjs.get_color('black'),
+            'backgroundColor': cjs.get_color('black', 0.5)
+        }
+        datasets.append(cat_sum)
+
+        data['datasets'] = datasets
+        config['data'] = data
+
+        return JsonResponse(config)
+
+
+class ExpenseByDescriptionPlotViewCustomDates(DetailView):
+
+    def get(self, request, *args, **kwargs):
+        user = User.objects.get(pk=kwargs['pk'])
+        start_date = kwargs['start_date']
+        end_date = kwargs['end_date']
+        config = get_bar_chart_config('Expenses by Description')
+
+        data = dict()
+        top5_desc = user.return_top_description_dt_to_dt(start_date, end_date, num_of_entries=5)
+
+        labels = list()
+        data_sum = list()
+        for topdesc in top5_desc:
+            labels.append(topdesc['description'])
+            data_sum.append(topdesc['sum'])
+
+        data['labels'] = labels
+        datasets = list()
+        desc_sum = {
+            'label': 'Total',
+            'data': data_sum,
+            'borderColor': cjs.get_color('black'),
+            'backgroundColor': cjs.get_color('black', 0.5)
+        }
+        datasets.append(desc_sum)
+
+        data['datasets'] = datasets
+        config['data'] = data
+
+        return JsonResponse(config)
+
+
+class ExpenseByLocationPlotViewCustomDates(DetailView):
+
+    def get(self, request, *args, **kwargs):
+        user = User.objects.get(pk=kwargs['pk'])
+        start_date = kwargs['start_date']
+        end_date = kwargs['end_date']
+        config = get_bar_chart_config('Expenses by Location')
+
+        top5_loc = user.return_top_location_dt_to_dt(start_date, end_date, num_of_entries=5)
+        labels = list()
+        data = dict()
+        data_sum = list()
+        for toploc in top5_loc:
+            labels.append(toploc['location'])
+            data_sum.append(toploc['sum'])
+
+        data['labels'] = labels
+        datasets = list()
+        loc_sum = {
+            'label': 'Total',
+            'data': data_sum,
+            'borderColor': cjs.get_color('black'),
+            'backgroundColor': cjs.get_color('black', 0.5)
+        }
+        datasets.append(loc_sum)
+
+        data['datasets'] = datasets
+        config['data'] = data
+
+        return JsonResponse(config)
+
 class DebugView(TemplateView):
     template_name = 'finances/debug.html'
 

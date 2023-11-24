@@ -226,24 +226,24 @@
             budget_vs_spent_chart.data = result.data;
             budget_vs_spent_chart.update();
             });
-          {#url = "{% url 'plot_top5_by_category' object.pk month year %}";#}
-          {#$.getJSON(url, function(result) {#}
-          {#    top_category_chart.options = result.options;#}
-          {#    top_category_chart.data = result.data;#}
-          {#    top_category_chart.update();#}
-          {#    });#}
-          {#url = "{% url 'plot_top5_by_description' object.pk month year %}";#}
-          {#$.getJSON(url, function(result) {#}
-          {#    top_description_chart.options = result.options;#}
-          {#    top_description_chart.data = result.data;#}
-          {#    top_description_chart.update();#}
-          {#    });#}
-          {#url = "{% url 'plot_top5_by_location' object.pk month year %}";#}
-          {#$.getJSON(url, function(result) {#}
-          {#    top_location_chart.options = result.options;#}
-          {#    top_location_chart.data = result.data;#}
-          {#    top_location_chart.update();#}
-          {#    });#}
+          url = "{% url 'plot_top5_by_category_dt_to_dt'  user_pk start_date end_date %}";
+          $.getJSON(url, function(result) {
+              top_category_chart.options = result.options;
+              top_category_chart.data = result.data;
+              top_category_chart.update();
+              });
+          url = "{% url 'plot_top5_by_description_dt_to_dt'  user_pk start_date end_date %}";
+          $.getJSON(url, function(result) {
+              top_description_chart.options = result.options;
+              top_description_chart.data = result.data;
+              top_description_chart.update();
+              });
+          url = "{% url 'plot_top5_by_location_dt_to_dt'  user_pk start_date end_date %}";
+          $.getJSON(url, function(result) {
+              top_location_chart.options = result.options;
+              top_location_chart.data = result.data;
+              top_location_chart.update();
+              });
           {#url = "{% url 'plot_expenses_cumulative_month_year' object.pk month year %}";#}
           {#$.getJSON(url, function(result) {#}
           {#    exp_cum_chart.data = result.data;#}

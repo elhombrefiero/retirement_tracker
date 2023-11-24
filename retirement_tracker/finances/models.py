@@ -428,17 +428,22 @@ class User(models.Model):
         all_accounts = Account.objects.filter(user=self)
         return all_accounts
 
+    def return_top_items_dt_to_dt(self, start_dt, end_dt, expense_filter, num_of_entries=5):
+        """ Returns the top expenses from the checking accounts based on given input parameters."""
+        checking_accounts = self.return_checking_accts()
+        expenses = Withdrawal.objects.filter(account__in=checking_accounts,
+                                             date__gte=start_dt, date__lt=end_dt)
+        expenses = expenses.exclude(budget_group=BUDGET_GROUP_MORTGAGE)
+        filtered_expenses = expenses.values(expense_filter).distinct().annotate(sum=Sum('amount'))
+        filtered_expenses = filtered_expenses.order_by('-sum')[:num_of_entries]
+        return filtered_expenses
+
     def return_top_items(self, month, year, expense_filter, num_of_entries=5):
         """ Returns the top expenses from the checking accounts based on given input parameters. """
         checking_accounts = self.return_checking_accts()
         beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
-        expenses = Withdrawal.objects.filter(account__in=checking_accounts,
-                                             date__gte=beg_of_month, date__lt=end_of_month)
-        expenses = expenses.exclude(budget_group=BUDGET_GROUP_MORTGAGE)
-        filtered_expenses = expenses.values(expense_filter).distinct().annotate(sum=Sum('amount'))
-        filtered_expenses = filtered_expenses.order_by('-sum')[:num_of_entries]
-        return filtered_expenses
+        return self.return_top_items(beg_of_month, end_of_month, expense_filter, num_of_entries)
 
     def return_top_category(self, month, year, num_of_entries=5):
         """ Finds the maximum expenses by category. By default, finds the top five for a given month/year"""
@@ -446,11 +451,29 @@ class User(models.Model):
 
         return category_expenses
 
+    def return_top_category_dt_to_dt(self, start_dt, end_dt, num_of_entries=5):
+
+        category_expenses = self.return_top_items_dt_to_dt(start_dt, end_dt, 'category', num_of_entries)
+
+        return category_expenses
+
+    def return_top_description_dt_to_dt(self, start_dt, end_dt, num_of_entries=5):
+
+        description_expenses = self.return_top_items_dt_to_dt(start_dt, end_dt, 'description', num_of_entries)
+
+        return description_expenses
+
     def return_top_description(self, month, year, num_of_entries=5):
         """ Finds the maximum expenses by category. By default, finds the top five for a given month/year"""
         description_expenses = self.return_top_items(month, year, 'description', num_of_entries)
 
         return description_expenses
+
+    def return_top_location_dt_to_dt(self, start_dt, end_dt, num_of_entries=5):
+
+        location_expenses = self.return_top_items_dt_to_dt(start_dt, end_dt, 'location', num_of_entries)
+
+        return location_expenses
 
     def return_top_location(self, month, year, num_of_entries=5):
         """ Finds the maximum expenses by category. By default, finds the top five for a given month/year"""
