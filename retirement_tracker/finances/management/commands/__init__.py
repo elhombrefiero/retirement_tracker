@@ -5,6 +5,3 @@
 # Other Imports
 
 # Defined Functions:
-
-# TODO: Add command to sync another database, including csv file.
-# TODO: Add command to import HSA or other data

@@ -168,40 +168,40 @@
 {% block jsstuff %}
   <script>
   const ctx = document.getElementById('linechart_cumulativeexp');
-  var exp_cum_chart = new Chart(ctx, {
+  let exp_cum_chart = new Chart(ctx, {
       type: 'line',
     });
   const ctx2 = document.getElementById('piechart_budget');
-  var budget_pie_chart = new Chart(ctx2, {
+  let budget_pie_chart = new Chart(ctx2, {
     type: 'pie',
     });
   const ctx3 = document.getElementById('piechart_actual');
-  var actual_pie_chart = new Chart(ctx3, {
+  let actual_pie_chart = new Chart(ctx3, {
     type: 'pie',
     });
   const ctx4 = document.getElementById('barchart_budget_spent');
-  var budget_vs_spent_chart = new Chart(ctx4, {
+  let budget_vs_spent_chart = new Chart(ctx4, {
     type: 'bar',
     });
-  var ctx5 = document.getElementById('barchart_by_category');
-  var top_category_chart = new Chart(ctx5, {
+  const ctx5 = document.getElementById('barchart_by_category');
+  let top_category_chart = new Chart(ctx5, {
     type: 'bar',
     });
-  var ctx6 = document.getElementById('barchart_by_description');
-  var top_description_chart = new Chart(ctx6, {
+  const ctx6 = document.getElementById('barchart_by_description');
+  let top_description_chart = new Chart(ctx6, {
     type: 'bar',
     });
-  var ctx7 = document.getElementById('barchart_by_location');
-  var top_location_chart = new Chart(ctx7, {
+  const ctx7 = document.getElementById('barchart_by_location');
+  let top_location_chart = new Chart(ctx7, {
     type: 'bar',
     });
   const ctx8 = document.getElementById('linechart_cumulativeinc');
-  var income_cum_chart = new Chart(ctx8, {
+  let income_cum_chart = new Chart(ctx8, {
     type: 'line',
     });
 
   const ctx9 = document.getElementById('linechart_cumulativetot');
-  var total_cum_chart = new Chart(ctx9, {
+  let total_cum_chart = new Chart(ctx9, {
     type: 'line',
     });
 
@@ -244,25 +244,25 @@
               top_location_chart.data = result.data;
               top_location_chart.update();
               });
-          {#url = "{% url 'plot_expenses_cumulative_month_year' object.pk month year %}";#}
-          {#$.getJSON(url, function(result) {#}
-          {#    exp_cum_chart.data = result.data;#}
-          {#    exp_cum_chart.options = result.config.options;#}
-          {#    exp_cum_chart.update();#}
-          {#    });#}
-          {#url =   "{% url 'plot_incomes_cumulative_month_year' object.pk month year %}";#}
-          {#console.log(url);#}
-          {#$.getJSON(url, function(result) {#}
-          {#    income_cum_chart.config.data = result.data;#}
-          {#    income_cum_chart.config.options = result.config.options;#}
-          {#    income_cum_chart.update();#}
-          {#    });#}
-          {#url =   "{% url 'plot_totals_cumulative_month_year' object.pk month year %}";#}
-          {#$.getJSON(url, function(result) {#}
-          {#    total_cum_chart.data = result.data;#}
-          {#    total_cum_chart.options = result.config.options;#}
-          {#    total_cum_chart.update();#}
-          {#    });#}
+          url = "{% url 'plot_expenses_cumulative_dt_to_dt' user_pk start_date end_date %}";
+          $.getJSON(url, function(result) {
+              exp_cum_chart.data = result.data;
+              exp_cum_chart.options = result.config.options;
+              exp_cum_chart.update();
+              });
+          url =   "{% url 'plot_incomes_cumulative_dt_to_dt' user_pk start_date end_date %}";
+          console.log(url);
+          $.getJSON(url, function(result) {
+              income_cum_chart.config.data = result.data;
+              income_cum_chart.config.options = result.config.options;
+              income_cum_chart.update();
+              });
+          url =   "{% url 'plot_totals_cumulative_dt_to_dt' user_pk start_date end_date %}";
+          $.getJSON(url, function(result) {
+              total_cum_chart.data = result.data;
+              total_cum_chart.options = result.config.options;
+              total_cum_chart.update();
+              });
           });
       </script>
     {% endif %}

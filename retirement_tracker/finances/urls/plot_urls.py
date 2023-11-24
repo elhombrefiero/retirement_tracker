@@ -90,6 +90,15 @@ urlpatterns = [
     # Ex. /finances/plot/user/1/bar_top5_location_dt_to_dt/2022-01-01/2023-01-01
     path('plot/user/<int:pk>/bar_top5_loc_dt_to_dt/<yyyy:start_date>/<yyyy:end_date>',
          pv.ExpenseByLocationPlotViewCustomDates.as_view(), name='plot_top5_by_location_dt_to_dt'),
+    # Ex. /finances/plot/user/1/expenses/2022-01-01/2023-01-01/cumulative_expenses
+    path('plot/user/<int:pk>/expenses/<yyyy:start_date>/<yyyy:end_date>/cumulative_expenses',
+         pv.ExpenseCumulativeMonthYearPlotViewCustomDate.as_view(), name='plot_expenses_cumulative_dt_to_dt'),
+    # Ex. /finances/plot/user/1/incomes/2022-01-01/2023-01-01/cumulative_incomes
+    path('plot/user/<int:pk>/incomes/<yyyy:start_date>/<yyyy:end_date>/cumulative_incomes',
+         pv.IncomeCumulativeMonthYearPlotViewCustomDates.as_view(), name='plot_incomes_cumulative_dt_to_dt'),
+    # Ex. /finances/plot/user/1/totals/2022-01-01/2023-01-01/cumulative_totals
+    path('plot/user/<int:pk>/totals/<yyyy:start_date>/<yyyy:end_date>/cumulative_totals',
+         pv.TotalCumulativeMonthYearPlotViewCustomDates.as_view(), name='plot_totals_cumulative_dt_to_dt'),
     # Ex. /finances/plot/debug
     path('plot/debug', pv.DebugView.as_view(), name='plot_debug')
 ]

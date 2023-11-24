@@ -15,7 +15,6 @@ from dateutil.relativedelta import relativedelta
 
 
 # TODO: Add plot views that take advantage of the value vs time functions. Account balance vs time. User net worth over time. Debt balance vs time
-# TODO: Add ability to track monthly budget vs expense over time.
 
 def get_pie_chart_config(name):
     """Returns the configuration for a pie chart minus the data using chart.js"""
@@ -27,10 +26,12 @@ def get_pie_chart_config(name):
             'legend': {
                 'position': 'bottom',
             },
-            'title': {
-                'display': True,
-                'text': f'{name}'
-            }
+            'plugins': {
+                'title': {
+                    'display': True,
+                    'text': f'{name}'
+                }
+            },
         }
     }
     )
@@ -89,9 +90,11 @@ def get_bar_chart_config(name):
     config['type'] = 'bar'
 
     config['options'] = {
-        'title': {
-            'display': True,
-            'text': f'{name}'
+        'plugins': {
+            'title': {
+                'display': True,
+                'text': f'{name}'
+            },
         },
         'maintainAspectRatio': False,
         # 'padding': {
@@ -737,6 +740,7 @@ class DebtAccountBalanceByTime(DetailView):
 
 
 class UserReportDataCustom(DetailView):
+    # TODO: Add some return information based on the inputs from the get function.
     model = User
 
 
@@ -863,7 +867,7 @@ class ExpenseByCategoryPlotViewCustomDates(DetailView):
         user = User.objects.get(pk=kwargs['pk'])
         start_date = kwargs['start_date']
         end_date = kwargs['end_date']
-        config = get_bar_chart_config('Expenses by Category')
+        config = get_bar_chart_config('Top Expenses by Category')
         data = dict()
         top5_cat = user.return_top_category_dt_to_dt(start_date, end_date, 5)
 
@@ -895,7 +899,7 @@ class ExpenseByDescriptionPlotViewCustomDates(DetailView):
         user = User.objects.get(pk=kwargs['pk'])
         start_date = kwargs['start_date']
         end_date = kwargs['end_date']
-        config = get_bar_chart_config('Expenses by Description')
+        config = get_bar_chart_config('Top Expenses by Description')
 
         data = dict()
         top5_desc = user.return_top_description_dt_to_dt(start_date, end_date, num_of_entries=5)
@@ -928,7 +932,7 @@ class ExpenseByLocationPlotViewCustomDates(DetailView):
         user = User.objects.get(pk=kwargs['pk'])
         start_date = kwargs['start_date']
         end_date = kwargs['end_date']
-        config = get_bar_chart_config('Expenses by Location')
+        config = get_bar_chart_config('Top Expenses by Location')
 
         top5_loc = user.return_top_location_dt_to_dt(start_date, end_date, num_of_entries=5)
         labels = list()
@@ -952,6 +956,121 @@ class ExpenseByLocationPlotViewCustomDates(DetailView):
         config['data'] = data
 
         return JsonResponse(config)
+
+
+class IncomeCumulativeMonthYearPlotViewCustomDates(DetailView):
+    model = User
+
+    def get(self, request, *args, **kwargs):
+        user = User.objects.get(pk=kwargs['pk'])
+        start_date = kwargs['start_date']
+        end_date = kwargs['end_date']
+        config = get_line_chart_config(f'Cumulative Incomes from {start_date.strftime("%B %d, %Y")} to {end_date.strftime("%B %d, %Y")}')
+        cumulative_income = user.return_cumulative_incomes(start_date, end_date)
+
+        return_dict = dict()
+        return_dict['config'] = config
+
+        xy_data = []
+        labels = []
+        for income_day in cumulative_income:
+            income_day_dt = datetime(income_day.year, income_day.month, income_day.day)
+            income_day_ts = dt_to_milliseconds_after_epoch(income_day_dt)
+            labels.append(income_day_ts)
+            xy_data.append(
+                {'x': income_day_ts, 'y': float(cumulative_income[income_day])})
+
+        data = {
+            'labels': labels,
+            'datasets': [{
+                'label': 'Cumulative Incomes',
+                'backgroundColor': cjs.get_color('green', 0.5),
+                'borderColor': cjs.get_color('green'),
+                'fill': False,
+                'data': xy_data
+            }]
+        }
+
+        return_dict['data'] = data
+
+        return JsonResponse(return_dict)
+
+
+class ExpenseCumulativeMonthYearPlotViewCustomDate(DetailView):
+    model = User
+
+    def get(self, request, *args, **kwargs):
+        user = User.objects.get(pk=kwargs['pk'])
+        start_date = kwargs['start_date']
+        end_date = kwargs['end_date']
+
+        config = get_line_chart_config(f'Cumulative Expenses from {start_date.strftime("%B %d, %Y")} to {end_date.strftime("%B %d, %Y")}')
+        cumulative_expenses = user.return_cumulative_expenses(start_date, end_date)
+
+        return_dict = dict()
+        return_dict['config'] = config
+
+        xy_data = []
+        labels = []
+        for expensedate in cumulative_expenses:
+            expensedate_dt = datetime(expensedate.year, expensedate.month, expensedate.day)
+            expensedate_ts = dt_to_milliseconds_after_epoch(expensedate_dt)
+            labels.append(expensedate_ts)
+            xy_data.append(
+                {'x': expensedate_ts, 'y': float(cumulative_expenses[expensedate])})
+
+        data = {
+            'labels': labels,
+            'datasets': [{
+                'label': 'Cumulative Expenses',
+                'backgroundColor': cjs.get_color('red', 0.5),
+                'borderColor': cjs.get_color('red'),
+                'fill': False,
+                'data': xy_data
+            }]
+        }
+
+        return_dict['data'] = data
+
+        return JsonResponse(return_dict)
+
+
+class TotalCumulativeMonthYearPlotViewCustomDates(DetailView):
+    model = User
+
+    def get(self, request, *args, **kwargs):
+        user = User.objects.get(pk=kwargs['pk'])
+        start_date = kwargs['start_date']
+        end_date = kwargs['end_date']
+        config = get_line_chart_config(f'Cumulative Total from {start_date.strftime("%B %d, %Y")} to {end_date.strftime("%B %d, %Y")}')
+        cumulative_total = user.return_cumulative_total(start_date, end_date)
+
+        return_dict = dict()
+        return_dict['config'] = config
+
+        xy_data = []
+        labels = []
+        for date_key in sorted(cumulative_total.keys()):
+            date_dt = datetime(date_key.year, date_key.month, date_key.day)
+            date_ts = dt_to_milliseconds_after_epoch(date_dt)
+            labels.append(date_ts)
+            xy_data.append(
+                {'x': date_ts, 'y': float(cumulative_total[date_key]['cumulative'])})
+
+        data = {
+            'labels': labels,
+            'datasets': [{
+                'label': 'Cumulative Total',
+                'backgroundColor': cjs.get_color('red', 0.5),
+                'borderColor': cjs.get_color('red'),
+                'fill': False,
+                'data': xy_data
+            }]
+        }
+
+        return_dict['data'] = data
+
+        return JsonResponse(return_dict)
 
 class DebugView(TemplateView):
     template_name = 'finances/debug.html'
