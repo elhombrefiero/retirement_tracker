@@ -1455,6 +1455,7 @@ class RetirementAccount(Account):
             return 0.0
 
         req_dt = datetime.strptime(f'{month}-01-{year}', '%B-%d-%Y')
+        req_dt = datetime.combine(req_dt, datetime.min.time(), tzinfo=timezone.get_current_timezone())
         return self.return_balance_up_to_dt(req_dt)
 
     def return_withdrawal_info(self, retirement_date: datetime,
