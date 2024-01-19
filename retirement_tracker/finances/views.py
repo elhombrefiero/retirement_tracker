@@ -790,20 +790,21 @@ class UserWorkRelatedIncomeView(FormView):
     form_class = UserWorkIncomeExpenseForm
     template_name = 'finances/user_work_income_form.html'
 
-    def dispatch(self, request, *args, **kwargs):
-        pk = kwargs.get('pk')
-        self.user = User.objects.get(pk=pk)
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['user'] = self.user
-        return context
+    def get(self, request, *args, **kwargs):
+        self.user = User.objects.get(pk=kwargs['pk'])
+        return super().get(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.user
+        user = User.objects.get(pk=self.kwargs['pk'])
+        kwargs['user'] = user
         return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = User.objects.get(pk=self.kwargs['pk'])
+        context['user'] = user
+        return context
 
     def form_valid(self, form):
         post = self.request.POST
