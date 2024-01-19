@@ -49,6 +49,8 @@ urlpatterns = [
     path('user/<int:pk>/reports', views.UserReportsAvailable.as_view(), name='user_available_reports'),
     # Ex. /finances/user/1/monthly_budgets
     path('user/<int:pk>/monthly_budgets', views.UserMonthlyBudgetsAvailable.as_view(), name='user_available_monthly_budgets'),
+    # Ex. /finances/user/1/all
+    path('user/<int:pk>/all', views.UserReportAllView.as_view(), name='user_all'),
     # Ex. /finances/user/1/2022
     path('user/<int:pk>/<int:year>', views.UserReportYearView.as_view(), name='user_year'),
     # Ex. /finances/usr/1/January/2022

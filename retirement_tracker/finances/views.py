@@ -151,22 +151,57 @@ class UserReportAllView(DetailView):
     # TODO: Add budgeted vs expense by budget group views.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_tot_debt, ret_net_worth = \
-            self.object.estimate_net_worth_at_retirement()
-        context['projected_net_worth'] = ret_net_worth
-        context['earliest_ret_date'] = self.object.get_earliest_retirement_date()
-        context['retirement_date'] = self.object.return_retirement_datetime()
-        context['accounts'] = Account.objects.filter(user=self.object)
-        tot_checking, tot_retirement, tot_trading, tot_debt, net_worth = \
-            self.object.return_net_worth()
-        context['net_worth'] = net_worth
-        context['checking_balance'] = tot_checking
-        context['retirement_balance'] = tot_retirement
-        context['trading_balance'] = tot_trading
-        context['debt_balance'] = tot_debt
-        context['month'] = None
-        context['year'] = None
-        context['report_type'] = None
+        context['report_data'] = True
+        context['user_pk'] = self.object.pk
+        context['report_message'] = 'All'
+
+        start_date, end_date = self.object.get_earliest_latest_dates()
+
+        tzinfo = timezone.get_current_timezone()
+        start_dt = datetime.combine(start_date, datetime.min.time(), tzinfo=tzinfo)
+        end_dt = datetime.combine(end_date, datetime.min.time(), tzinfo=tzinfo)
+
+        context['create_plots'] = True
+
+        context['start_date'] = start_date.strftime('%Y-%m-%d')
+        context['end_date'] = end_date.strftime('%Y-%m-%d')
+
+        stat_tot, mand_tot, mort_tot, dgr_tot, disc_tot = self.object.return_monthly_budgets(start_date, end_date)
+        context['stat_total'] = stat_tot
+        context['mand_total'] = mand_tot
+        context['mort_total'] = mort_tot
+        context['dgr_total'] = dgr_tot
+        context['disc_total'] = disc_tot
+
+        mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp = self.object.return_tot_expenses_by_budget_startdt_to_enddt(
+            start_date, end_date)
+        context['stat_exp'] = stat_exp
+        context['mand_exp'] = mand_exp
+        context['mort_exp'] = mort_exp
+        context['dgr_exp'] = dgr_exp
+        context['disc_exp'] = disc_exp
+
+        context['leftover_statutory'] = round(stat_tot - stat_exp, 2)
+        context['leftover_mand'] = round(mand_tot - mand_exp, 2)
+        context['leftover_mort'] = round(mort_tot - mort_exp, 2)
+        context['leftover_dgr'] = round(dgr_tot - dgr_exp, 2)
+        context['leftover_disc'] = round(disc_tot - disc_exp, 2)
+
+        account_balances = self.object.return_report_info_acct_balance(start_dt, end_dt)
+
+        starting_balance = account_balances['tot_checking_start'] + \
+                           account_balances['tot_retirement_start'] + \
+                           account_balances['tot_trading_start'] - \
+                           account_balances['tot_debt_start']
+
+        end_balance = starting_balance + account_balances['net_diff']
+
+        context['start_balance'] = round(starting_balance, 2)
+        context['end_balance'] = round(end_balance, 2)
+
+        user_income_tot = self.object.return_income_total(start_date, end_date)
+        context['income'] = user_income_tot
+        context['takehome_pay'] = round(user_income_tot - stat_exp, 2)
         return context
 
 
@@ -174,27 +209,64 @@ class UserReportYearView(DetailView):
     model = User
     template_name = 'finances/user_report.html'
 
-    # TODO: Figure out any useful metrics for year view
-
     def dispatch(self, request, *args, **kwargs):
         self.year = kwargs['year']
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['report_type'] = 'year'
-        context['accounts'] = Account.objects.filter(user=self.object)
-        tot_checking, tot_retirement, tot_trading, tot_debt, net_worth = \
-            self.object.return_net_worth_year(self.year)
-        context['checking_balance'] = tot_checking
-        context['retirement_balance'] = tot_retirement
-        context['trading_balance'] = tot_trading
-        context['debt_balance'] = tot_debt
-        context['net_worth'] = net_worth
-        context['year'] = self.year
-        ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_tot_debt, ret_net_worth = \
-            self.object.estimate_net_worth_at_retirement()
-        context['projected_net_worth'] = ret_net_worth
+        context['report_data'] = True
+        context['user_pk'] = self.object.pk
+        context['report_message'] = f'{self.year}'
+
+        start_date = datetime.strptime(f'January 1, {self.year}', '%B %d, %Y')
+        tzinfo = timezone.get_current_timezone()
+        start_dt = datetime.combine(start_date, datetime.min.time(), tzinfo=tzinfo)
+        end_date = start_date + relativedelta(years=+1, seconds=-1)
+        end_dt = datetime.combine(end_date, datetime.min.time(), tzinfo=tzinfo)
+
+        context['create_plots'] = True
+
+        context['start_date'] = start_date.strftime('%Y-%m-%d')
+        context['end_date'] = end_date.strftime('%Y-%m-%d')
+
+        stat_tot, mand_tot, mort_tot, dgr_tot, disc_tot = self.object.return_monthly_budgets(start_date, end_date)
+        context['stat_total'] = stat_tot
+        context['mand_total'] = mand_tot
+        context['mort_total'] = mort_tot
+        context['dgr_total'] = dgr_tot
+        context['disc_total'] = disc_tot
+
+        mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp = self.object.return_tot_expenses_by_budget_startdt_to_enddt(
+            start_date, end_date)
+        context['stat_exp'] = stat_exp
+        context['mand_exp'] = mand_exp
+        context['mort_exp'] = mort_exp
+        context['dgr_exp'] = dgr_exp
+        context['disc_exp'] = disc_exp
+
+        context['leftover_statutory'] = round(stat_tot - stat_exp, 2)
+        context['leftover_mand'] = round(mand_tot - mand_exp, 2)
+        context['leftover_mort'] = round(mort_tot - mort_exp, 2)
+        context['leftover_dgr'] = round(dgr_tot - dgr_exp, 2)
+        context['leftover_disc'] = round(disc_tot - disc_exp, 2)
+
+        account_balances = self.object.return_report_info_acct_balance(start_dt, end_dt)
+
+        starting_balance = account_balances['tot_checking_start'] + \
+                           account_balances['tot_retirement_start'] + \
+                           account_balances['tot_trading_start'] - \
+                           account_balances['tot_debt_start']
+
+        end_balance = starting_balance + account_balances['net_diff']
+
+        context['start_balance'] = round(starting_balance, 2)
+        context['end_balance'] = round(end_balance, 2)
+
+        user_income_tot = self.object.return_income_total(start_date, end_date)
+        context['income'] = user_income_tot
+        context['takehome_pay'] = round(user_income_tot - stat_exp, 2)
+
         return context
 
 
@@ -209,44 +281,58 @@ class UserReportMonthYearView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['report_type'] = 'month'
-        context['accounts'] = Account.objects.filter(user=self.object)
-        tot_checking, tot_retirement, tot_trading, tot_debt, net_worth = \
-            self.object.return_net_worth_month_year(self.month, self.year)
-        context['net_worth'] = net_worth
-        context['checking_balance'] = tot_checking
-        context['retirement_balance'] = tot_retirement
-        context['trading_balance'] = tot_trading
-        context['debt_balance'] = tot_debt
-        context['month'] = self.month
-        context['year'] = self.year
-        context['needs_monthly_budget'] = self.object.needs_monthly_budget(self.month, self.year)
-        ret_tot_checking, ret_tot_retirement, ret_tot_trading, ret_tot_debt, ret_net_worth = \
-            self.object.estimate_net_worth_at_retirement()
-        context['projected_net_worth'] = ret_net_worth
-        date = datetime.strptime(f'{self.year}-{self.month}-01', '%Y-%B-%d')
-        try:
-            mbudget = MonthlyBudget.objects.get(user=self.object, month=self.month, year=self.year)
-        except MonthlyBudget.DoesNotExist:
-            mbudget = MonthlyBudget.objects.create(user=self.object, date=date)
-            mbudget.save()
-        statutory = self.object.return_statutory_month_year(self.month, self.year)
-        context['statutory'] = statutory
-        context['monthly_budget'] = mbudget
-        takehome_pay = self.object.return_takehome_pay_month_year(self.month, self.year)
-        context['takehome_pay'] = takehome_pay
-        mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp = \
-            self.object.return_tot_expenses_by_budget_month_year(self.month, self.year)
-        context['tot_mandatory_expenses'] = mand_exp
-        context['tot_mortgage_expenses'] = mort_exp
-        context['tot_debts_goals_retirement_expenses'] = dgr_exp
-        context['tot_discretionary_expenses'] = disc_exp
-        context['tot_statutory_expenses'] = stat_exp
-        context['leftover_statutory'] = round(float(statutory - stat_exp), 2)
-        context['leftover_mandatory'] = round(float(mbudget.mandatory - mand_exp), 2)
-        context['leftover_mortgage'] = round(float(mbudget.mortgage - mort_exp), 2)
-        context['leftover_dgr'] = round(float(mbudget.debts_goals_retirement - dgr_exp), 2)
-        context['leftover_disc'] = round(float(mbudget.discretionary - disc_exp), 2)
+        context['report_data'] = True
+        context['user_pk'] = self.object.pk
+        context['report_message'] = f'{self.month}, {self.year}'
+
+        start_date = datetime.strptime(f'{self.month} 1, {self.year}', '%B %d, %Y')
+        tzinfo = timezone.get_current_timezone()
+        start_dt = datetime.combine(start_date, datetime.min.time(), tzinfo=tzinfo)
+        end_date = start_date + relativedelta(months=+1, seconds=-1)
+        end_dt = datetime.combine(end_date, datetime.min.time(), tzinfo=tzinfo)
+
+        context['create_plots'] = True
+
+        context['start_date'] = start_date.strftime('%Y-%m-%d')
+        context['end_date'] = end_date.strftime('%Y-%m-%d')
+
+        stat_tot, mand_tot, mort_tot, dgr_tot, disc_tot = self.object.return_monthly_budgets(start_date, end_date)
+        context['stat_total'] = stat_tot
+        context['mand_total'] = mand_tot
+        context['mort_total'] = mort_tot
+        context['dgr_total'] = dgr_tot
+        context['disc_total'] = disc_tot
+
+        mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp = self.object.return_tot_expenses_by_budget_startdt_to_enddt(
+            start_date, end_date)
+        context['stat_exp'] = stat_exp
+        context['mand_exp'] = mand_exp
+        context['mort_exp'] = mort_exp
+        context['dgr_exp'] = dgr_exp
+        context['disc_exp'] = disc_exp
+
+        context['leftover_statutory'] = round(stat_tot - stat_exp, 2)
+        context['leftover_mand'] = round(mand_tot - mand_exp, 2)
+        context['leftover_mort'] = round(mort_tot - mort_exp, 2)
+        context['leftover_dgr'] = round(dgr_tot - dgr_exp, 2)
+        context['leftover_disc'] = round(disc_tot - disc_exp, 2)
+
+        account_balances = self.object.return_report_info_acct_balance(start_dt, end_dt)
+
+        starting_balance = account_balances['tot_checking_start'] + \
+                           account_balances['tot_retirement_start'] + \
+                           account_balances['tot_trading_start'] - \
+                           account_balances['tot_debt_start']
+
+        end_balance = starting_balance + account_balances['net_diff']
+
+        context['start_balance'] = round(starting_balance, 2)
+        context['end_balance'] = round(end_balance, 2)
+
+        user_income_tot = self.object.return_income_total(start_date, end_date)
+        context['income'] = user_income_tot
+        context['takehome_pay'] = round(user_income_tot - stat_exp, 2)
+
         return context
 
 

@@ -13,6 +13,9 @@
         </tr>
     </thead>
     <tbody>
+        <tr>
+            <td><a href="/finances/user/{{ object.pk }}/all">All User Data</a></td>
+        </tr>
         {% for year, month_list in reports_year_month.items %}
         <tr>
             <td><a href="/finances/user/{{object.pk}}/{{year}}">{{year}}</a></td>

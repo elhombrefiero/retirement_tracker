@@ -752,7 +752,7 @@ class MonthlyBudgetCustomPlotView(DetailView):
         start_date = kwargs['start_date']
         end_date = kwargs['end_date']
 
-        config = get_pie_chart_config(f'Monthly Budgets from {start_date.strftime("%B, %Y")} to {end_date.strftime("%B, %Y")}')
+        config = get_pie_chart_config(f'Monthly Budgets from {start_date.strftime("%B %d, %Y")} to {end_date.strftime("%B %d, %Y")}')
 
         stat_tot = 0.0
         mand_tot = 0.0
@@ -801,7 +801,7 @@ class ActualExpenseByBudgetGroupCustomDates(DetailView):
 
         mand_act, mort_act, dgr_act, disc_act, stat_act = user.return_tot_expenses_by_budget_startdt_to_enddt(start_date, end_date)
 
-        config = get_pie_chart_config(f'Actual Expenses by Monthly Budget from {start_date.strftime("%B, %Y")} to {end_date.strftime("%B, %Y")}')
+        config = get_pie_chart_config(f'Actual Expenses by Monthly Budget from {start_date.strftime("%B %d, %Y")} to {end_date.strftime("%B %d, %Y")}')
 
         data = {
             'labels': ['Mandatory', 'Statutory', 'Mortgage', 'Debts, Goals, Retirement', 'Discretionary'],
