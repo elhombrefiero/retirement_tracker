@@ -1,3 +1,4 @@
+from dateutil.relativedelta import relativedelta
 from django import forms
 from django.utils.timezone import now
 from django.forms import modelformset_factory
@@ -20,6 +21,10 @@ MONTH_CHOICES = ((None, None), ('January', 'January'), ('February', 'February'),
                      ('July', 'July'), ('August', 'August'), ('September', 'September'),
                      ('October', 'October'), ('November', 'November'), ('December', 'December'))
 
+FIRST_DATE = now() + relativedelta(years=-5)
+END_DATE = now() + relativedelta(years=+5)
+INPUT_YEAR_SPAN = list(range(FIRST_DATE.year, END_DATE.year+1, 1))
+
 class UserForm(forms.ModelForm):
     """ Add a new user to the database"""
 
@@ -29,23 +34,27 @@ class UserForm(forms.ModelForm):
 
 
 class DepositForUserForm(forms.ModelForm):
+    date = forms.DateField(label='Date', initial=now,
+                           widget=forms.SelectDateWidget(years=INPUT_YEAR_SPAN), required=True)
     class Meta:
         model = Deposit
-        fields = '__all__'
+        exclude = ['date']
 
-
-class WithdrawalByLocForm(forms.ModelForm):
-    """ Add or update an expense."""
-
-    class Meta:
-        model = Withdrawal
-        fields = '__all__'
+# class WithdrawalByLocForm(forms.ModelForm):
+#     """ Add or update an expense."""
+#
+#     class Meta:
+#         model = Withdrawal
+#         fields = '__all__'
 
 
 class WithdrawalForUserForm(forms.ModelForm):
+    date = forms.DateField(label='Date', initial=now,
+                           widget=forms.SelectDateWidget(years=INPUT_YEAR_SPAN), required=True)
+
     class Meta:
         model = Withdrawal
-        fields = '__all__'
+        exclude = ['date']
 
     def __init__(self, *arg, **kwarg):
         super().__init__(*arg, **kwarg)
@@ -55,9 +64,12 @@ class WithdrawalForUserForm(forms.ModelForm):
 class StatutoryForUserForm(forms.ModelForm):
     """ Add a statutory payment for the user."""
 
+    date = forms.DateField(label='Date', initial=now,
+                           widget=forms.SelectDateWidget(years=INPUT_YEAR_SPAN), required=True)
+
     class Meta:
         model = Statutory
-        exclude = ['user']
+        exclude = ['user', 'date']
 
 
 class UserWorkIncomeExpenseForm(forms.Form):

@@ -44,7 +44,7 @@ urlpatterns = [
     # Ex. /finances/user/1/statutory
     path('user/<int:pk>/statutory_entries', views.UserStatutoryAvailable.as_view(), name='user_available_statutory'),
     # Ex. /finances/user/1/transfers
-    path('user/<int:pk>/transfers', views.UserStatutoryAvailable.as_view(), name='user_available_statutory'),
+    path('user/<int:pk>/transfers', views.UserTransfersAvailable.as_view(), name='user_available_statutory'),
     # Ex. /finances/user/1/reports
     path('user/<int:pk>/reports', views.UserReportsAvailable.as_view(), name='user_available_reports'),
     # Ex. /finances/user/1/monthly_budgets
@@ -85,6 +85,8 @@ urlpatterns = [
     path('deposit_overview/<int:pk>/', views.DepositView.as_view(), name='deposit_overview'),
     # Ex. /finances/statutory_overview/pk
     path('statutory_overview/<int:pk>/', views.StatutoryView.as_view(), name='statutory_overview'),
+    # Ex. /finances/transfer_overview/pk
+    path('transfer_overview/<int:pk>/', views.TransferView.as_view(), name='transfer_overview'),
     # Ex. /finances/add_user
     path('add_user/', views.UserCreateView.as_view(), name='add_user'),
     # Ex. /finances/add_account
@@ -113,6 +115,8 @@ urlpatterns = [
     path('update_withdrawal/<int:pk>', views.WithdrawalUpdateView.as_view(), name='withdrawal-update'),
     # Ex. /finances/update_statutory/1
     path('update_statutory/<int:pk>', views.StatutoryUpdateView.as_view(), name='statutory-update'),
+    # Ex. /finances/update_transfer/1
+    path('update_transfer/<int:pk>', views.TransferUpdateView.as_view(), name='transfer-update'),
     # Ex. /finances/delete_user/1
     path('delete_user/<int:pk>', views.UserDeleteView.as_view(), name='user-delete'),
     # Ex. finances/delete_account/1
@@ -127,11 +131,10 @@ urlpatterns = [
     path('delete_deposit/<int:pk>', views.DepositDeleteView.as_view(), name='deposit-delete'),
     # Ex. finances/delete_expense/1
     path('delete_withdrawal/<int:pk>', views.WithdrawalDeleteView.as_view(), name='withdrawal-delete'),
-    # Ex. finances/delete_withdrawal/1
+    # Ex. finances/delete_statutory/1
     path('delete_statutory/<int:pk>', views.StatutoryDeleteView.as_view(), name='statutory-delete'),
-    # # Ex. /finances/user=1/enter_expense_by_location/extra=0
-    # path('user=<int:user_id>/enter_withdrawal_by_location/extra=<int:extrarows>',
-    #      views.add_expense_by_location_user_account, name='add_withdrawal_by_loc'),
+    # Ex. finances/delete_transfer/1
+    path('delete_transfer/<int:pk>', views.TransferDeleteView.as_view(), name='transfer-delete'),
     # Ex. /finances/user/<int:pk>/add_withdrawals_by_loc
     path('user/<int:pk>/add_withdrawals_by_loc', views.WithdrawalForUserByLocation.as_view(),
          name='add_withdrawals_by_loc')

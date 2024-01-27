@@ -3,6 +3,7 @@
 # Python Library Imports
 from dateutil.relativedelta import relativedelta
 import json
+import pytz
 
 # Other Imports
 from django.db.models.functions import TruncDay
@@ -34,6 +35,10 @@ from finances.utils import chartjs_utils as cjs
 # TODO: Create a page where the user can input a date and have the user's accounts balance at that time.
 # TODO: Update the Debt Account functions to set the minimum value of 0.0 when the account reaches zero.
 
+# TODO: Add a projected outlook page similar to the custom report page.
+
+def get_dt_from_month_day_year(month, day, year):
+    return datetime.strptime(f'{month}-{day}-{year}', '%m-%d-%Y')
 
 class IndexView(TemplateView):
     template_name = 'finances/index.html'
@@ -439,7 +444,7 @@ class UserStatutoryAvailable(ListView):
 
 class UserTransfersAvailable(ListView):
     model = Transfer
-    template_name = 'finances/user_transfers'
+    template_name = 'finances/transfer_list.html'
     paginate_by = 25
 
     def dispatch(self, request, *args, **kwargs):
@@ -448,7 +453,8 @@ class UserTransfersAvailable(ListView):
 
     def get_queryset(self):
         userobj = User.objects.get(pk=self.userpk)
-        return Transfer.objects.filter(user=userobj).order_by('-date')
+        user_accounts = userobj.return_all_accounts()
+        return Transfer.objects.filter(account_from__in=user_accounts, account_to__in=user_accounts).order_by('-date')
 
 
 class UserReportsAvailable(DetailView):
@@ -762,6 +768,7 @@ class WithdrawalForUserView(FormView):
     def dispatch(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
         self.user = User.objects.get(pk=pk)
+        timezone.activate(timezone.get_current_timezone())
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -783,8 +790,9 @@ class WithdrawalForUserView(FormView):
     def form_valid(self, form):
         post = self.request.POST
         account = Account.objects.get(pk=post['account'])
+        dtdate = get_dt_from_month_day_year(post['date_month'], post['date_day'], post['date_year'])
         newexpense = Withdrawal.objects.create(account=account,
-                                               date=post['date'],
+                                               date=dtdate,
                                                budget_group=post['budget_group'],
                                                category=post['category'],
                                                location=post['location'],
@@ -1129,6 +1137,22 @@ class StatutoryView(DetailView):
     template_name = 'finances/statutory_detail.html'
 
 
+class TransferView(DetailView):
+    model = Transfer
+    template_name = 'finances/transfer_detail.html'
+
+
+class TransferUpdateView(UpdateView):
+    model = Transfer
+    fields = '__all__'
+
+
+class TransferDeleteView(DeleteView):
+    model = Transfer
+    template_name = 'finances/object_confirm_delete.html'
+    success_url = '/finances'
+
+
 class DepositForUserView(FormView):
     """ Input a deposit for a user. """
     form_class = DepositForUserForm
@@ -1160,8 +1184,9 @@ class DepositForUserView(FormView):
     def form_valid(self, form):
         post = self.request.POST
         account = Account.objects.get(pk=post['account'])
+        dtdate = get_dt_from_month_day_year(post['date_month'], post['date_day'], post['date_year'])
         newdeposit = Deposit.objects.create(account=account,
-                                            date=post['date'],
+                                            date=dtdate,
                                             category=post['category'],
                                             description=post['description'],
                                             location=post['location'],
@@ -1176,7 +1201,7 @@ class DepositForUserView(FormView):
 
 class StatutoryForUserView(FormView):
     form_class = StatutoryForUserForm
-    template_name = 'finances/income_form_for_user.html'
+    template_name = 'finances/statutory_form_for_user.html'
     success_url = '/finances'
 
     def dispatch(self, request, *args, **kwargs):
@@ -1184,10 +1209,16 @@ class StatutoryForUserView(FormView):
         self.user = User.objects.get(pk=pk)
         return super().dispatch(request, *args, **kwargs)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.user
+        return context
+
     def form_valid(self, form):
         post = self.request.POST
+        dtdate = get_dt_from_month_day_year(post['date_month'], post['date_day'], post['date_year'])
         newstatutory = Statutory.objects.create(user=self.user,
-                                                date=post['date'],
+                                                date=dtdate,
                                                 category=post['category'],
                                                 location=post['location'],
                                                 description=post['description'],
@@ -1313,7 +1344,7 @@ class TradingAccountCreateView(CreateView):
 class TradingAccountDeleteView(DeleteView):
     model = TradingAccount
     success_url = '/finances'
-    template_name = 'account_confirm_delete.html'
+    template_name = 'finances/account_confirm_delete.html'
 
 
 class TradingAccountUpdateView(UpdateView):
@@ -1329,7 +1360,7 @@ class RetirementAccountCreateView(CreateView):
 class RetirementAccountDeleteView(DeleteView):
     model = RetirementAccount
     success_url = '/finances'
-    template_name = 'account_confirm_delete.html'
+    template_name = 'finances/account_confirm_delete.html'
 
 
 class RetirementAccountUpdateView(UpdateView):

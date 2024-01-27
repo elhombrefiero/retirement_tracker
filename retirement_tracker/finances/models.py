@@ -1212,6 +1212,9 @@ class Transfer(models.Model):
     # Optional group for any specific purpose (e.g., vacation in Hawaii)
     group = models.CharField(max_length=100, null=True, blank=True)
 
+    def __str__(self):
+        return f'{self.date} {self.amount} from {self.account_from} to {self.account_to} for {self.description}'
+
     def save(self, *args, **kwargs):
         withdrawal_obj, created = Withdrawal.objects.get_or_create(account=self.account_from,
                                                                    date=self.date,
@@ -1249,6 +1252,9 @@ class Transfer(models.Model):
             deposit_obj.group = self.group
             deposit_obj.save()
         super(Transfer, self).save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('transfer_overview', args=[self.pk])
 
 
 class TradingAccount(Account):
@@ -1550,6 +1556,9 @@ class Statutory(models.Model):
 
     def __str__(self):
         return f'{self.date} {self.description} {self.amount}'
+
+    def get_absolute_url(self):
+        return reverse('statutory_overview', args=[self.pk])
 
     class Meta:
         unique_together = ['user', 'date', 'description', 'amount']
