@@ -312,7 +312,7 @@ class User(models.Model):
         disc_total = 0.0
 
         stats = Statutory.objects.filter(user=self, date__gt=start_date, date__lte=end_date)
-        mbudgets = MonthlyBudget.objects.filter(user=self, date__gt=start_date, date__lte=end_date)
+        mbudgets = MonthlyBudget.objects.filter(user=self, date__gte=start_date, date__lte=end_date)
 
         for stat in stats:
             stat_total += stat.amount

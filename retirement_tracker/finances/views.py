@@ -301,7 +301,7 @@ class UserReportMonthYearView(DetailView):
         context['start_date'] = start_date.strftime('%Y-%m-%d')
         context['end_date'] = end_date.strftime('%Y-%m-%d')
 
-        stat_tot, mand_tot, mort_tot, dgr_tot, disc_tot = self.object.return_monthly_budgets(start_date, end_date)
+        stat_tot, mand_tot, mort_tot, dgr_tot, disc_tot = self.object.return_monthly_budgets(start_date.date(), end_date.date())
         context['stat_total'] = stat_tot
         context['mand_total'] = mand_tot
         context['mort_total'] = mort_tot
@@ -1074,29 +1074,40 @@ class MonthlyBudgetForUserView(FormView):
         return context
 
     def get_form(self, form_class=None):
+        # Populate with the current date and user information for that given month
         form = super().get_form(form_class)
-        init_date = datetime.strptime(f'{self.month}, {self.year}', '%B, %Y').date()
-        form.initial.update({'date': init_date})
+        if self.request.method == 'GET':
+            user = User.objects.get(pk=self.kwargs['pk'])
+            start_date = datetime.strptime(f'{self.month}-01-{self.year}', '%B-%d-%Y')
+            end_date = start_date + relativedelta(months=+1, seconds=-1)
+            stat_tot, mand_tot, mort_tot, dgr_tot, disc_tot = user.return_monthly_budgets(start_date, end_date)
+
+            init_date = datetime.strptime(f'{self.month}, {self.year}', '%B, %Y').date()
+            form.initial.update({'date': init_date, 'mandatory': mand_tot, 'mortgage': mort_tot,
+                                'debts_goals_retirement': dgr_tot, 'discretionary': disc_tot})
         return form
 
     def form_valid(self, form):
         post = self.request.POST
-        dtdate = datetime.strptime(f'{self.month}-{self.year}', '%B-%Y')
-        newmb, created = MonthlyBudget.objects.get_or_create(user=self.user, month=self.month, year=self.year,
-                                                             defaults={'date': dtdate,
-                                                                       'mandatory': post['mandatory'],
-                                                                       'mortgage': post['mortgage'],
-                                                                       'debts_goals_retirement': post[
-                                                                           'debts_goals_retirement'],
-                                                                       'discretionary': post['discretionary']
-                                                                       })
-        if not created:
-            newmb.date = dtdate
-            newmb.mandatory = post['mandatory']
-            newmb.mortgage = post['mortgage']
-            newmb.debts_goals_retirement = post['debts_goals_retirement']
-            newmb.discretionary = post['discretionary']
-            newmb.save()
+        mandatory = round(float(post['mandatory']), 2)
+        mortgage = round(float(post['mortgage']), 2)
+        dgr = round(float(post['debts_goals_retirement']), 2)
+        disc = round(float(post['discretionary']), 2)
+        dt = datetime.strptime(f'{self.month}-{self.year}', '%B-%Y')
+        date = dt.date()
+        try:
+            monthly_budget = MonthlyBudget.objects.get(user=self.user, month=self.month, year=self.year)
+            monthly_budget.mandatory = mandatory
+            monthly_budget.mortgage = mortgage
+            monthly_budget.debts_goals_retirement = dgr
+            monthly_budget.discretionary = disc
+
+        except MonthlyBudget.DoesNotExist:
+            monthly_budget = MonthlyBudget.objects.create(user=self.user, date=date, mandatory=mandatory,
+                                                          mortgage=mortgage, disc=disc, debts_goals_retirement=dgr)
+        finally:
+            monthly_budget.save()
+
         self.success_url = f'/finances/user/{self.user.pk}/{self.month}/{self.year}'  # Redirect to monthly report
         return super().form_valid(form)
 

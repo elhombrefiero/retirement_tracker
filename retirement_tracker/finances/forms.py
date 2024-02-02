@@ -172,7 +172,8 @@ class UserExpenseLookupForm(forms.Form):
 
 class MonthlyBudgetForUserForm(forms.ModelForm):
     """ Add a monthly budget for a given user."""
-    date = forms.DateField(label='Date', initial=now, widget=forms.SelectDateWidget)
+    date = forms.DateField(label='Date', initial=now,
+                           widget=forms.SelectDateWidget(years=INPUT_YEAR_SPAN), required=True)
 
     class Meta:
         model = MonthlyBudget
@@ -181,7 +182,8 @@ class MonthlyBudgetForUserForm(forms.ModelForm):
 
 class MonthlyBudgetForUserMonthYearForm(forms.ModelForm):
     """ Add a monthly budget for a given user, month and year"""
-    date = forms.DateField(label='Date', initial=now, widget=forms.SelectDateWidget)
+    date = forms.DateField(label='Date', initial=now,
+                           widget=forms.SelectDateWidget(years=INPUT_YEAR_SPAN), required=True)
 
     class Meta:
         model = MonthlyBudget
@@ -217,7 +219,8 @@ class AddRetirementAccountForm(forms.ModelForm):
 
 
 class TransferBetweenAccountsForm(forms.ModelForm):
-    date = forms.DateField(label='Transfer Date', initial=now, widget=forms.SelectDateWidget)
+    date = forms.DateField(label='Date', initial=now,
+                           widget=forms.SelectDateWidget(years=INPUT_YEAR_SPAN), required=True)
 
     class Meta:
         model = Transfer
