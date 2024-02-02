@@ -902,6 +902,7 @@ class UserWorkRelatedIncomeView(FormView):
 
     def form_valid(self, form):
         post = self.request.POST
+        user = User.objects.get(pk=self.kwargs['pk'])
         account = CheckingAccount.objects.get(pk=post['checking_account'])
         account_401k = RetirementAccount.objects.get(pk=post['account_401k'])
         account_HSA = RetirementAccount.objects.get(pk=post['account_HSA'])
@@ -926,7 +927,7 @@ class UserWorkRelatedIncomeView(FormView):
                                          description='Gross Income',
                                          amount=gross_income)
         new_inc.save()
-        fed_exp = Statutory.objects.create(user=self.user,
+        fed_exp = Statutory.objects.create(user=user,
                                            date=date,
                                            category='Taxes',
                                            location='Work',
@@ -934,7 +935,7 @@ class UserWorkRelatedIncomeView(FormView):
                                            amount=fed_income_tax,
                                            )
         fed_exp.save()
-        ss_exp = Statutory.objects.create(user=self.user,
+        ss_exp = Statutory.objects.create(user=user,
                                           date=date,
                                           category='Taxes',
                                           location='Work',
@@ -942,7 +943,7 @@ class UserWorkRelatedIncomeView(FormView):
                                           amount=social_security_tax,
                                           )
         ss_exp.save()
-        medicare_exp = Statutory.objects.create(user=self.user,
+        medicare_exp = Statutory.objects.create(user=user,
                                                 date=date,
                                                 category='Taxes',
                                                 location='Work',
@@ -951,7 +952,7 @@ class UserWorkRelatedIncomeView(FormView):
                                                 )
         medicare_exp.save()
         if state_income_tax > 0.0:
-            state_income_exp = Statutory.objects.create(user=self.user,
+            state_income_exp = Statutory.objects.create(user=user,
                                                         date=date,
                                                         category='Taxes',
                                                         location='Work',
@@ -1001,7 +1002,7 @@ class UserWorkRelatedIncomeView(FormView):
                                                      )
             ret_401k_trans.save()
         else:
-            ret_401k_inc = Deposit.objects.create(user=self.user,
+            ret_401k_inc = Deposit.objects.create(user=user,
                                                   account=account_401k,
                                                   date=date,
                                                   category='401k',
@@ -1028,7 +1029,7 @@ class UserWorkRelatedIncomeView(FormView):
                                                  location='Work',
                                                  amount=retirement_hsa)
             ret_hsa_inc.save()
-        self.success_url = f'/finances/user/{self.user.pk}'
+        self.success_url = f'/finances/user/{user.pk}'
         return super().form_valid(form)
 
 
@@ -1388,6 +1389,8 @@ class WithdrawalForUserByLocation(CreateView):
     form_class = WithdrawalForUserForm
     template_name = 'finances/user_withdrawal_by_location_form.html'
     extra = 1
+    # TODO: Check why the dates show up in this form
+    # TODO: Check why the location is not put into a Withdrawal
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
