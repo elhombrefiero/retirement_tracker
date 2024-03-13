@@ -7,7 +7,7 @@ from django.db.models.functions import Trunc
 from django.utils.timezone import now
 
 from finances.models import User, MonthlyBudget, CheckingAccount, RetirementAccount, DebtAccount, \
-    dt_to_milliseconds_after_epoch, Statutory
+    dt_to_milliseconds_after_epoch, Statutory, Account
 from finances.utils import chartjs_utils as cjs
 
 from datetime import datetime
@@ -1044,6 +1044,43 @@ class TotalCumulativeMonthYearPlotViewCustomDates(DetailView):
         end_date = kwargs['end_date']
         config = get_line_chart_config(f'Cumulative Total from {start_date.strftime("%B %d, %Y")} to {end_date.strftime("%B %d, %Y")}')
         cumulative_total = user.return_cumulative_total(start_date, end_date)
+
+        return_dict = dict()
+        return_dict['config'] = config
+
+        xy_data = []
+        labels = []
+        for date_key in sorted(cumulative_total.keys()):
+            date_dt = datetime(date_key.year, date_key.month, date_key.day)
+            date_ts = dt_to_milliseconds_after_epoch(date_dt)
+            labels.append(date_ts)
+            xy_data.append(
+                {'x': date_ts, 'y': float(cumulative_total[date_key]['cumulative'])})
+
+        data = {
+            'labels': labels,
+            'datasets': [{
+                'label': 'Cumulative Total',
+                'backgroundColor': cjs.get_color('red', 0.5),
+                'borderColor': cjs.get_color('red'),
+                'fill': False,
+                'data': xy_data
+            }]
+        }
+
+        return_dict['data'] = data
+
+        return JsonResponse(return_dict)
+
+class AccountCumulativeCustomDates(DetailView):
+    model = Account
+
+    def get(self, request, *args, **kwargs):
+        account = Account.objects.get(pk=kwargs['pk'])
+        start_date = kwargs['start_date']
+        end_date = kwargs['end_date']
+        config = get_line_chart_config(f'Cumulative Total from {start_date.strftime("%B %d, %Y")} to {end_date.strftime("%B %d, %Y")}')
+        cumulative_total = account.return_cumulative_total(start_date, end_date)
 
         return_dict = dict()
         return_dict['config'] = config
