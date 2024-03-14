@@ -99,6 +99,9 @@ urlpatterns = [
     # Ex. /finances/plot/user/1/totals/2022-01-01/2023-01-01/cumulative_totals
     path('plot/user/<int:pk>/totals/<yyyy:start_date>/<yyyy:end_date>/cumulative_totals',
          pv.TotalCumulativeMonthYearPlotViewCustomDates.as_view(), name='plot_totals_cumulative_dt_to_dt'),
+    # Ex. /finances/plot/account/1/totals/2022-01-01/2023-01-01/cumulative_totals
+    path('plot/account/<int:pk>/totals/<yyyy:start_date>/<yyyy:end_date>/cumulative_totals',
+         pv.AccountCumulativeCustomDates.as_view(), name='plot_totals_acct_cumulative_dt_to_dt'),
     # Ex. /finances/plot/debug
     path('plot/debug', pv.DebugView.as_view(), name='plot_debug')
 ]

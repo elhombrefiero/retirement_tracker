@@ -38,9 +38,9 @@ def get_pie_chart_config(name):
     return config
 
 
-def get_line_chart_config(name):
+def get_line_chart_config(name, type='scatter'):
     """ Returns the configuration for a line chart"""
-    config = {'type': 'scatter',
+    config = {'type': f'{type}',
               'options': {
                   'showLine': True,
                   'responsive': True,
@@ -1080,19 +1080,24 @@ class AccountCumulativeCustomDates(DetailView):
         start_date = kwargs['start_date']
         end_date = kwargs['end_date']
         config = get_line_chart_config(f'Cumulative Total from {start_date.strftime("%B %d, %Y")} to {end_date.strftime("%B %d, %Y")}')
-        cumulative_total = account.return_cumulative_total(start_date, end_date)
+        cumulative_total, add_projected = account.return_cumulative_total(start_date, end_date)
 
         return_dict = dict()
         return_dict['config'] = config
 
         xy_data = []
+        proj_xy_data = []
         labels = []
         for date_key in sorted(cumulative_total.keys()):
             date_dt = datetime(date_key.year, date_key.month, date_key.day)
             date_ts = dt_to_milliseconds_after_epoch(date_dt)
             labels.append(date_ts)
-            xy_data.append(
-                {'x': date_ts, 'y': float(cumulative_total[date_key]['cumulative'])})
+            if 'cumulative' in cumulative_total[date_key]:
+                xy_data.append(
+                    {'x': date_ts, 'y': float(cumulative_total[date_key]['cumulative'])})
+            if 'projected' in cumulative_total[date_key]:
+                proj_xy_data.append(
+                    {'x': date_ts, 'y': float(cumulative_total[date_key]['projected'])})
 
         data = {
             'labels': labels,
@@ -1104,6 +1109,14 @@ class AccountCumulativeCustomDates(DetailView):
                 'data': xy_data
             }]
         }
+        if add_projected:
+            data['datasets'].append({
+                'label': 'Projected',
+                'backgroundColor': cjs.get_color('green', 0.5),
+                'borderColor': cjs.get_color('green'),
+                'fill': False,
+                'data': xy_data
+            })
 
         return_dict['data'] = data
 

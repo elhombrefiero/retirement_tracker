@@ -1082,6 +1082,7 @@ class Account(models.Model):
         trend up to the end_date
         """
         latest_date = self.return_latest_date()
+        latest_date_dt = datetime.combine(latest_date, datetime.min.time())
 
         incomes = Deposit.objects.filter(account=self,
                                          date__gte=start_date, date__lt=end_date).order_by('date')
@@ -1112,6 +1113,7 @@ class Account(models.Model):
 
         # Iterate through the dictionary and add a total amount
         total = 0.0
+        max_date = latest_date_dt
         for date_key in sorted(all_income_exp.keys()):
             if 'income' in all_income_exp[date_key]:
                 total = total + all_income_exp[date_key]['income']
@@ -1119,29 +1121,30 @@ class Account(models.Model):
                 total = total - all_income_exp[date_key]['expense']
             all_income_exp[date_key]['cumulative'] = total
 
-        all_income_exp['add_projected'] = False
+            max_date = min(max_date, date_key)
+
+        add_projected = False
 
         # Check if end date is greater than the latest date
-        if (end_date > latest_date):
-            all_income_exp['add_projected'] = True
+        if (end_date > latest_date_dt):
+            add_projected = True
 
             # If so, then create a value vs time line based on the last couple of entries (user input)
 
             # Make sure that the dates are properly subdivided (e.g., if date range is more than six months, then use the last six months, if it's less than that, only use the last 10 entries or so)
-            date_to_use = all_income_exp.keys()[:-10]
 
             # Use the function to create the projected trend out to end_date
             # TODO: Update return_value_vs_time_function to use a time span instead of number of years, months, etc.
-            f = self.return_value_vs_time_function(date_to_use, latest_date)
+            f = self.return_value_vs_time_function(latest_date_dt, end_date)
             # Then create entries in all_income_exp, starting from the last date
-            current_date = all_income_exp.keys()[:-1]
+            current_date = latest_date_dt
 
             while (current_date <= end_date):
                 projected = f(current_date)
                 all_income_exp[current_date]['projected'] = projected
                 current_date += relativedelta()
 
-        return all_income_exp
+        return all_income_exp, add_projected
 
     def get_absolute_url(self):
         return reverse('account_overview', args=[self.pk])
