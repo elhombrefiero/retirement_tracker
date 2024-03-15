@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from django.db import models
 from django.db.models import Sum, Max, F, Window
 from django.db.models.functions import TruncDay
@@ -965,9 +967,8 @@ class Account(models.Model):
 
         return f
 
-    def return_value_vs_time_function(self, num_of_years=0, num_of_months=6, kind='slinear', fill_value='extrapolate',
-                                      months_into_future=None):
-        """ Returns a function of cumulative amount vs time for the given account.
+    def return_value_vs_time_function(self, start_dt, end_dt, subdiv=10, kind='slinear', fill_value='extrapolate'):
+        """ Returns a function of cumulative amount vs time for the given account for the time span requested.
 
             Looks at the final data entry and then traverses back depending on the input arguments.
 
@@ -975,6 +976,8 @@ class Account(models.Model):
 
             Uses the data with the scipy interpolate interp1d to return a function that
             can be called to extrapolate the balance up to a certain point in time.
+
+            Default subdivides the balance into ten time steps between start_dt and end_dt to determine the function
         """
 
         dates = np.empty(0)
@@ -987,23 +990,21 @@ class Account(models.Model):
             f = scipy.interpolate.interp1d(dates, balances, kind=kind, fill_value=fill_value)
             return f
 
-        first_date = latest_date + relativedelta(years=-1 * num_of_years, months=-1 * num_of_months)
+        start_msec = dt_to_milliseconds_after_epoch(start_dt)
+        end_msec = dt_to_milliseconds_after_epoch(end_dt)
 
-        if months_into_future:
-            latest_date += relativedelta(months=months_into_future)
+        offset_ms = (end_msec - start_msec) / subdiv
+        offset_seconds = int(offset_ms * 1E-3)
 
-        current_date = first_date
+        current_dt = start_dt
 
-        # Captures the balance up to the end of the month for the month selected
-        while current_date <= latest_date:
-            month_name = datetime.strptime(str(current_date.month), '%m').strftime('%B')
-            year = current_date.year
-            balance = self.return_balance_up_to_month_year(month_name, year)
-            dtime = datetime.strptime(f'{month_name}-1-{year}', '%B-%d-%Y')
-            dt_ts = dt_to_milliseconds_after_epoch(dtime)
+        # Captures the balance up to the subdivided datetimes
+        while current_dt <= end_dt:
+            balance = self.return_balance_up_to_dt(current_dt)
+            dt_ts = dt_to_milliseconds_after_epoch(current_dt)
             dates = np.append(dates, dt_ts)
             balances = np.append(balances, balance)
-            current_date = current_date + relativedelta(months=+1)
+            current_dt = current_dt + relativedelta(seconds=offset_seconds)
 
         # Once all data is filled, calculate the balance as a function of ordinal
         f = scipy.interpolate.interp1d(dates, balances, kind=kind, fill_value=fill_value)
@@ -1021,7 +1022,10 @@ class Account(models.Model):
         req_date_dt = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         req_date_ts = dt_to_milliseconds_after_epoch(req_date_dt)
 
-        f = self.return_value_vs_time_function(num_of_years, num_of_months, kind=kind, fill_value=fill_value)
+        latest_date = self.return_latest_date()
+        start_exp_date = latest_date + relativedelta(years=-1*num_of_years, months=-1*num_of_months)
+
+        f = self.return_value_vs_time_function(start_exp_date, latest_date, kind=kind, fill_value=fill_value)
 
         y = float(f(req_date_ts))
 
@@ -1070,7 +1074,7 @@ class Account(models.Model):
 
         return time_to_reach_dt
 
-    def return_cumulative_total(self, start_date, end_date):
+    def return_cumulative_total(self, start_date, end_date, num_of_months_exp=6):
         """ Returns the cumulative total (income - expenses) of all the checking accounts within a date range.
 
         Start date is inclusive whereas the end_date is not.
@@ -1121,30 +1125,35 @@ class Account(models.Model):
                 total = total - all_income_exp[date_key]['expense']
             all_income_exp[date_key]['cumulative'] = total
 
-            max_date = min(max_date, date_key)
+            date_key_dt = datetime.combine(date_key, datetime.min.time())
+            max_date = min(max_date, date_key_dt)
 
-        add_projected = False
+        projected_data = None
 
         # Check if end date is greater than the latest date
         if (end_date > latest_date_dt):
-            add_projected = True
+            projected_data = dict()
 
             # If so, then create a value vs time line based on the last couple of entries (user input)
-
-            # Make sure that the dates are properly subdivided (e.g., if date range is more than six months, then use the last six months, if it's less than that, only use the last 10 entries or so)
-
+            start_exp_dt = latest_date_dt + relativedelta(months=-1*num_of_months_exp)
             # Use the function to create the projected trend out to end_date
-            # TODO: Update return_value_vs_time_function to use a time span instead of number of years, months, etc.
-            f = self.return_value_vs_time_function(latest_date_dt, end_date)
+            f = self.return_value_vs_time_function(start_exp_dt, latest_date_dt)
             # Then create entries in all_income_exp, starting from the last date
-            current_date = latest_date_dt
+            current_date = max_date
 
             while (current_date <= end_date):
-                projected = f(current_date)
-                all_income_exp[current_date]['projected'] = projected
-                current_date += relativedelta()
+                current_date_ms = dt_to_milliseconds_after_epoch(current_date)
+                projected = f(current_date_ms)
+                projected_data.update({current_date: projected})
 
-        return all_income_exp, add_projected
+                if (end_date - latest_date_dt < 30):
+                    current_date += relativedelta(days=+1)
+                elif (end_date - latest_date_dt > 365*5):
+                    current_date += relativedelta(years=+1)
+                else:
+                    current_date += relativedelta(months=+1)
+
+        return all_income_exp, projected_data
 
     def get_absolute_url(self):
         return reverse('account_overview', args=[self.pk])
