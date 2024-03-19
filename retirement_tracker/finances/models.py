@@ -12,6 +12,7 @@ import scipy.interpolate
 
 from datetime import date
 from datetime import datetime
+from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 
 BUDGET_GROUP_CHOICES = (
@@ -1086,7 +1087,10 @@ class Account(models.Model):
         trend up to the end_date
         """
         latest_date = self.return_latest_date()
+        earliest_date = self.return_earliest_date()
         latest_date_dt = datetime.combine(latest_date, datetime.min.time())
+        earliest_date_dt = datetime.combine(earliest_date, datetime.min.time())
+        end_date_dt = datetime.combine(end_date, datetime.min.time())
 
         incomes = Deposit.objects.filter(account=self,
                                          date__gte=start_date, date__lt=end_date).order_by('date')
@@ -1117,7 +1121,7 @@ class Account(models.Model):
 
         # Iterate through the dictionary and add a total amount
         total = 0.0
-        max_date = latest_date_dt
+        max_date = earliest_date_dt
         for date_key in sorted(all_income_exp.keys()):
             if 'income' in all_income_exp[date_key]:
                 total = total + all_income_exp[date_key]['income']
@@ -1126,29 +1130,30 @@ class Account(models.Model):
             all_income_exp[date_key]['cumulative'] = total
 
             date_key_dt = datetime.combine(date_key, datetime.min.time())
-            max_date = min(max_date, date_key_dt)
+            max_date = max(max_date, date_key_dt)
 
         projected_data = None
+        max_date_dt = datetime.combine(max_date, datetime.min.time())
 
         # Check if end date is greater than the latest date
-        if (end_date > latest_date_dt):
+        if (end_date_dt > max_date_dt):
             projected_data = dict()
 
             # If so, then create a value vs time line based on the last couple of entries (user input)
-            start_exp_dt = latest_date_dt + relativedelta(months=-1*num_of_months_exp)
+            start_exp_dt = max_date_dt + relativedelta(months=-1*num_of_months_exp)
             # Use the function to create the projected trend out to end_date
-            f = self.return_value_vs_time_function(start_exp_dt, latest_date_dt)
+            f = self.return_value_vs_time_function(start_exp_dt, max_date_dt)
             # Then create entries in all_income_exp, starting from the last date
             current_date = max_date
 
             while (current_date <= end_date):
                 current_date_ms = dt_to_milliseconds_after_epoch(current_date)
                 projected = f(current_date_ms)
-                projected_data.update({current_date: projected})
+                projected_data.update({current_date: float(projected)})
 
-                if (end_date - latest_date_dt < 30):
+                if (end_date - latest_date_dt < timedelta(days=30)):
                     current_date += relativedelta(days=+1)
-                elif (end_date - latest_date_dt > 365*5):
+                elif (end_date - latest_date_dt > timedelta(weeks=52*5)):
                     current_date += relativedelta(years=+1)
                 else:
                     current_date += relativedelta(months=+1)

@@ -1086,7 +1086,6 @@ class AccountCumulativeCustomDates(DetailView):
         return_dict['config'] = config
 
         xy_data = []
-        proj_xy_data = []
         labels = []
         for date_key in sorted(cumulative_total.keys()):
             date_dt = datetime(date_key.year, date_key.month, date_key.day)
@@ -1106,16 +1105,21 @@ class AccountCumulativeCustomDates(DetailView):
                 'data': xy_data
             }]
         }
+        proj_xy_data = []
         if projected_data:
-            if 'projected' in cumulative_total[date_key]:
+            labels = []
+            for date_key in sorted(projected_data.keys()):
+                date_dt = datetime(date_key.year, date_key.month, date_key.day)
+                date_ts = dt_to_milliseconds_after_epoch(date_dt)
+                labels.append(date_ts)
                 proj_xy_data.append(
-                    {'x': date_ts, 'y': float(cumulative_total[date_key]['projected'])})
+                    {'x': date_ts, 'y': float(projected_data[date_key])})
             data['datasets'].append({
                 'label': 'Projected',
                 'backgroundColor': cjs.get_color('green', 0.5),
                 'borderColor': cjs.get_color('green'),
                 'fill': False,
-                'data': xy_data
+                'data': proj_xy_data
             })
 
         return_dict['data'] = data
@@ -1128,28 +1132,7 @@ class DebugView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['accountpk'] = 1
-        account = Account.objects.get(pk=1)
-        f = account.return_value_vs_time_function()
-        today = now()
-        six_months_prior = today + relativedelta(months=-6)
-        current_date = six_months_prior
-        data = []
-        labels = []
-        return_data = dict()
-        config = get_line_chart_config('Debug')
-        while current_date <= today:
-            current_date_ts = dt_to_milliseconds_after_epoch(current_date)
-            data.append({'x': current_date_ts, 'y': float(f(current_date_ts) * 1000)})
-            labels.append(current_date.strftime('%B-%Y'))
-            current_date = current_date + relativedelta(months=+1)
-        return_data['labels'] = labels
-        datasets = list()
-        datasets.append({'label': 'Test Data', 'data': data})
-        return_data['datasets'] = datasets
-        options = dict()
-        options['scales'] = dict()
-        options['scales']['x'] = {'type': 'time', 'title': {'display': True, 'text': 'Date'}}
-        context['data'] = data
-        context['options'] = options
-        context['labels'] = labels
+        context['start_date'] = '2023-06-01'
+        context['end_date'] = '2024-09-01'
+
         return context

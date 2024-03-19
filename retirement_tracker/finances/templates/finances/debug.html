@@ -27,7 +27,7 @@
 
 $(document).ready(function () {
     // create an AJAX JSON request
-    url = "{% url 'data_projected_account_balance' accountpk %}";
+    url = "{% url 'plot_totals_acct_cumulative_dt_to_dt' accountpk start_date end_date %}";
     // console.log(url);
     $.getJSON(url, function(result) {
         chartmb.update();
