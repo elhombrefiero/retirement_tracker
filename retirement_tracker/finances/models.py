@@ -23,6 +23,7 @@ BUDGET_GROUP_MORTGAGE = BUDGET_GROUP_CHOICES[1][0]
 BUDGET_GROUP_DGR = BUDGET_GROUP_CHOICES[2][0]
 BUDGET_GROUP_DISC = BUDGET_GROUP_CHOICES[3][0]
 
+
 def dt_to_milliseconds_after_epoch(dt):
     """ Converts a given datetime to milliseconds after epoch.
     This is used in place of timestamp due to limitations on RPi
@@ -32,7 +33,8 @@ def dt_to_milliseconds_after_epoch(dt):
     dt_ = dt.replace(tzinfo=cur_tz)
     epoch_dt = datetime.fromtimestamp(0, tz=cur_tz)
     tdelta = dt_ - epoch_dt
-    return tdelta.total_seconds()*1000
+    return tdelta.total_seconds() * 1000
+
 
 class User(models.Model):
     """ User class for the retirement tracker.
@@ -311,7 +313,7 @@ class User(models.Model):
         dgr_total = 0.0
         disc_total = 0.0
 
-        stats = Statutory.objects.filter(user=self, date__gt=start_date, date__lte=end_date)
+        stats = Statutory.objects.filter(user=self, date__gte=start_date, date__lt=end_date)
         mbudgets = MonthlyBudget.objects.filter(user=self, date__gte=start_date, date__lte=end_date)
 
         for stat in stats:
@@ -323,7 +325,8 @@ class User(models.Model):
             dgr_total += mbudget.debts_goals_retirement
             disc_total += mbudget.discretionary
 
-        return round(stat_total,2), round(mand_total,2), round(mort_total,2), round(dgr_total,2), round(disc_total,2)
+        return round(stat_total, 2), round(mand_total, 2), round(mort_total, 2), round(dgr_total, 2), round(disc_total,
+                                                                                                            2)
 
     def return_checking_acct_total(self):
         tot_checking_amt = 0.0
@@ -488,7 +491,8 @@ class User(models.Model):
         beg_of_month = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
         end_of_month = beg_of_month + relativedelta(months=+1, seconds=-1)
 
-        mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp = self.return_tot_expenses_by_budget_startdt_to_enddt(beg_of_month, end_of_month)
+        mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp = self.return_tot_expenses_by_budget_startdt_to_enddt(
+            beg_of_month, end_of_month)
 
         return mand_exp, mort_exp, dgr_exp, disc_exp, stat_exp
 
@@ -740,7 +744,6 @@ class User(models.Model):
             income_tot += income.amount
 
         return income_tot
-
 
     def return_cumulative_incomes(self, start_date, end_date):
         """ Returns the cumulative incomes of all the checking accounts within a date range.
