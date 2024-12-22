@@ -810,6 +810,8 @@ class ExpenseLookupForUserView(FormView):
     form_class = UserExpenseLookupForm
     template_name = 'finances/expense_lookup_form_for_user.html'
 
+    # TODO: Add a table below the plot with the filtered entries
+
     def dispatch(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
         self.user = User.objects.get(pk=pk)
@@ -824,32 +826,48 @@ class ExpenseLookupForUserView(FormView):
         context = self.get_context_data(**kwargs)
         user_accts = self.user.return_all_accounts()
         withdrawals = Withdrawal.objects.filter(account__in=user_accts).order_by('date')
+        title_txt = f''
         if form.cleaned_data['start_year']:
             if form.cleaned_data['start_month']:
+                title_txt += f'Start date: {form.cleaned_data["start_month"]} 1, '
                 start_dt = datetime.strptime(f'{form.cleaned_data["start_month"]} 1, {form.cleaned_data["start_year"]}',
                                              '%B %d, %Y')
             else:
+                title_txt += f'Start date: January 1, '
                 start_dt = datetime.strptime(f'January 1, {form.cleaned_data["start_year"]}', '%B %d, %Y')
+            title_txt += f'{form.cleaned_data["start_year"]} '
             withdrawals = withdrawals.filter(date__gte=start_dt)
+
         if form.cleaned_data['end_year']:
             if form.cleaned_data['end_month']:
+                # Get end day of the end month
                 end_dt = datetime.strptime(f'{form.cleaned_data["end_month"]} 1, {form.cleaned_data["end_year"]}',
                                            '%B %d, %Y')
+                end_dt = end_dt + relativedelta(months=+1)
+                end_dt = end_dt - relativedelta(days=-1)
+                title_txt += f'End date: {form.cleaned_data["end_month"]} {datetime.strftime(end_dt,"%d")}, '
             else:
+                title_txt += f'End date: {form.cleaned_data["end_month"]} 31, '
                 end_dt = datetime.strptime(f'December 31, {form.cleaned_data["end_year"]}', '%B %d, %Y')
             withdrawals = withdrawals.filter(date__lte=end_dt)
 
         if form.cleaned_data['category']:
+            title_txt += f'Category: {form.cleaned_data["category"]} '
             withdrawals = withdrawals.filter(category=form.cleaned_data['category'])
 
         if form.cleaned_data['budget_group']:
+            title_txt += f'Budget Group: {form.cleaned_data["budget_group"]} '
             withdrawals = withdrawals.filter(budget_group=form.cleaned_data['budget_group'])
 
         if form.cleaned_data['description']:
+            title_txt += f'Description: {form.cleaned_data["description"]} '
             withdrawals = withdrawals.filter(description=form.cleaned_data['description'])
 
         if form.cleaned_data['where_bought']:
+            title_txt += f'Location: {form.cleaned_data["where_bought"]} '
             withdrawals = withdrawals.filter(location=form.cleaned_data['where_bought'])
+
+        title_txt = title_txt.strip()
 
         if len(withdrawals) > 2:
             context['chart_data'] = True
@@ -872,7 +890,7 @@ class ExpenseLookupForUserView(FormView):
                 'datasets': datasets
             }
             context['data'] = json.dumps(data)
-            config = get_line_chart_config('Filtered data')
+            config = get_line_chart_config(title_txt)
             context['options'] = json.dumps(config['options'])
         else:
             context['chart_data'] = False
