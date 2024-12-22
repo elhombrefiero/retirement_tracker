@@ -7,6 +7,16 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <Title>{{object.name}} Look up Expenses</Title>
+    <style>
+        table {
+            width: 100%;
+        }
+        th,
+        td {
+            padding: 2px;
+            text-align: center;
+        }
+    </style>
 {% endblock %}
 
 {% block mymessage %}
@@ -23,6 +33,29 @@
     <canvas id="expenses_over_time"></canvas>
 </div>
 {%  endif %}
+{% if include_table %}
+    <!-- Table with information -->
+    <table>
+    <thead>
+    <tr>
+        <th>Date</th>
+        <th>Category</th>
+        <th>Description</th>
+        <th>Amount</th>
+        <th>Cumulative Amount</th>
+    </tr>
+    </thead>
+    {% for twithdrawal in table_data %}
+        <tr>
+        <td >{{ twithdrawal.date }}</td>
+        <td>{{ twithdrawal.category }}</td>
+            <td><a href="/finances/update_withdrawal/{{ twithdrawal.withdrawal_id }}">{{ twithdrawal.description }}</a></td>
+        <td>{{ twithdrawal.amount }}</td>
+        <td>{{ twithdrawal.cumulative }}</td>
+        </tr>
+    {% endfor %}
+    </table>
+{% endif %}
 {% endblock %}
 
 {% block jsstuff %}
