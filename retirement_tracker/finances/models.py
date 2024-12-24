@@ -1022,7 +1022,13 @@ class Account(models.Model):
         """
 
         req_date_dt = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
-        req_date_ts = dt_to_milliseconds_after_epoch(req_date_dt)
+
+        return self.estimate_balance_dt(req_date_dt)
+
+    def estimate_balance_dt(self, dt, num_of_years=0, num_of_months=6, kind='slinear',
+                            fill_value='extrapolate'):
+
+        req_date_ts = dt_to_milliseconds_after_epoch(dt)
 
         f = self.return_value_vs_time_function(num_of_years, num_of_months, kind=kind, fill_value=fill_value)
 
@@ -1138,6 +1144,28 @@ class DebtAccount(Account):
 
         return max(round(float(self.starting_balance) - float(all_income) + float(all_expense), 2), 0)
 
+    def estimate_balance_month_year(self, month: str, year: int, num_of_years=0, num_of_months=6, kind='slinear',
+                                    fill_value='extrapolate'):
+        """ Performs an interpolation of balance vs time using the data of the last entries in the account
+
+        By default, uses data from six months before the requested month/year for the extrapolation.
+
+        Because this is a debt account, the extrapolation stops at 0.0 (i.e., zeroed out debt)
+
+        """
+
+        req_date_dt = datetime.strptime(f'{month}, 1, {year}', '%B, %d, %Y')
+        return self.estimate_balance_dt(req_date_dt, num_of_years=num_of_years, num_of_months=num_of_months, kind=kind, fill_value=fill_value)
+
+    def estimate_balance_dt(self, dt, num_of_years=0, num_of_months=6, kind='slinear',
+                                    fill_value='extrapolate'):
+        req_date_ts = dt_to_milliseconds_after_epoch(dt)
+
+        f = self.return_value_vs_time_function(num_of_years, num_of_months, kind=kind, fill_value=fill_value)
+
+        y = max(float(f(req_date_ts)), 0.0)
+
+        return y
 
 class Withdrawal(models.Model):
     """ Withdrawal for a given account.

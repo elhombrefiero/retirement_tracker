@@ -7,7 +7,7 @@ from django.db.models.functions import Trunc
 from django.utils.timezone import now
 
 from finances.models import User, MonthlyBudget, CheckingAccount, RetirementAccount, DebtAccount, \
-    dt_to_milliseconds_after_epoch, Statutory
+    dt_to_milliseconds_after_epoch, Statutory, Account
 from finances.utils import chartjs_utils as cjs
 
 from datetime import datetime
@@ -708,17 +708,17 @@ class DebtAccountBalanceByTime(DetailView):
             }
         )
 
-        f = self.account.return_value_vs_time_function()
-
         current_date = today
 
         while current_date <= five_years_from_today:
             current_date_ts = dt_to_milliseconds_after_epoch(current_date)
-            current_balance = float(f(current_date_ts))
+            current_balance = self.account.estimate_balance_dt(current_date)
             xy_projected.append({'x': current_date_ts, 'y': current_balance})
             labels_actual.append(current_date_ts)
+            if current_balance <= 0.0:
+                break
 
-            current_date = current_date + relativedelta(years=+1)
+            current_date = current_date + relativedelta(months=+3)
 
         datasets.append({
             'label': 'Projected Account Balance',
