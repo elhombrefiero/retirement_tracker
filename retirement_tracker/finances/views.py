@@ -36,6 +36,8 @@ from finances.utils import chartjs_utils as cjs
 # TODO: Update the Debt Account functions to set the minimum value of 0.0 when the account reaches zero.
 
 # TODO: Add a projected outlook page similar to the custom report page.
+# TODO: Create a view that lets you upload a work-related income file for a user.
+# TODO: Create view that allows multiple work-related entries.
 
 def get_dt_from_month_day_year(month, day, year):
     return datetime.strptime(f'{month}-{day}-{year}', '%m-%d-%Y')
