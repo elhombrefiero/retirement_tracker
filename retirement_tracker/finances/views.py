@@ -3,7 +3,7 @@
 # Python Library Imports
 from dateutil.relativedelta import relativedelta
 import json
-import pytz
+
 
 # Other Imports
 from django.db.models.functions import TruncDay
@@ -26,7 +26,7 @@ from finances.forms import MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, 
     UserExpenseLookupForm, MonthlyBudgetForUserMonthYearForm, AddDebtAccountForm, \
     AddCheckingAccountForm, AddRetirementAccountForm, AddTradingAccountForm, TransferBetweenAccountsForm, \
     WithdrawalForUserForm, DepositForUserForm, StatutoryForUserForm, \
-    DateLocationForm, WithdrawalByLocationFormset, UserReportSelectForm
+    DateLocationForm, WithdrawalByLocationFormset, UserReportSelectForm, UserFileUploadForm
 from finances.plot_views import get_line_chart_config
 from finances.utils import chartjs_utils as cjs
 
@@ -1067,6 +1067,34 @@ class UserWorkRelatedIncomeView(FormView):
             ret_hsa_inc.save()
         self.success_url = f'/finances/user/{user.pk}'
         return super().form_valid(form)
+
+
+class UserWorkRelatedIncomeFileView(FormView):
+    template_name = 'finances/user_work_income_file_form.html'
+    form_class = UserFileUploadForm
+
+    def get(self, request, *args, **kwargs):
+        self.user = User.objects.get(pk=kwargs['pk'])
+        return super().get(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        user = User.objects.get(pk=self.kwargs['pk'])
+        kwargs['user'] = user
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = User.objects.get(pk=self.kwargs['pk'])
+        context['user'] = user
+        return context
+
+    def form_valid(self, form):
+        post = self.request.POST
+        process_user_work_file(self.request.FILES['file'])
+        self.success_url = f'/finances/user/{self.kwargs["pk"]}'
+        # Redirect to a page with multiple entries based on the data parsed from the process_user_work_file function
+        return HttpResponseRedirect(self.success_url)
 
 
 class MonthlyBudgetForUserView(FormView):

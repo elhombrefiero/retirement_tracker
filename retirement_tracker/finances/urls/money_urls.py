@@ -64,6 +64,12 @@ urlpatterns = [
     path('user/<int:pk>/lookup_expenses', views.ExpenseLookupForUserView.as_view(), name='user_expense_lookup'),
     # Ex. /finances/user/1/add_work_income
     path('user/<int:pk>/add_work_income', views.UserWorkRelatedIncomeView.as_view(), name='user_work_income'),
+    # Ex. /finances/user/1/add_work_income_file
+    path('user/<int:pk>/add_work_income_file', views.UserWorkRelatedIncomeFileView.as_view(),
+         name='user_add_work_income_file'),
+    # Ex. /finances/user/1/confirm_work_income_file
+    # path('user/<int:pk>/confirm_work_income_file', views.UserConfirmWorkRelatedIncomeFileView.as_view(),
+    #     name='user_confirm_work_income_file'),
     # Ex. /finances/account_overview/pk
     path('account_overview/<int:pk>/', views.AccountView.as_view(), name='account_overview'),
     # Ex. /finances/checkingaccount_overview/pk

@@ -1,0 +1,10 @@
+{% extends 'finances/user_general_template.html' %}
+
+{% block mymessage %}
+<form method="POST" enctype="multipart/form-data">
+    {{ form.non_field_errors }}
+    {% csrf_token %}
+    {{form.as_p}}
+    <input type="submit" value="Submit">
+</form>
+{% endblock %}
