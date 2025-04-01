@@ -3,6 +3,8 @@ from pypdf import PdfReader
 import logging
 import re
 
+from django.utils.timezone import get_current_timezone
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,13 +23,15 @@ def process_user_work_file(user_work_file):
     pdf_obj = PdfReader(user_work_file)
     page = pdf_obj.pages[0]
     split_page = page.extract_text().split('\n')
+    cur_tz = get_current_timezone()
 
     for i, line in enumerate(split_page):
         pay_date_match = pay_date_regex.match(line)
         if pay_date_match:
             pay_date = pay_date_match.group(1)
-            pay_datetime = datetime.strptime(pay_date, '%m/%d/%Y')  # TODO: Apply the time zone
-            print(f'Found Pay date: {pay_datetime}')
+            pay_datetime = datetime.strptime(pay_date, '%m/%d/%Y')
+            pay_datetime = pay_datetime.replace(tzinfo=cur_tz)
+            return_dict['pay_date'] = pay_datetime
             continue
         if 'Earnings' in line:
             process_earnings(i + 2, split_page, return_dict)
@@ -35,7 +39,7 @@ def process_user_work_file(user_work_file):
         if 'Deductions' in line:
             process_deductions(i + 2, split_page, return_dict)
 
-        if 'Taxes' in line:
+        if 'Taxes' == line.strip():
             # Tax, Current, YTD
             process_taxes(i + 2, split_page, return_dict)
 
