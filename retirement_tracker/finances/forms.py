@@ -265,3 +265,13 @@ class UserReportSelectForm(forms.Form):
                                                         widget=forms.SelectDateWidget(years=span), required=False)
             self.fields['end_date'] = forms.DateField(label='End Date', initial=latest_dt,
                                                       widget=forms.SelectDateWidget(years=span), required=False)
+
+
+class UserFileUploadForm(forms.Form):
+    file = forms.FileField()
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user:
+            # Update the fields needed for the form
+            pass
