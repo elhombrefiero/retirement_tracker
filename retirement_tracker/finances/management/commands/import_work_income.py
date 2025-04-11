@@ -140,6 +140,14 @@ class Command(BaseCommand):
             work_info = process_user_work_file(filename)
 
             if work_info:
+                self.stdout.write(self.style.SUCCESS(f'Contents of the work_info file:'))
+                for key1, value1 in work_info.items():
+                    self.stdout.write(self.style.SUCCESS(f'{key1}'))
+                    if type(value1) == dict:
+                        for key2, value2 in value1.items():
+                            self.stdout.write(self.style.SUCCESS(f'{key2}: {value2}'))
+                    else:
+                        self.stdout.write(self.style.SUCCESS(f'{key1}: {value1}'))
                 try:
                     pdate = work_info['pay_date']
                 except:
