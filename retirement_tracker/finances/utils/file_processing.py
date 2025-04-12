@@ -75,11 +75,11 @@ def process_checking_split(i, split_lines, return_dict):
 
 def process_earnings(i, split_lines, return_dict):
     """ Processes earnings portion of the input file."""
-
     # Pay type, hours, pay rate, current, ytd
-    re_earnings1 = re.compile(r'([a-z\s]+)[\d\.]+\s+[$\d\.,]+\s+\$([\d\.,]+)\s+[$\d\.,]+',
-                              re.IGNORECASE)  # Pay type, hours, pay rate, current, ytd
-    re_earnings2 = re.compile(r'^([a-z0-9\s]+)\$([\d\.,]+)\s+\$[\d\.,]+', re.IGNORECASE)
+    re_earnings1 = re.compile(r'(^.*)\s[\d\.]+\s+[$\d\.,]+\s+\$([\d\.,]+)\s+[$\d\.,]+',
+                              re.IGNORECASE)
+    # Pay type, current, ytd
+    re_earnings2 = re.compile(r'(^.*)\s\$([\d\.,]+)\s+\$[\d\.,]+', re.IGNORECASE)
 
     for line in split_lines[i:]:
         match1 = re_earnings1.match(line)

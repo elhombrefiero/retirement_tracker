@@ -157,22 +157,23 @@ class Command(BaseCommand):
 
                 if 'earnings' in work_info.keys():
                     for description in work_info['earnings'].keys():
-                        try:
-                            deposit, created = Deposit.objects.update_or_create(account=caccount,
-                                                                                date=pdate,
-                                                                                description=description,
-                                                                                amount=work_info['earnings'][description],
-                                                                                defaults={'category': 'Work',
-                                                                                          'location': 'Work'})
-                            if created:
-                                self.stdout.write(self.style.SUCCESS(f'Created Deposit {deposit}'))
-                            else:
-                                self.stdout.write(self.style.SUCCESS(f'Updated Deposit {deposit}'))
+                        if work_info['earnings'][description] > 0.0:
+                            try:
+                                deposit, created = Deposit.objects.update_or_create(account=caccount,
+                                                                                    date=pdate,
+                                                                                    description=description,
+                                                                                    amount=work_info['earnings'][description],
+                                                                                    defaults={'category': 'Work',
+                                                                                              'location': 'Work'})
+                                if created:
+                                    self.stdout.write(self.style.SUCCESS(f'Created Deposit {deposit}'))
+                                else:
+                                    self.stdout.write(self.style.SUCCESS(f'Updated Deposit {deposit}'))
+                                deposit.save()
+                            except IntegrityError as e:
+                                self.stdout.write(self.style.ERROR(f'Error updating Deposit {description} on {pdate}: {e}'))
+                                continue
                             deposit.save()
-                        except IntegrityError as e:
-                            self.stdout.write(self.style.ERROR(f'Error updating Deposit {description} on {pdate}: {e}'))
-                            continue
-                        deposit.save()
 
                 # TODO: Determine if deductions should come through income file or through associated account files.
                 # if 'deductions' in work_info.keys():
