@@ -980,7 +980,7 @@ class Account(models.Model):
 
             Default subdivides the balance into ten time steps between start_dt and end_dt to determine the function
         """
-
+        # TODO: Try subdividing into smaller pieces (e.g., 100)
         dates = np.empty(0)
         balances = np.empty(0)
 
@@ -1086,6 +1086,7 @@ class Account(models.Model):
         For cases where end_date is greater than the latest date entry, project the
         trend up to the end_date
         """
+        # TODO: Use multiple years instead of using the number of months. Alternatively, use five years worth of expenses instead of six months.
         latest_date = self.return_latest_date()
         earliest_date = self.return_earliest_date()
         latest_date_dt = datetime.combine(latest_date, datetime.min.time())
