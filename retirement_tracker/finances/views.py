@@ -29,6 +29,7 @@ from finances.forms import MonthlyBudgetForUserForm, UserWorkIncomeExpenseForm, 
     DateLocationForm, WithdrawalByLocationFormset, UserReportSelectForm, UserFileUploadForm
 from finances.plot_views import get_line_chart_config
 from finances.utils import chartjs_utils as cjs
+from utils.file_processing import process_user_work_file
 
 
 # Create your views here.
