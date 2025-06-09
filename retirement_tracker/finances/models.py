@@ -1134,6 +1134,7 @@ class Account(models.Model):
             max_date = max(max_date, date_key_dt)
 
         projected_data = None
+        trend_data = None
         max_date_dt = datetime.combine(max_date, datetime.min.time())
 
         # Check if end date is greater than the latest date
@@ -1147,6 +1148,10 @@ class Account(models.Model):
             # Then create entries in all_income_exp, starting from the last date
             current_date = max_date
 
+            # TODO: Update trend_data to include the data used to form the trend line
+
+            trend_data = dict()
+
             while (current_date <= end_date):
                 current_date_ms = dt_to_milliseconds_after_epoch(current_date)
                 projected = f(current_date_ms)
@@ -1159,7 +1164,7 @@ class Account(models.Model):
                 else:
                     current_date += relativedelta(months=+1)
 
-        return all_income_exp, projected_data
+        return all_income_exp, projected_data, trend_data
 
     def get_absolute_url(self):
         return reverse('account_overview', args=[self.pk])

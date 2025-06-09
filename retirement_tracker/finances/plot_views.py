@@ -1079,8 +1079,8 @@ class AccountCumulativeCustomDates(DetailView):
         account = Account.objects.get(pk=kwargs['pk'])
         start_date = kwargs['start_date']
         end_date = kwargs['end_date']
-        config = get_line_chart_config(f'Cumulative Total from {start_date.strftime("%B %d, %Y")} to {end_date.strftime("%B %d, %Y")}')
-        cumulative_total, projected_data = account.return_cumulative_total(start_date, end_date)
+        config = get_line_chart_config(f'{account.name.title()} Data from {start_date.strftime("%B %d, %Y")} to {end_date.strftime("%B %d, %Y")}')
+        cumulative_total, projected_data, trend_data = account.return_cumulative_total(start_date, end_date)
 
         return_dict = dict()
         return_dict['config'] = config
@@ -1105,8 +1105,8 @@ class AccountCumulativeCustomDates(DetailView):
                 'data': xy_data
             }]
         }
-        proj_xy_data = []
         if projected_data:
+            proj_xy_data = []
             labels = []
             for date_key in sorted(projected_data.keys()):
                 date_dt = datetime(date_key.year, date_key.month, date_key.day)
@@ -1120,6 +1120,23 @@ class AccountCumulativeCustomDates(DetailView):
                 'borderColor': cjs.get_color('green'),
                 'fill': False,
                 'data': proj_xy_data
+            })
+
+        if trend_data:
+            trend_xy_data = []
+            labels = []
+            for date_key in sorted(trend_data.keys()):
+                date_dt = datetime(date_key.year, date_key.month, date_key.day)
+                date_ts = dt_to_milliseconds_after_epoch(date_dt)
+                labels.append(date_ts)
+                trend_xy_data.append(
+                    {'x': date_ts, 'y': float(projected_data[date_key])})
+            data['datasets'].append({
+                'label': 'Trendline',
+                'backgroundColor': cjs.get_color('yellow', 0.25),
+                'borderColor': cjs.get_color('yellow'),
+                'fill': False,
+                'data': trend_xy_data
             })
 
         return_dict['data'] = data
