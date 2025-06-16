@@ -1150,6 +1150,6 @@ class DebugView(TemplateView):
         context = super().get_context_data(**kwargs)
         context['accountpk'] = 1
         context['start_date'] = '2023-06-01'
-        context['end_date'] = '2024-09-01'
+        context['end_date'] = '2024-04-11'
 
         return context

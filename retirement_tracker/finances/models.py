@@ -15,6 +15,8 @@ from datetime import datetime
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 
+from finances.utils.time_utils import return_relative_delta
+
 BUDGET_GROUP_CHOICES = (
     ('Mandatory', 'Mandatory'),
     ('Mortgage', 'Mortgage'),
@@ -1122,7 +1124,7 @@ class Account(models.Model):
 
         # Iterate through the dictionary and add a total amount
         total = 0.0
-        max_date = earliest_date_dt
+        max_date_dt = earliest_date_dt
         for date_key in sorted(all_income_exp.keys()):
             if 'income' in all_income_exp[date_key]:
                 total = total + all_income_exp[date_key]['income']
@@ -1131,38 +1133,49 @@ class Account(models.Model):
             all_income_exp[date_key]['cumulative'] = total
 
             date_key_dt = datetime.combine(date_key, datetime.min.time())
-            max_date = max(max_date, date_key_dt)
+            max_date_dt = max(max_date_dt, date_key_dt)
 
         projected_data = None
         trend_data = None
-        max_date_dt = datetime.combine(max_date, datetime.min.time())
+        max_date_dt = datetime.combine(max_date_dt, datetime.min.time())
+        max_date = max_date_dt.date()
 
         # Check if end date is greater than the latest date
-        if (end_date_dt > max_date_dt):
+        if end_date_dt > max_date_dt:
             projected_data = dict()
 
-            # If so, then create a value vs time line based on the last couple of entries (user input)
+            # If so, then create a value vs timeline based on the last couple of entries (user input)
             start_exp_dt = max_date_dt + relativedelta(months=-1*num_of_months_exp)
             # Use the function to create the projected trend out to end_date
             f = self.return_value_vs_time_function(start_exp_dt, max_date_dt)
+            start_exp = start_exp_dt.date()
             # Then create entries in all_income_exp, starting from the last date
-            current_date = max_date
+            current_date = start_exp
 
-            # TODO: Update trend_data to include the data used to form the trend line
+            relative_diff = return_relative_delta(start_exp_dt, max_date_dt)
 
             trend_data = dict()
+            while current_date <= max_date:
+                current_date_dt = datetime.combine(current_date, datetime.min.time())
+                current_date_ms = dt_to_milliseconds_after_epoch(current_date_dt)
+                projected = f(current_date_ms)
+                trend_data.update({current_date: float(projected)})
 
-            while (current_date <= end_date):
-                current_date_ms = dt_to_milliseconds_after_epoch(current_date)
+                current_date += relative_diff
+
+            current_date = max_date
+
+            relative_diff = return_relative_delta(max_date_dt, end_date_dt)
+
+            # TODO: Check for end_date type and use accordingly
+
+            while current_date <= end_date:
+                current_date_dt = datetime.combine(current_date, datetime.min.time())
+                current_date_ms = dt_to_milliseconds_after_epoch(current_date_dt)
                 projected = f(current_date_ms)
                 projected_data.update({current_date: float(projected)})
 
-                if (end_date - latest_date_dt < timedelta(days=30)):
-                    current_date += relativedelta(days=+1)
-                elif (end_date - latest_date_dt > timedelta(weeks=52*5)):
-                    current_date += relativedelta(years=+1)
-                else:
-                    current_date += relativedelta(months=+1)
+                current_date += relative_diff
 
         return all_income_exp, projected_data, trend_data
 
