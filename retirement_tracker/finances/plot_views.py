@@ -15,6 +15,7 @@ from dateutil.relativedelta import relativedelta
 
 
 # TODO: Add plot views that take advantage of the value vs time functions. Account balance vs time. User net worth over time. Debt balance vs time
+# TODO: Add pie chart of top X amount of items. Input can be category, group, checking account. A table will show the sum of the item, the amount, followed by the remaining balance.
 
 def get_pie_chart_config(name):
     """Returns the configuration for a pie chart minus the data using chart.js"""
