@@ -405,7 +405,7 @@ class UserAccountsAvailable(DetailView):
 class UserExpensesAvailable(ListView):
     model = Withdrawal
     template_name = 'finances/withdrawal_list.html'
-    paginate_by = 25
+    paginate_by = 50
 
     def dispatch(self, request, *args, **kwargs):
         self.userpk = kwargs['pk']
