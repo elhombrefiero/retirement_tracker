@@ -1466,7 +1466,6 @@ class WithdrawalForUserByLocation(CreateView):
     extra = 1
 
     # TODO: Check why the dates show up in this form
-    # TODO: Check why the location is not put into a Withdrawal
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1508,6 +1507,6 @@ class WithdrawalForUserByLocation(CreateView):
         instances = formset.save(commit=False)
         for instance in instances:
             instance.date = dt
-            instance.where_bought = location
+            instance.location = location
             instance.save()
         return HttpResponseRedirect(self.success_url)
